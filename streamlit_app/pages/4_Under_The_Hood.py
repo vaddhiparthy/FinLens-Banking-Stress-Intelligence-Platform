@@ -14,6 +14,13 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from finlens.config import get_settings
+from finlens.evidence import (
+    airflow_run_rows,
+    dbt_artifact_summary,
+    dbt_result_rows,
+    source_landing_rows,
+    warehouse_table_rows,
+)
 from finlens.pipeline_runs import latest_pipeline_run
 from finlens.pipeline_status import pipeline_status_rows
 from finlens.state import load_state
@@ -49,6 +56,7 @@ def _status_color(status: str, palette: dict[str, str]) -> str:
         "Running": "rgba(179, 141, 91, 0.55)",
         "Missing Data": "rgba(180, 170, 156, 0.5)",
         "Deferred": "rgba(180, 170, 156, 0.35)",
+        "Not Activated": "rgba(180, 170, 156, 0.35)",
     }.get(status, palette["text_soft"])
 
 
@@ -112,6 +120,7 @@ def pipeline_status_table(frame: pd.DataFrame) -> pd.DataFrame:
         "Running": "🟠 Running",
         "Missing Data": "⚪ Missing Data",
         "Deferred": "⚪ Deferred",
+        "Not Activated": "⚪ Not Activated",
     }
     tool_map = {
         "FDIC -> Bronze": "Airflow task + Python extractor",
@@ -182,8 +191,13 @@ def anomaly_chart() -> go.Figure:
 def reconciliation_table() -> pd.DataFrame:
     mode = stress_pulse_source_mode()
     status = "Pass" if mode == "live" else "Deferred"
-    gold_value = "Live gold aggregate" if mode == "live" else "Pending aggregate contract"
-    qbp_value = "Connected" if mode == "live" else "Not active in zero-risk build"
+    gold_value = "Live gold aggregate" if mode == "live" else "QBP aggregate not activated"
+    qbp_value = "Connected" if mode == "live" else "No QBP source URL configured"
+    detail = (
+        "Validated against QBP aggregate contract"
+        if mode == "live"
+        else "Disabled rather than faked; activate FDIC_QBP_SOURCE_URL to reconcile"
+    )
     return pd.DataFrame(
         [
             {
@@ -191,24 +205,28 @@ def reconciliation_table() -> pd.DataFrame:
                 "Gold aggregate": gold_value,
                 "FDIC QBP": qbp_value,
                 "Status": status,
+                "Evidence": detail,
             },
             {
                 "Metric": "Total deposits",
                 "Gold aggregate": gold_value,
                 "FDIC QBP": qbp_value,
                 "Status": status,
+                "Evidence": detail,
             },
             {
                 "Metric": "Total equity",
                 "Gold aggregate": gold_value,
                 "FDIC QBP": qbp_value,
                 "Status": status,
+                "Evidence": detail,
             },
             {
                 "Metric": "Net income",
                 "Gold aggregate": gold_value,
                 "FDIC QBP": qbp_value,
                 "Status": status,
+                "Evidence": detail,
             },
         ]
     )
@@ -225,14 +243,56 @@ def freshness_table() -> pd.DataFrame:
         [
             {
                 "Source": item["label"],
-                "Freshness": "Success" if item["ready"] else "Missing connector",
+                "Freshness": "Success" if item["ready"] else "Not Activated",
                 "SLA": item["cadence"],
                 "Status": item["status"],
+                "Required input": ", ".join(item.get("required_env", [])) or "None",
+                "Missing input": ", ".join(item.get("missing_env", [])) or "None",
             }
             for item in sources
-            if item["enabled"]
         ]
     )
+
+
+def source_activation_frame() -> pd.DataFrame:
+    connector_report = load_state("connector_report", default={})
+    sources = connector_report.get("sources", []) if isinstance(connector_report, dict) else []
+    if not sources:
+        return pd.DataFrame(
+            [
+                {
+                    "Source": "No connector report",
+                    "Activation": "Missing",
+                    "Reason": "Run connector readiness",
+                    "Cadence": "—",
+                }
+            ]
+        )
+    rows = []
+    for item in sources:
+        missing = item.get("missing_env", [])
+        if item.get("ready"):
+            activation = "Active"
+            reason = "Connector inputs present and runtime check passed"
+        elif item.get("enabled"):
+            activation = "Blocked"
+            reason = f"Missing: {', '.join(missing)}" if missing else "Connector not ready"
+        else:
+            activation = "Not Activated"
+            reason = (
+                f"Inactive source contract; missing {', '.join(missing)}"
+                if missing
+                else "Inactive source contract"
+            )
+        rows.append(
+            {
+                "Source": item["label"],
+                "Activation": activation,
+                "Reason": reason,
+                "Cadence": item["cadence"],
+            }
+        )
+    return pd.DataFrame(rows)
 
 
 def _success_status(status: str | None) -> str:
@@ -544,6 +604,93 @@ def dbt_build_frame() -> pd.DataFrame:
     )
 
 
+def dbt_quality_summary_frame() -> pd.DataFrame:
+    summary = dbt_artifact_summary()
+    return pd.DataFrame(
+        [
+            {
+                "Build status": summary["build_status"],
+                "Target": summary["target"],
+                "Models passed": summary["models_success"],
+                "Tests passed": summary["tests_success"],
+                "Failures": summary["failures"],
+                "Total nodes": summary["total_nodes"],
+                "Artifact available": "Yes" if summary["artifact_available"] else "No",
+                "Captured at": summary["captured_at"],
+            }
+        ]
+    )
+
+
+def dbt_results_frame() -> pd.DataFrame:
+    rows = dbt_result_rows()
+    if not rows:
+        return pd.DataFrame(
+            [
+                {
+                    "Resource type": "No artifact",
+                    "Name": "Run dbt build",
+                    "Status": "Pending",
+                    "Execution seconds": "—",
+                    "Adapter response": "dbt target/run_results.json is not present",
+                }
+            ]
+        )
+    return pd.DataFrame(rows)
+
+
+def warehouse_inventory_frame() -> pd.DataFrame:
+    rows = warehouse_table_rows()
+    if not rows:
+        return pd.DataFrame(
+            [
+                {
+                    "Layer": "No warehouse",
+                    "Schema": "—",
+                    "Table": "Run pipeline",
+                    "Rows": "—",
+                    "Columns": "—",
+                }
+            ]
+        )
+    return pd.DataFrame(rows)
+
+
+def source_landing_frame() -> pd.DataFrame:
+    rows = source_landing_rows()
+    if not rows:
+        return pd.DataFrame(
+            [
+                {
+                    "Source": "No raw files",
+                    "Raw files": 0,
+                    "Latest artifact": "—",
+                    "Latest record count": "—",
+                    "Ingested at": "—",
+                    "Storage path": "Run ingestion",
+                }
+            ]
+        )
+    return pd.DataFrame(rows)
+
+
+def airflow_runs_frame() -> pd.DataFrame:
+    rows = airflow_run_rows()
+    if not rows:
+        return pd.DataFrame(
+            [
+                {
+                    "DAG": "No run evidence",
+                    "Latest run": "Run Airflow evidence collector",
+                    "State": "Pending",
+                    "Started": "—",
+                    "Ended": "—",
+                }
+            ]
+        )
+    return pd.DataFrame(rows)
+
+
 def service_endpoints_frame() -> pd.DataFrame:
     settings = get_settings()
     base = settings.finlens_api_base_url or "http://127.0.0.1:8010"
@@ -743,10 +890,45 @@ if active_section == "pipeline":
     )
     styled_table(tool_evidence_frame())
     section_heading(
+        "Source Landing Evidence",
+        "Raw landing files created by the active connectors. This shows which source artifacts "
+        "exist, how many raw files were retained, and the latest source record volume.",
+    )
+    styled_table(source_landing_frame())
+    section_heading(
+        "Source Activation Contract",
+        "This separates active sources from intentionally inactive contracts. QBP and NIC stay out "
+        "of the live path until their source URLs are configured.",
+    )
+    styled_table(source_activation_frame())
+    section_heading(
+        "Warehouse Table Inventory",
+        "DuckDB/Snowflake-parity warehouse objects currently serving the dashboard contract. "
+        "Rows and columns are counted from the live warehouse file.",
+    )
+    styled_table(warehouse_inventory_frame())
+    section_heading(
+        "Airflow Run Evidence",
+        "Latest DAG states captured from the Airflow runtime. Failed historical retries can remain "
+        "in history, but the latest successful transform run is the operational proof.",
+    )
+    styled_table(airflow_runs_frame())
+    section_heading(
         "dbt Build Result",
         "Latest transformation run against the local analytical warehouse target.",
     )
     styled_table(dbt_build_frame())
+    section_heading(
+        "dbt Data Quality Summary",
+        "Counts parsed from dbt's run_results artifact: models, tests, failures, "
+        "and total executed nodes. This is the proof layer for transformation quality.",
+    )
+    styled_table(dbt_quality_summary_frame())
+    section_heading(
+        "dbt Node-Level Results",
+        "Latest model and test outcomes from dbt artifacts.",
+    )
+    styled_table(dbt_results_frame())
     section_heading(
         "Latest Pipeline Run",
         "Execution ledger written by the pipeline runner. This is the operational bridge between "
@@ -774,10 +956,20 @@ if active_section == "pipeline":
 elif active_section == "status":
     section_heading(
         "Reconciliation (dbt Data Quality)",
-        "This is the credibility panel. In the fully activated warehouse path, these checks belong "
-        "in dbt tests and marts-level reconciliation output.",
+        "The current live path is FDIC + FRED. QBP aggregate reconciliation is intentionally "
+        "inactive until FDIC_QBP_SOURCE_URL is configured, so this is shown explicitly.",
     )
     styled_table(reconciliation_table())
+    section_heading(
+        "Warehouse Table Inventory",
+        "Current table-level row counts used for status and reconciliation context.",
+    )
+    styled_table(warehouse_inventory_frame())
+    section_heading(
+        "dbt Data Quality Summary",
+        "Latest dbt artifact metrics. Failures here would be the first reason not to trust a mart.",
+    )
+    styled_table(dbt_quality_summary_frame())
     left, right = st.columns(2)
     with left:
         section_heading(
@@ -803,11 +995,28 @@ elif active_section == "implementation":
     )
     styled_table(tool_evidence_frame())
     section_heading(
+        "Airflow Run Evidence",
+        "Scheduler-visible DAG runs and states. This is the operational trace that proves Airflow "
+        "is participating rather than being listed as a resume keyword.",
+    )
+    styled_table(airflow_runs_frame())
+    section_heading(
+        "dbt Node-Level Results",
+        "Model and test results parsed from dbt's generated artifacts.",
+    )
+    styled_table(dbt_results_frame())
+    section_heading(
         "Source Freshness (Airflow Inputs)",
         "These are the active source contracts that Airflow should refresh when the scheduler is "
         "enabled.",
     )
     styled_table(freshness_table())
+    section_heading(
+        "Source Activation Contract",
+        "Active connectors are separated from source contracts that are present in code but not "
+        "activated in production.",
+    )
+    styled_table(source_activation_frame())
     section_heading(
         "Warehouse Activation Checklist (Snowflake + dbt)",
         "These are the concrete checks needed before claiming the full warehouse path is live.",

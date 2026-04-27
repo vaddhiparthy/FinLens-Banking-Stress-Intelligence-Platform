@@ -17,16 +17,19 @@ FLOW_LABELS = {
 
 DEFERRED_FLOWS = {
     "qbp": {
-        "status": "Deferred",
-        "last_run": "Not active",
+        "status": "Not Activated",
+        "last_run": "Source contract inactive",
         "rows": "—",
-        "note": "Zero-risk build is running on FDIC failures and FRED until QBP package is wired",
+        "note": "No FDIC_QBP_SOURCE_URL is configured; reconciliation is disabled, not faked",
     },
     "nic": {
-        "status": "Deferred",
-        "last_run": "Not active",
+        "status": "Not Activated",
+        "last_run": "Source contract inactive",
         "rows": "—",
-        "note": "Current-parent metadata contract is reserved for the next source activation",
+        "note": (
+            "No NIC_CURRENT_PARENT_SOURCE_URL is configured; "
+            "current-parent lineage is inactive"
+        ),
     },
 }
 

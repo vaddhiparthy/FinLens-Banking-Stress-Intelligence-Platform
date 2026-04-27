@@ -16,6 +16,9 @@ with DAG(
         task_id="sync_control_plane_to_postgres",
         bash_command=(
             "cd /opt/finlens && "
+            "airflow dags list-runs -d dag_transform_and_quality --output json "
+            ">/tmp/finlens_airflow_check.json && "
+            "/opt/finlens/.venv/bin/python scripts/collect_airflow_evidence.py && "
             "/opt/finlens/.venv/bin/python scripts/sync_control_plane_to_postgres.py"
         ),
     )

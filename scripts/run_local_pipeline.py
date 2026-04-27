@@ -164,6 +164,12 @@ def _run_dbt_build(target: str) -> dict:
         "stderr_tail": completed.stderr[-4000:],
         "captured_at": datetime.now(UTC).isoformat(),
     }
+    try:
+        from finlens.evidence import dbt_artifact_summary
+
+        payload["artifact_summary"] = dbt_artifact_summary()
+    except Exception as exc:
+        payload["artifact_summary_error"] = str(exc)
     save_state("dbt_build_report", payload)
     if completed.returncode != 0:
         raise RuntimeError(f"dbt build failed with return code {completed.returncode}")
