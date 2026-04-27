@@ -1110,46 +1110,38 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         font-weight: 800;
         margin: .6rem 0 .18rem;
     }}
-    div[data-testid="stRadio"] label {{
-        min-height: 1.45rem !important;
-        padding: .08rem .1rem !important;
-        margin: 0 !important;
-        color: {palette["text_main"]} !important;
-        font-size: .78rem !important;
-        line-height: 1.25 !important;
-        border: 0 !important;
-        box-shadow: none !important;
-        background: transparent !important;
+    .wiki-tree {{
+        font-size: .84rem;
+        line-height: 1.45;
     }}
-    div[data-testid="stRadio"] label:hover {{
+    .wiki-tree-cluster {{
+        color: {palette["text_main"]} !important;
+        font-weight: 850;
+        margin: .58rem 0 .18rem;
+    }}
+    .wiki-tree-branch {{
+        color: {palette["text_soft"]};
+        font-weight: 800;
+        margin: .2rem 0 .08rem .35rem;
+    }}
+    .wiki-tree-link {{
+        display: block;
+        color: {palette["text_muted"]} !important;
+        text-decoration: none !important;
+        margin: .03rem 0 .03rem .9rem;
+        padding: .02rem 0;
         background: transparent !important;
-        text-decoration: underline;
-        text-decoration-color: {palette["accent"]};
+        border: 0 !important;
+    }}
+    .wiki-tree-link:hover {{
+        color: {palette["text_main"]} !important;
+        text-decoration: underline !important;
+        text-decoration-color: {palette["accent"]} !important;
         text-underline-offset: 3px;
     }}
-    div[data-testid="stRadio"] label:has(input:checked) {{
-        background: transparent !important;
-        border: 0 !important;
-        box-shadow: none !important;
+    .wiki-tree-link.active {{
         color: {palette["accent"]} !important;
-        font-weight: 850 !important;
-    }}
-    div[data-testid="stRadio"] label p {{
-        color: {palette["text_main"]} !important;
-        font-size: .78rem !important;
-        line-height: 1.25 !important;
-    }}
-    div[data-testid="stRadio"] label:has(input:checked) p {{
-        color: {palette["accent"]} !important;
-        -webkit-text-fill-color: {palette["accent"]} !important;
-        font-weight: 850 !important;
-    }}
-    div[data-testid="stRadio"] label div:first-child {{
-        transform: scale(.7);
-        margin-right: .25rem !important;
-    }}
-    div[data-testid="stRadio"] div[role="radiogroup"] {{
-        gap: .02rem !important;
+        font-weight: 850;
     }}
     .browser-stage-anchor + div button {{
         min-height: 4.2rem !important;

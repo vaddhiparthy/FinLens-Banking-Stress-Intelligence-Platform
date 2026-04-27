@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 import pandas as pd
 import streamlit as st
@@ -194,6 +195,13 @@ def _tree(matches: list[str]) -> dict[str, dict[str, list[str]]]:
     return tree
 
 
+def _slug(title: str) -> str:
+    return title.lower().replace(" ", "-").replace("/", "-")
+
+
+SLUG_TO_TITLE = {_slug(title): title for title in ARTICLES}
+
+
 def _source_contract_table() -> pd.DataFrame:
     return pd.DataFrame(
         [
@@ -275,7 +283,10 @@ with header_right:
     ).strip()
 
 matches = _matching_articles(query)
-if st.session_state.get("wiki_article") not in matches:
+requested_article = SLUG_TO_TITLE.get(st.query_params.get("article", ""))
+if requested_article in matches:
+    st.session_state["wiki_article"] = requested_article
+elif st.session_state.get("wiki_article") not in matches:
     st.session_state["wiki_article"] = matches[0]
 
 left, center = st.columns([0.92, 3.08], gap="large")
@@ -285,29 +296,19 @@ with left:
     st.page_link("pages/0_Stress_Pulse.py", label="Business Surface", icon=":material/space_dashboard:")
     st.page_link("pages/4_Under_The_Hood.py", label="Technical Surface", icon=":material/account_tree:")
     st.markdown('<div class="wiki-nav-title wiki-nav-spaced">Contents</div>', unsafe_allow_html=True)
-    tree_labels = []
-    label_to_title = {}
+    tree_html = ['<div class="wiki-tree">']
     for cluster, branches in _tree(matches).items():
-        tree_labels.append(f"{cluster}")
+        tree_html.append(f'<div class="wiki-tree-cluster">{cluster}</div>')
         for branch, titles in branches.items():
-            tree_labels.append(f"  {branch}")
+            tree_html.append(f'<div class="wiki-tree-branch">{branch}</div>')
             for title in titles:
-                label = f"    {title}"
-                tree_labels.append(label)
-                label_to_title[label] = title
-    current_title = st.session_state.get("wiki_article", matches[0])
-    current_label = next(
-        (label for label, title in label_to_title.items() if title == current_title),
-        next(iter(label_to_title)),
-    )
-    chosen_label = st.radio(
-        "Wiki content tree",
-        [label for label in tree_labels if label in label_to_title],
-        index=[label for label in tree_labels if label in label_to_title].index(current_label),
-        label_visibility="collapsed",
-        key="wiki_tree_radio",
-    )
-    st.session_state["wiki_article"] = label_to_title[chosen_label]
+                active_class = " active" if title == st.session_state.get("wiki_article") else ""
+                href = f"?article={quote(_slug(title))}"
+                tree_html.append(
+                    f'<a class="wiki-tree-link{active_class}" href="{href}">{title}</a>'
+                )
+    tree_html.append("</div>")
+    st.markdown("\n".join(tree_html), unsafe_allow_html=True)
 
 selected = st.session_state["wiki_article"]
 with center:
