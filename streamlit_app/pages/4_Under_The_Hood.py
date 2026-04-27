@@ -32,6 +32,7 @@ from streamlit_app.lib.ui_components import (
     inject_styles,
     metric_card,
     section_heading,
+    styled_table,
     tech_bulletin,
 )
 
@@ -62,14 +63,23 @@ def dag_chart(frame: pd.DataFrame) -> go.Figure:
         go.Sankey(
             arrangement="snap",
             node=dict(
-                label=["FDIC", "QBP", "FRED", "NIC", "Bronze", "Silver", "Gold", "Dashboards"],
+                label=[
+                    "FDIC",
+                    "QBP deferred",
+                    "FRED",
+                    "NIC deferred",
+                    "Bronze",
+                    "Silver",
+                    "Gold",
+                    "Dashboards",
+                ],
                 pad=18,
                 thickness=18,
                 color=[
                     palette["accent"],
-                    palette["teal"],
+                    "rgba(180, 170, 156, 0.7)",
                     palette["link"],
-                    "#b38d5b",
+                    "rgba(180, 170, 156, 0.7)",
                     palette["accent_soft"],
                     palette["teal_soft"],
                     palette["content_bg"],
@@ -494,18 +504,18 @@ if active_section == "pipeline":
         metric_card("Snowflake", stack.iloc[4]["Status"], "Warehouse contract readiness")
     section_heading(
         "Live Pipeline Status",
-        "The live flow stays simple, but the technical surface now reflects the broader resume "
-        "stack around it: S3 raw storage, Airflow orchestration, dbt transforms, Snowflake as "
-        "the warehouse target, FastAPI for health and telemetry, and Cloudflare at the edge.",
+        "Green paths are active in the current zero-risk build. QBP and NIC are deliberately "
+        "shown as deferred, not failed, because they are not part of the active FDIC/FRED "
+        "runtime scope yet.",
     )
     st.plotly_chart(dag_chart(pipeline_frame), width="stretch")
-    st.dataframe(pipeline_status_table(pipeline_frame), width="stretch", hide_index=True)
+    styled_table(pipeline_status_table(pipeline_frame))
     section_heading(
         "Platform Stack Readiness",
         "These are the infrastructure and platform components wrapped around the app so it can "
         "graduate from a local demo into a resume-grade data platform.",
     )
-    st.dataframe(platform_stack_frame(), width="stretch", hide_index=True)
+    styled_table(platform_stack_frame())
     tech_bulletin(
         "Health endpoint",
         "/healthz is the machine-facing endpoint intended for Uptime Kuma.",
@@ -517,7 +527,7 @@ elif active_section == "status":
         "This is the credibility panel. It now includes QBP reconciliation posture plus the "
         "service endpoints and sync channels that support the deployed product.",
     )
-    st.dataframe(reconciliation_table(), width="stretch", hide_index=True)
+    styled_table(reconciliation_table())
     left, right = st.columns(2)
     with left:
         section_heading(
@@ -525,14 +535,14 @@ elif active_section == "status":
             "These are the machine-facing endpoints and public surfaces currently wired for the "
             "stack.",
         )
-        st.dataframe(service_endpoints_frame(), width="stretch", hide_index=True)
+        styled_table(service_endpoints_frame())
     with right:
         section_heading(
             "Control Sync",
             "Telemetry and control-plane snapshots can sync back to home Postgres once the DSN "
             "is supplied.",
         )
-        st.dataframe(control_sync_frame(), width="stretch", hide_index=True)
+        styled_table(control_sync_frame())
 
 elif active_section == "implementation":
     top, bottom = st.columns(2)
@@ -542,7 +552,7 @@ elif active_section == "implementation":
             "This stays simple and durable, but now sits beside telemetry, sync readiness, and the "
             "additional platform components that support the engineering story.",
         )
-        st.dataframe(freshness_table(), width="stretch", hide_index=True)
+        styled_table(freshness_table())
     with bottom:
         section_heading(
             "Row Count Stability",
@@ -584,7 +594,7 @@ elif active_section == "implementation":
             },
         ]
     )
-    st.dataframe(protection, width="stretch", hide_index=True)
+    styled_table(protection)
 
 elif active_section == "decisions":
     render_architecture_decisions()

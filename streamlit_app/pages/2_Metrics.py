@@ -16,8 +16,14 @@ if str(PROJECT_ROOT) not in sys.path:
 from streamlit_app.lib.data import load_failures, load_metrics
 from streamlit_app.lib.page_shell import BUSINESS_PAGE, page_intro, status_ribbon, top_navigation
 from streamlit_app.lib.telemetry import record_page_view
-from streamlit_app.lib.theme import app_css, ensure_theme_state, get_palette, get_theme_mode
-from streamlit_app.lib.ui_components import empty_state, inject_styles, metric_card, section_heading
+from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
+from streamlit_app.lib.ui_components import (
+    empty_state,
+    inject_styles,
+    metric_card,
+    section_heading,
+    styled_table,
+)
 
 SERIES_LABELS = {
     "UNRATE": "Unemployment",
@@ -79,67 +85,71 @@ def failure_count_series(frame: pd.DataFrame) -> pd.DataFrame:
     return frame
 
 
-def lag_heatmap(frame: pd.DataFrame) -> go.Figure:
-    palette = get_palette()
-    series_names = [
-        name
-        for name in ["10Y-2Y", "Unemployment", "CPI", "GDP", "Home Price Index"]
-        if name in frame and frame[name].notna().any()
-    ]
-    lags = [0, 4, 8, 12, 18, 24]
-    z_values: list[list[float]] = []
-    for series_name in series_names:
-        row: list[float] = []
-        for lag in lags:
-            shifted = frame[series_name].shift(lag)
-            correlation = shifted.corr(frame["failure_count"])
-            row.append(0.0 if pd.isna(correlation) else float(abs(correlation)))
-        z_values.append(row)
-    figure = go.Figure(
-        data=go.Heatmap(
-            z=z_values,
-            x=[f"{lag}m" for lag in lags],
-            y=series_names,
-            colorscale=[
-                [0.0, palette["sand"]],
-                [0.5, palette["teal_soft"]],
-                [1.0, palette["accent"]],
-            ],
-            zmin=0,
-            zmax=max([max(row) for row in z_values], default=0.45) or 0.45,
+def indicator_board(frame: pd.DataFrame) -> pd.DataFrame:
+    rows = []
+    metadata = {
+        "10Y-2Y": ("Yield curve slope", "Rates", "Negative values indicate inversion."),
+        "Unemployment": ("Labor market stress", "Labor", "Higher values usually pressure credit."),
+        "CPI": ("Inflation level", "Prices", "Level index; not comparable to rates."),
+        "GDP": ("Economic activity", "Growth", "Quarterly level series."),
+        "Home Price Index": ("Housing collateral context", "Asset prices", "Level index."),
+    }
+    for series, (description, family, note) in metadata.items():
+        if series not in frame or frame[series].dropna().empty:
+            continue
+        valid = frame.dropna(subset=[series])
+        latest = valid.iloc[-1]
+        rows.append(
+            {
+                "Indicator": series,
+                "Family": family,
+                "Latest": _format_metric(latest[series]),
+                "As of": str(latest["date"].date()),
+                "Use": description,
+                "Note": note,
+            }
         )
-    )
-    figure.update_layout(
-        margin=dict(l=10, r=10, t=40, b=10),
-        paper_bgcolor="rgba(255,255,255,0)",
-        plot_bgcolor="rgba(255,255,255,0)",
-        font=dict(color="#1f2933"),
-    )
-    return figure
+    return pd.DataFrame(rows)
 
 
 def detail_chart(frame: pd.DataFrame, series: str) -> go.Figure:
     figure = go.Figure()
-    figure.add_scatter(x=frame["date"], y=frame[series], name=series)
+    clean = frame.dropna(subset=[series])
+    figure.add_scatter(x=clean["date"], y=clean[series], name=series)
     figure.update_layout(
+        title=f"{series} history",
         margin=dict(l=10, r=10, t=40, b=10),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
         font=dict(color="#1f2933"),
+        yaxis_title=series,
     )
     return figure
 
 
-def yield_curve_chart(frame: pd.DataFrame) -> go.Figure:
+def failure_overlay_chart(frame: pd.DataFrame, series: str) -> go.Figure:
     figure = go.Figure()
-    if "10Y-2Y" in frame and frame["10Y-2Y"].notna().any():
-        figure.add_scatter(x=frame["date"], y=frame["10Y-2Y"], name="10Y-2Y spread")
-    figure.add_hline(y=0, line_dash="dash")
+    if series in frame and frame[series].notna().any():
+        clean = frame.dropna(subset=[series])
+        figure.add_scatter(x=clean["date"], y=clean[series], name=series, yaxis="y")
+    if "failure_count" in frame:
+        failures = frame.loc[frame["failure_count"].gt(0)]
+        figure.add_bar(
+            x=failures["date"],
+            y=failures["failure_count"],
+            name="Monthly failures",
+            yaxis="y2",
+            marker_color="rgba(191, 109, 71, 0.45)",
+        )
     figure.update_layout(
-        margin=dict(l=10, r=10, t=40, b=10),
+        title=f"{series} with monthly FDIC failure counts",
+        margin=dict(l=10, r=10, t=42, b=10),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
         font=dict(color="#1f2933"),
+        yaxis=dict(title=series),
+        yaxis2=dict(title="Failures", overlaying="y", side="right", rangemode="tozero"),
+        legend=dict(orientation="h"),
     )
     return figure
 
@@ -202,19 +212,19 @@ with card4:
     metric_card("Home Price Index", value, f"As of {as_of}")
 
 section_heading(
-    "Lag Heatmap",
-    "The MVP keeps this honest: a compact, documented heatmap of simple historical lead-lag "
-    "relationships rather than causal storytelling.",
+    "Indicator Board",
+    "These are the stable FRED indicators currently loaded into gold. They are not plotted on "
+    "one shared axis because they have different units and ranges.",
 )
-st.plotly_chart(lag_heatmap(frame), width="stretch")
+styled_table(indicator_board(frame))
 
 section_heading(
     "Indicator Detail",
-    "Selecting a series opens the simplest useful drill-down: the indicator itself and the "
-    "most familiar stress view, the yield curve.",
+    "The left chart shows the selected indicator on its own scale. The right chart overlays "
+    "monthly FDIC failure counts on a separate axis so the comparison is readable.",
 )
 left, right = st.columns(2)
 with left:
     st.plotly_chart(detail_chart(frame, selected_series), width="stretch")
 with right:
-    st.plotly_chart(yield_curve_chart(frame), width="stretch")
+    st.plotly_chart(failure_overlay_chart(frame, selected_series), width="stretch")

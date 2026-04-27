@@ -18,7 +18,13 @@ from streamlit_app.lib.data import load_failures
 from streamlit_app.lib.page_shell import BUSINESS_PAGE, page_intro, status_ribbon, top_navigation
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
-from streamlit_app.lib.ui_components import empty_state, inject_styles, metric_card, section_heading
+from streamlit_app.lib.ui_components import (
+    empty_state,
+    inject_styles,
+    metric_card,
+    section_heading,
+    styled_table,
+)
 
 
 def prepare_failures() -> pd.DataFrame:
@@ -91,6 +97,24 @@ def state_map(frame: pd.DataFrame) -> go.Figure:
     return figure
 
 
+def inventory_table(frame: pd.DataFrame) -> pd.DataFrame:
+    columns = {
+        "bank_name": "Bank",
+        "city": "City",
+        "state": "State",
+        "closing_date": "Failure Date",
+        "year": "Failure Year",
+        "cert": "Cert",
+        "acquirer": "Acquirer",
+    }
+    available = [column for column in columns if column in frame.columns]
+    return (
+        frame[available]
+        .rename(columns=columns)
+        .sort_values(["Failure Year", "State", "Bank"], ascending=[False, True, True])
+    )
+
+
 st.set_page_config(
     page_title="FinLens | Failure Forensics",
     layout="wide",
@@ -136,16 +160,29 @@ else:
         metric_card("Latest year count", f"{ttm_count}", f"{latest_year} current slice")
 
     section_heading(
-        "Failure Timeline",
-        "Annual failed-bank counts from the live FDIC failure feed.",
-    )
-    st.plotly_chart(failure_timeline(failures), width="stretch")
-
-    section_heading(
         "Geography And Acquirers",
-        "This layer uses durable fields from the current FDIC feed: state concentration and "
-        "acquirer coverage.",
+        "Use the year and state controls below to filter the inventory. The map stays visual; "
+        "the table is the operational drill-down.",
     )
+    years = sorted(failures["year"].dropna().astype(int).unique().tolist(), reverse=True)
+    states = ["All states", *sorted(failures["state"].dropna().unique().tolist())]
+    filter_left, filter_right = st.columns(2)
+    with filter_left:
+        selected_year = st.selectbox(
+            "Failure year",
+            ["All years", *years],
+            index=0,
+            key="failure_forensics_year",
+        )
+    with filter_right:
+        selected_state = st.selectbox("State", states, index=0, key="failure_forensics_state")
+
+    filtered = failures.copy()
+    if selected_year != "All years":
+        filtered = filtered.loc[filtered["year"].eq(int(selected_year))]
+    if selected_state != "All states":
+        filtered = filtered.loc[filtered["state"].eq(selected_state)]
+
     left, right = st.columns(2)
     with left:
         st.plotly_chart(state_map(failures), width="stretch")
@@ -174,24 +211,4 @@ else:
         "Failure Inventory",
         "This is the one flat list in the business surface. It stays subordinate to the charts.",
     )
-    inventory_columns = [
-        "Bank",
-        "City",
-        "State",
-        "Failure Date",
-        "Failure Year",
-        "Cert",
-        "Acquirer",
-    ]
-    renamed = failures.rename(
-        columns={
-            "bank_name": "Bank",
-            "city": "City",
-            "state": "State",
-            "year": "Failure Year",
-            "closing_date": "Failure Date",
-            "cert": "Cert",
-            "acquirer": "Acquirer",
-        }
-    )
-    st.dataframe(renamed[inventory_columns], width="stretch", hide_index=True)
+    styled_table(inventory_table(filtered))

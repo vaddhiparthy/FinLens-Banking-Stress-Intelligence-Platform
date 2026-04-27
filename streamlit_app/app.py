@@ -26,6 +26,7 @@ from streamlit_app.lib.ui_components import (
     metric_card,
     section_heading,
     stack_badges,
+    styled_table,
 )
 
 
@@ -197,6 +198,36 @@ def _series_chart(frame: pd.DataFrame, series: list[str]) -> go.Figure:
     return figure
 
 
+def _single_series_chart(frame: pd.DataFrame, series: str, title: str) -> go.Figure:
+    figure = go.Figure()
+    if series in frame and frame[series].notna().any():
+        clean = frame.dropna(subset=[series])
+        figure.add_scatter(x=clean["date"], y=clean[series], mode="lines", name=title)
+    figure.update_layout(
+        title=title,
+        margin=dict(l=10, r=10, t=42, b=10),
+        paper_bgcolor="rgba(255,255,255,0)",
+        plot_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"),
+        showlegend=False,
+    )
+    return figure
+
+
+def _failure_inventory_for_year(frame: pd.DataFrame, year: int) -> pd.DataFrame:
+    filtered = frame.loc[frame["year"].eq(year)].copy()
+    columns = {
+        "bank_name": "Bank",
+        "city": "City",
+        "state": "State",
+        "closing_date": "Failure Date",
+        "cert": "Cert",
+        "acquirer": "Acquirer",
+    }
+    available = [column for column in columns if column in filtered.columns]
+    return filtered[available].rename(columns=columns).sort_values(["State", "Bank"])
+
+
 def render_public_data_stress_snapshot() -> None:
     failures = load_failures().copy()
     metrics = _macro_panel()
@@ -243,16 +274,33 @@ def render_public_data_stress_snapshot() -> None:
             empty_state("FDIC failure data is not available from the current run.")
         else:
             st.plotly_chart(_failure_timeline(failures), width="stretch")
+            years = sorted(failures["year"].dropna().astype(int).unique().tolist(), reverse=True)
+            selected_year = st.selectbox(
+                "Show failed banks for year",
+                years,
+                index=years.index(2010) if 2010 in years else 0,
+                key="stress_pulse_failure_year",
+            )
+            styled_table(_failure_inventory_for_year(failures, selected_year))
     with right:
         section_heading(
             "Macro Context",
-            "FRED indicators currently available in the gold layer.",
+            "FRED indicators currently available in the gold layer. Each chart uses its own "
+            "scale because CPI, rates, unemployment, and home prices are different units.",
         )
         if metrics.empty:
             empty_state("FRED macro data is not available from the current run.")
         else:
             st.plotly_chart(
-                _series_chart(metrics, ["Unemployment", "10Y-2Y", "CPI", "Home Price Index"]),
+                _single_series_chart(metrics, "Unemployment", "Unemployment Rate (%)"),
+                width="stretch",
+            )
+            st.plotly_chart(
+                _single_series_chart(metrics, "10Y-2Y", "10Y-2Y Treasury Spread"),
+                width="stretch",
+            )
+            st.plotly_chart(
+                _single_series_chart(metrics, "CPI", "Consumer Price Index"),
                 width="stretch",
             )
 

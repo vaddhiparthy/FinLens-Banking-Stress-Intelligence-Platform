@@ -118,23 +118,10 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         color: {palette["text_main"]} !important;
         -webkit-text-fill-color: {palette["text_main"]} !important;
     }}
-    [data-testid="stDataFrame"],
-    [data-testid="stDataFrame"] *,
     [data-testid="stTable"],
-    [data-testid="stTable"] *,
-    table,
-    thead,
-    tbody,
-    tr,
-    th,
-    td {{
-        background-color: {palette["content_bg"]} !important;
+    [data-testid="stTable"] * {{
         color: {palette["text_main"]} !important;
         -webkit-text-fill-color: {palette["text_main"]} !important;
-    }}
-    [data-testid="stDataFrame"] canvas,
-    [data-testid="stDataFrame"] iframe {{
-        background: {palette["content_bg"]} !important;
     }}
     button,
     button *,
@@ -708,6 +695,45 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         margin-bottom: .65rem;
         font-size: .84rem;
         line-height: 1.55;
+    }}
+    .finlens-table-wrap {{
+        overflow-x: auto;
+        border: 1px solid {palette["border"]};
+        border-radius: 18px;
+        background: {palette["content_bg"]};
+        box-shadow: {palette["shadow"]};
+        padding: .25rem;
+        margin-bottom: .85rem;
+    }}
+    .finlens-table {{
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        color: {palette["text_main"]};
+        font-size: .82rem;
+        line-height: 1.45;
+    }}
+    .finlens-table th {{
+        text-align: left;
+        color: {palette["text_soft"]};
+        background: {palette["sand"]};
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        font-size: .66rem;
+        font-weight: 800;
+        padding: .72rem .78rem;
+        border-bottom: 1px solid {palette["border"]};
+        white-space: nowrap;
+    }}
+    .finlens-table td {{
+        color: {palette["text_main"]};
+        background: {palette["content_bg"]};
+        padding: .72rem .78rem;
+        border-bottom: 1px solid rgba(228, 215, 198, 0.62);
+        vertical-align: top;
+    }}
+    .finlens-table tr:last-child td {{
+        border-bottom: 0;
     }}
     .status-ribbon {{
         display: inline-flex;

@@ -1,3 +1,6 @@
+from html import escape
+
+import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -27,6 +30,25 @@ def section_heading(title: str, copy: str | None = None) -> None:
 
 def empty_state(message: str) -> None:
     st.markdown(f'<div class="empty-card">{message}</div>', unsafe_allow_html=True)
+
+
+def styled_table(frame: pd.DataFrame) -> None:
+    header = "".join(f"<th>{escape(str(column))}</th>" for column in frame.columns)
+    rows = []
+    for _, row in frame.fillna("—").iterrows():
+        cells = "".join(f"<td>{escape(str(value))}</td>" for value in row.tolist())
+        rows.append(f"<tr>{cells}</tr>")
+    st.markdown(
+        f"""
+        <div class="finlens-table-wrap">
+            <table class="finlens-table">
+                <thead><tr>{header}</tr></thead>
+                <tbody>{"".join(rows)}</tbody>
+            </table>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def insight_card(label: str, title: str, copy: str) -> None:
