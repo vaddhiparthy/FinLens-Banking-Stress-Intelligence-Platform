@@ -18,6 +18,7 @@ def _page_path(page_key: str) -> str:
         "overview": "app.py",
         "banks": "pages/1_Banks.py",
         "metrics": "pages/2_Metrics.py",
+        "business_docs": "pages/5_Business_Knowledge.py",
         "pipeline": "pages/4_Under_The_Hood.py",
         "status": "pages/4_Under_The_Hood.py",
         "implementation": "pages/4_Under_The_Hood.py",
@@ -31,6 +32,12 @@ def _business_pages() -> list[tuple[str, str, str, str]]:
         ("overview", "app.py", "Stress Pulse", ":material/space_dashboard:"),
         ("banks", "pages/1_Banks.py", "Failure Forensics", ":material/account_balance:"),
         ("metrics", "pages/2_Metrics.py", "Macro Transmission", ":material/show_chart:"),
+        (
+            "business_docs",
+            "pages/5_Business_Knowledge.py",
+            "Business Knowledge",
+            ":material/menu_book:",
+        ),
     ]
     if STRESS_LAB_ENABLED:
         pages.append(("stress", "pages/3_Stress_Lab.py", "Stress Lab", ":material/model_training:"))
@@ -42,6 +49,7 @@ def _business_sections() -> list[tuple[str, str]]:
         ("overview", "Stress Pulse"),
         ("banks", "Failure Forensics"),
         ("metrics", "Macro Transmission"),
+        ("business_docs", "Business Knowledge"),
     ]
     if STRESS_LAB_ENABLED:
         sections.append(("stress", "Stress Lab"))

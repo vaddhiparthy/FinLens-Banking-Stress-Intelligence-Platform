@@ -67,12 +67,25 @@ def _normalize_fdic_summary(payload: bytes) -> bytes:
     except (UnicodeDecodeError, json.JSONDecodeError):
         return payload
 
-    rows = []
+    by_year: dict[str, dict[str, float | str | None]] = {}
     for item in document.get("data", []):
         data = item.get("data", item)
         year = str(data.get("YEAR", "")).strip()
         if not year:
             continue
+        bucket = by_year.setdefault(
+            year,
+            {
+                "quarter": f"{year}Q4",
+                "net_income": 0.0,
+                "net_interest_income": 0.0,
+                "charge_offs": 0.0,
+                "noncurrent": 0.0,
+                "total_assets": 0.0,
+                "total_deposits": 0.0,
+                "total_equity": 0.0,
+            },
+        )
         asset = _to_number(data.get("sum_ASSET") or data.get("ASSET"))
         net_income = _to_number(data.get("sum_NETINC") or data.get("NETINC"))
         net_interest_income = _to_number(data.get("sum_NIM") or data.get("NIM"))
@@ -80,10 +93,32 @@ def _normalize_fdic_summary(payload: bytes) -> bytes:
         noncurrent = _to_number(data.get("sum_P9LNLS") or data.get("P9LNLS"))
         equity = _to_number(data.get("sum_EQ") or data.get("EQ"))
         deposits = _to_number(data.get("sum_DEP") or data.get("DEP"))
+        for key, value in {
+            "net_income": net_income,
+            "net_interest_income": net_interest_income,
+            "charge_offs": charge_offs,
+            "noncurrent": noncurrent,
+            "total_assets": asset,
+            "total_deposits": deposits,
+            "total_equity": equity,
+        }.items():
+            if value is not None:
+                bucket[key] = float(bucket[key] or 0) + value
+
+    rows = []
+    for year in sorted(by_year):
+        data = by_year[year]
+        asset = _to_number(data.get("total_assets"))
+        net_income = _to_number(data.get("net_income"))
+        net_interest_income = _to_number(data.get("net_interest_income"))
+        charge_offs = _to_number(data.get("charge_offs"))
+        noncurrent = _to_number(data.get("noncurrent"))
+        equity = _to_number(data.get("total_equity"))
+        deposits = _to_number(data.get("total_deposits"))
         rows.append(
             {
                 "quarter": f"{year}Q4",
-                "net_income": net_income,
+                "net_income": round((net_income or 0) / 1_000_000, 3),
                 "roa": _rate(net_income, asset),
                 "nim": _rate(net_interest_income, asset),
                 "problem_banks": None,
@@ -93,9 +128,9 @@ def _normalize_fdic_summary(payload: bytes) -> bytes:
                 "nco_rate": _rate(charge_offs, asset),
                 "afs_losses": None,
                 "htm_losses": None,
-                "total_assets": asset,
-                "total_deposits": deposits,
-                "total_equity": equity,
+                "total_assets": round((asset or 0) / 1_000_000, 3),
+                "total_deposits": round((deposits or 0) / 1_000_000, 3),
+                "total_equity": round((equity or 0) / 1_000_000, 3),
                 "source_code": "FDIC_BANKS_SUMMARY",
             }
         )

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any
 
 from finlens.paths import RAW_DATA_DIR, ROOT_DIR
@@ -15,11 +16,20 @@ def source_landing_rows() -> list[dict[str, Any]]:
         files = sorted(source_dir.glob("ingestion_date=*/*.json"))
         if not files:
             continue
-        latest = files[-1]
+        latest = max(files, key=lambda path: path.stat().st_mtime)
         payload = json.loads(latest.read_text(encoding="utf-8"))
         record_count = payload.get("record_count")
         if record_count is None and isinstance(payload.get("records"), list):
             record_count = len(payload["records"])
+        artifact_path = payload.get("artifact_path")
+        if record_count is None and artifact_path:
+            artifact = Path(artifact_path)
+            if not artifact.is_absolute():
+                artifact = ROOT_DIR / artifact
+            if artifact.exists() and artifact.suffix.lower() == ".json":
+                artifact_payload = json.loads(artifact.read_text(encoding="utf-8"))
+                if isinstance(artifact_payload, list):
+                    record_count = len(artifact_payload)
         rows.append(
             {
                 "Source": source.upper(),
@@ -31,6 +41,45 @@ def source_landing_rows() -> list[dict[str, Any]]:
             }
         )
     return rows
+
+
+def warehouse_table_names() -> list[str]:
+    import duckdb
+
+    db_path = local_duckdb_path()
+    if not db_path.exists():
+        return []
+    with duckdb.connect(str(db_path), read_only=True) as conn:
+        rows = conn.execute(
+            """
+            select table_schema || '.' || table_name as table_ref
+            from information_schema.tables
+            where table_type = 'BASE TABLE'
+              and table_schema not in ('information_schema', 'pg_catalog')
+            order by table_schema, table_name
+            """
+        ).fetchall()
+    return [row[0] for row in rows]
+
+
+def warehouse_table_preview(table_ref: str, *, limit: int = 6, offset: int = 0) -> dict[str, Any]:
+    import duckdb
+
+    if table_ref not in warehouse_table_names():
+        return {"rows": [], "columns": [], "total_rows": 0}
+    schema, table = table_ref.split(".", 1)
+    db_path = local_duckdb_path()
+    with duckdb.connect(str(db_path), read_only=True) as conn:
+        total_rows = conn.execute(f'select count(*) from "{schema}"."{table}"').fetchone()[0]
+        frame = conn.execute(
+            f'select * from "{schema}"."{table}" limit ? offset ?',
+            [limit, offset],
+        ).df()
+    return {
+        "rows": frame.to_dict(orient="records"),
+        "columns": list(frame.columns),
+        "total_rows": int(total_rows),
+    }
 
 
 def warehouse_table_rows() -> list[dict[str, Any]]:

@@ -156,6 +156,21 @@ def _format_latest(value: object, suffix: str = "") -> str:
     return f"{numeric:.2f}{suffix}"
 
 
+def _format_optional_count(value: object) -> str:
+    numeric = pd.to_numeric(value, errors="coerce")
+    if pd.isna(numeric):
+        return "Not published"
+    return f"{int(numeric):,}"
+
+
+def _format_optional_delta(current: object, previous: object) -> str:
+    current_value = pd.to_numeric(current, errors="coerce")
+    previous_value = pd.to_numeric(previous, errors="coerce")
+    if pd.isna(current_value) or pd.isna(previous_value):
+        return "Not available in FDIC summary API"
+    return f"QoQ {int(current_value - previous_value):+d}"
+
+
 def _macro_panel() -> pd.DataFrame:
     metrics = load_metrics().copy()
     if metrics.empty:
@@ -392,8 +407,8 @@ with card3:
 with card4:
     metric_card(
         "Problem bank count",
-        f"{int(latest['problem_banks'])}",
-        f"QoQ {int(latest['problem_banks'] - prev['problem_banks']):+d}",
+        _format_optional_count(latest["problem_banks"]),
+        _format_optional_delta(latest["problem_banks"], prev["problem_banks"]),
     )
 
 section_heading(

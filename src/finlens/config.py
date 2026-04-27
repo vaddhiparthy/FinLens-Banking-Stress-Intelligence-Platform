@@ -31,10 +31,9 @@ class Settings(BaseSettings):
     fdic_failed_banks_url: str = "https://www.fdic.gov/bank-failures/download-data.csv"
     fdic_qbp_source_url: str | None = (
         "https://api.fdic.gov/banks/summary?"
-        "fields=YEAR,ASSET,DEP,EQ,NETINC,NIM,DRLNLS,P9LNLS&"
-        "filters=YEAR:%5B%221985%22%20TO%20%222025%22%5D&"
-        "agg_by=YEAR&agg_sum_fields=ASSET,DEP,EQ,NETINC,NIM,DRLNLS,P9LNLS&"
-        "agg_limit=100&sort_by=YEAR&sort_order=ASC&limit=1&format=json"
+        "filters=STNAME:%22United%20States%22%20AND%20YEAR:%5B%221985%22%20TO%20%222025%22%5D&"
+        "fields=YEAR,STNAME,ASSET,DEP,EQ,NETINC,NIM,DRLNLS,P9LNLS&"
+        "sort_by=YEAR&sort_order=ASC&limit=100&format=json"
     )
     fred_api_key: str | None = None
     fred_base_url: str = "https://api.stlouisfed.org/fred"

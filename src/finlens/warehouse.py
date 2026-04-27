@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -55,6 +56,16 @@ def _clean_fdic_key(key: str) -> str:
     return cleaned
 
 
+def _clean_public_text(value: object) -> str:
+    if value is None:
+        return ""
+    text = unicodedata.normalize("NFKC", str(value))
+    text = text.replace("\ufffd", " ")
+    text = re.sub(r"(?<=[A-Za-z])\?(?=[A-Za-z])", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
 def _fdic_failures_frame():
     payload = _latest_source_json("fdic")
     if not payload or not payload.get("records"):
@@ -63,17 +74,17 @@ def _fdic_failures_frame():
     rows = []
     for record in payload["records"]:
         clean = {_clean_fdic_key(key): value for key, value in record.items()}
-        bank_name = clean.get("bank_name") or "Unknown institution"
-        cert = clean.get("cert") or ""
+        bank_name = _clean_public_text(clean.get("bank_name")) or "Unknown institution"
+        cert = _clean_public_text(clean.get("cert"))
         close_date = pd.to_datetime(clean.get("closing_date"), errors="coerce")
         rows.append(
             {
                 "bank_id": cert or f"{bank_name}-{clean.get('state', 'NA')}",
                 "bank_name": bank_name,
-                "city": clean.get("city") or "",
-                "state": clean.get("state") or "",
+                "city": _clean_public_text(clean.get("city")),
+                "state": _clean_public_text(clean.get("state")),
                 "cert": cert,
-                "acquirer": clean.get("acquiring_institution") or "Unknown",
+                "acquirer": _clean_public_text(clean.get("acquiring_institution")) or "Unknown",
                 "closing_date": close_date,
                 "year": int(close_date.year) if not pd.isna(close_date) else 0,
                 "assets_millions": float("nan"),

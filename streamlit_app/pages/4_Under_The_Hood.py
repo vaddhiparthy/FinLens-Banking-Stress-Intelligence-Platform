@@ -1,4 +1,4 @@
-# ruff: noqa: E402
+# ruff: noqa: E402,E501
 
 import sys
 from pathlib import Path
@@ -19,6 +19,8 @@ from finlens.evidence import (
     dbt_artifact_summary,
     dbt_result_rows,
     source_landing_rows,
+    warehouse_table_names,
+    warehouse_table_preview,
     warehouse_table_rows,
 )
 from finlens.pipeline_runs import latest_pipeline_run
@@ -74,9 +76,9 @@ def dag_chart(frame: pd.DataFrame) -> go.Figure:
             node=dict(
                 label=[
                     "FDIC",
-                    "QBP deferred",
+                    "QBP",
                     "FRED",
-                    "NIC deferred",
+                    "NIC",
                     "Bronze",
                     "Silver",
                     "Gold",
@@ -124,18 +126,18 @@ def pipeline_status_table(frame: pd.DataFrame) -> pd.DataFrame:
     }
     tool_map = {
         "FDIC -> Bronze": "Airflow task + Python extractor",
-        "QBP -> Bronze": "Airflow task (deferred)",
+        "QBP -> Bronze": "Airflow task + FDIC summary extractor",
         "FRED -> Bronze": "Airflow task + FRED extractor",
-        "NIC -> Bronze": "Airflow task (deferred)",
+        "NIC -> Bronze": "Airflow task + institution metadata extractor",
         "Bronze -> Silver": "dbt staging / canonical model",
         "Silver -> Gold": "dbt mart build",
         "Gold -> Dashboards": "Snowflake/DuckDB mart read + Streamlit",
     }
     evidence_map = {
         "FDIC -> Bronze": "FDIC failure feed is landing into the active data contract",
-        "QBP -> Bronze": "Not active in zero-risk source scope",
+        "QBP -> Bronze": "FDIC aggregate banking summary lands into the active data contract",
         "FRED -> Bronze": "FRED macro series are landing into the active data contract",
-        "NIC -> Bronze": "Not active in zero-risk source scope",
+        "NIC -> Bronze": "FDIC active-institution metadata lands into the active data contract",
         "Bronze -> Silver": "Canonical model layer rebuilds from source payloads",
         "Silver -> Gold": "Dashboard-facing marts are refreshed from canonical tables",
         "Gold -> Dashboards": "FastAPI health and Streamlit serving are live",
@@ -674,6 +676,48 @@ def source_landing_frame() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def render_data_browser(stage_key: str = "pipeline") -> None:
+    tables = warehouse_table_names()
+    if not tables:
+        tech_bulletin("Interactive Data Browser", "Run the pipeline to create browsable tables.")
+        return
+    stage_options = {
+        "Bronze/raw": [table for table in tables if table.startswith("raw.")],
+        "Gold marts": [table for table in tables if table.startswith("marts.")],
+        "All tables": tables,
+    }
+    stage = st.selectbox(
+        "Pipeline stage",
+        list(stage_options),
+        key=f"{stage_key}_browser_stage",
+    )
+    available = stage_options[stage]
+    table_ref = st.selectbox(
+        "Table",
+        available,
+        key=f"{stage_key}_browser_table",
+    )
+    preview_total = warehouse_table_preview(table_ref, limit=1, offset=0)["total_rows"]
+    page_size = 6
+    total_pages = max(1, (preview_total + page_size - 1) // page_size)
+    page = st.number_input(
+        "Preview page",
+        min_value=1,
+        max_value=total_pages,
+        value=1,
+        step=1,
+        key=f"{stage_key}_browser_page",
+    )
+    preview = warehouse_table_preview(table_ref, limit=page_size, offset=(int(page) - 1) * page_size)
+    section_heading(
+        "Interactive Data Browser",
+        f"Live read-only preview from `{table_ref}`. Showing {len(preview['rows'])} rows out "
+        f"of {preview['total_rows']:,}; this executes a limited warehouse query and never "
+        "modifies data.",
+    )
+    styled_table(pd.DataFrame(preview["rows"], columns=preview["columns"]))
+
+
 def airflow_runs_frame() -> pd.DataFrame:
     rows = airflow_run_rows()
     if not rows:
@@ -897,8 +941,8 @@ if active_section == "pipeline":
     styled_table(source_landing_frame())
     section_heading(
         "Source Activation Contract",
-        "This separates active sources from intentionally inactive contracts. QBP and NIC stay out "
-        "of the live path until their source URLs are configured.",
+        "This separates active sources from any intentionally inactive contracts. FDIC, FRED, "
+        "QBP, and institution metadata are active in the current production path.",
     )
     styled_table(source_activation_frame())
     section_heading(
@@ -952,12 +996,13 @@ if active_section == "pipeline":
         "Health endpoint",
         "/healthz is the machine-facing endpoint intended for Uptime Kuma.",
     )
+    render_data_browser("pipeline")
 
 elif active_section == "status":
     section_heading(
         "Reconciliation (dbt Data Quality)",
-        "The current live path is FDIC + FRED. QBP aggregate reconciliation is intentionally "
-        "inactive until FDIC_QBP_SOURCE_URL is configured, so this is shown explicitly.",
+        "The current live path includes FDIC failures, FRED macro data, FDIC aggregate summary "
+        "data, and active institution metadata.",
     )
     styled_table(reconciliation_table())
     section_heading(
@@ -970,6 +1015,7 @@ elif active_section == "status":
         "Latest dbt artifact metrics. Failures here would be the first reason not to trust a mart.",
     )
     styled_table(dbt_quality_summary_frame())
+    render_data_browser("status")
     left, right = st.columns(2)
     with left:
         section_heading(
@@ -1045,6 +1091,22 @@ elif active_section == "implementation":
         ]
     )
     styled_table(activation)
+    section_heading(
+        "Transform Preview",
+        "A compact before/after view of the central transform pattern: raw source payloads are "
+        "loaded, normalized into typed warehouse tables, then exposed as Gold marts.",
+    )
+    example = pd.DataFrame(
+        [
+            {
+                "Before": '{"Bank Name": "First-Citizens Bank & Trust Company", "Closing Date": "2023-03-10"}',
+                "After": '{"bank_name": "First-Citizens Bank & Trust Company", "closing_date": "2023-03-10", "year": 2023}',
+                "Rule": "Normalize column names, parse dates, preserve source values",
+            }
+        ]
+    )
+    styled_table(example)
+    render_data_browser("implementation")
 
 elif active_section == "decisions":
     render_architecture_decisions()
