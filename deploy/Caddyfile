@@ -11,6 +11,8 @@ pepper.vaddhiparthy.vip {
 }
 
 surya.vaddhiparthy.com {
+	redir /finlens /finlens/ 308
+
 	handle /finlens* {
 		reverse_proxy finlens-streamlit-public:8501
 	}
@@ -25,7 +27,7 @@ surya-admin.vaddhiparthy.com {
 }
 
 finlens.vaddhiparthy.vip {
-	redir https://surya.vaddhiparthy.com/finlens 308
+	redir https://surya.vaddhiparthy.com/finlens/ 308
 }
 
 http://135.181.249.237 {
