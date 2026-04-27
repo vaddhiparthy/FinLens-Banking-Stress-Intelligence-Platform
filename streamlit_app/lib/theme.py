@@ -313,6 +313,57 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
             0 10px 22px rgba(15, 23, 42, 0.08),
             inset 0 1px 0 rgba(255,255,255,0.5);
     }}
+    .home-hero {{
+        max-width: 980px;
+        margin: 1.5rem auto 1.4rem auto;
+        text-align: center;
+        padding: 3.1rem 2rem 2.4rem;
+        border-radius: 34px;
+        background:
+            radial-gradient(circle at 22% 0%, rgba(191,109,71,.18), transparent 32%),
+            radial-gradient(circle at 80% 15%, rgba(15,118,110,.14), transparent 34%),
+            linear-gradient(180deg, rgba(255,250,243,.94), rgba(244,239,230,.78));
+        border: 1px solid {palette["border"]};
+        box-shadow: 0 26px 52px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255,255,255,.65);
+    }}
+    .home-kicker {{
+        color: {palette["text_soft"]};
+        text-transform: uppercase;
+        letter-spacing: .26em;
+        font-size: .78rem;
+        font-weight: 900;
+        margin-bottom: .5rem;
+    }}
+    .home-title {{
+        color: {palette["text_main"]};
+        font-family: "Fraunces", Georgia, serif;
+        font-size: clamp(3.2rem, 7vw, 6.8rem);
+        line-height: .92;
+        letter-spacing: -.045em;
+    }}
+    .home-copy {{
+        max-width: 780px;
+        margin: 1.1rem auto 0;
+        color: {palette["text_main"]};
+        font-size: 1.08rem;
+        line-height: 1.7;
+        font-weight: 650;
+    }}
+    .home-subcopy {{
+        max-width: 720px;
+        margin: .72rem auto 0;
+        color: {palette["text_muted"]};
+        font-size: .95rem;
+        line-height: 1.7;
+    }}
+    .home-action-divider {{
+        text-align: center;
+        color: {palette["text_soft"]};
+        text-transform: uppercase;
+        letter-spacing: .14em;
+        font-size: .68rem;
+        font-weight: 900;
+    }}
     .topbar-anchor + div div[data-testid="stVerticalBlockBorderWrapper"] {{
         position: sticky;
         top: 5.35rem;
@@ -508,12 +559,12 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .topbar-anchor + div div[data-testid="stSegmentedControl"] {{
         background:
-            linear-gradient(180deg, {palette["content_bg"]}, rgba(243, 223, 207, 0.58));
-        border: 1px solid {palette["border"]};
-        border-radius: 14px;
-        padding: .18rem;
+            linear-gradient(180deg, {palette["accent_soft"]}, rgba(255,250,243,0.85));
+        border: 1px solid {palette["accent"]};
+        border-radius: 18px;
+        padding: .22rem;
         box-shadow:
-            0 8px 16px rgba(15, 23, 42, 0.06),
+            0 10px 18px rgba(15, 23, 42, 0.08),
             inset 0 1px 0 rgba(255,255,255,0.22);
     }}
     .topbar-anchor + div div[data-testid="stSegmentedControl"] [role="radiogroup"] {{
@@ -521,18 +572,18 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .topbar-anchor + div div[data-testid="stSegmentedControl"] label {{
         min-height: 2.2rem;
-        border-radius: 10px;
+        border-radius: 14px;
         border: 1px solid transparent;
         color: {palette["text_main"]};
-        font-weight: 700;
-        background: {palette["content_bg"]} !important;
+        font-weight: 900;
+        background: transparent !important;
     }}
     .topbar-anchor + div
     div[data-testid="stSegmentedControl"]
     label[data-selected="true"] {{
-        background: {palette["content_bg"]};
+        background: {palette["content_bg"]} !important;
         border-color: {palette["accent"]};
-        box-shadow: inset 0 -2px 0 {palette["accent"]};
+        box-shadow: 0 0 0 1px {palette["accent"]}, inset 0 -2px 0 {palette["accent"]};
     }}
     .topbar-anchor + div div[data-testid="stSegmentedControl"] label span {{
         color: {palette["text_main"]} !important;
@@ -658,6 +709,23 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         color: {palette["text_main"]} !important;
         -webkit-text-fill-color: {palette["text_main"]} !important;
         opacity: 1 !important;
+    }}
+    .section-menu-anchor + div button {{
+        border-radius: 8px !important;
+        min-height: 2rem !important;
+        background: transparent !important;
+        border: 1px solid transparent !important;
+        box-shadow: none !important;
+        font-size: .77rem !important;
+        font-weight: 750 !important;
+    }}
+    .section-menu-anchor + div button:disabled,
+    .section-menu-anchor + div button[aria-disabled="true"] {{
+        background: transparent !important;
+        border-color: transparent !important;
+        border-bottom: 2px solid {palette["accent"]} !important;
+        border-radius: 8px 8px 4px 4px !important;
+        box-shadow: none !important;
     }}
     div[data-testid="stPageLink"] a {{
         background: {palette["content_bg"]};
@@ -854,7 +922,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         -webkit-text-fill-color: {palette["text_main"]} !important;
     }}
     .page-control-anchor + div {{
-        max-width: 13rem;
+        max-width: 10rem;
         margin: .15rem auto .9rem auto;
         align-items: center;
     }}

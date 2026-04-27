@@ -727,7 +727,7 @@ def source_landing_frame() -> pd.DataFrame:
 
 def _render_page_buttons(page_key: str, current_page: int, total_pages: int) -> None:
     st.markdown('<div class="page-control-anchor"></div>', unsafe_allow_html=True)
-    left, middle, right = st.columns([1, 1.2, 1], vertical_alignment="center")
+    _, left, middle, right, _ = st.columns([4.2, 0.52, 0.9, 0.52, 4.2], vertical_alignment="center")
     with left:
         if st.button("Prev", key=f"{page_key}_previous", use_container_width=True):
             st.session_state[page_key] = max(1, current_page - 1)

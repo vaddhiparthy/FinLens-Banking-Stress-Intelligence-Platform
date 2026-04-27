@@ -15,7 +15,8 @@ def _set_surface_mode(mode: str) -> None:
 
 def _page_path(page_key: str) -> str:
     page_map = {
-        "overview": "app.py",
+        "home": "app.py",
+        "overview": "pages/0_Stress_Pulse.py",
         "banks": "pages/1_Banks.py",
         "metrics": "pages/2_Metrics.py",
         "business_docs": "pages/5_Business_Knowledge.py",
@@ -31,7 +32,7 @@ def _page_path(page_key: str) -> str:
 
 def _business_pages() -> list[tuple[str, str, str, str]]:
     pages = [
-        ("overview", "app.py", "Stress Pulse", ":material/space_dashboard:"),
+        ("overview", "pages/0_Stress_Pulse.py", "Stress Pulse", ":material/space_dashboard:"),
         ("banks", "pages/1_Banks.py", "Failure Forensics", ":material/account_balance:"),
         ("metrics", "pages/2_Metrics.py", "Macro Transmission", ":material/show_chart:"),
         (
@@ -147,30 +148,23 @@ def top_navigation(active_page: str, mode: str) -> None:
     st.markdown('<div style="height: 1.35rem;"></div>', unsafe_allow_html=True)
     st.markdown('<div class="topbar-anchor"></div>', unsafe_allow_html=True)
     with st.container(border=True):
-        top_left, top_right = st.columns([1.15, 3.85], vertical_alignment="center")
+        top_left, top_right = st.columns([1.45, 3.55], vertical_alignment="center")
         with top_left:
-            st.markdown('<div class="surface-switch-anchor"></div>', unsafe_allow_html=True)
-            surface_left, surface_right = st.columns(2, vertical_alignment="center")
-            with surface_left:
-                technical_label = (
-                    "● Technical" if mode == TECHNICAL_PAGE else "Technical"
-                )
-                if st.button(
-                    technical_label,
-                    key=f"surface_button_technical_{active_page}",
-                    use_container_width=True,
-                ) and mode != TECHNICAL_PAGE:
+            selected_surface = st.segmented_control(
+                "Surface",
+                [TECHNICAL_PAGE, BUSINESS_PAGE],
+                default=mode,
+                format_func=lambda value: "Technical" if value == TECHNICAL_PAGE else "Business",
+                key=f"surface_segment_{active_page}",
+                label_visibility="collapsed",
+            )
+            if selected_surface != mode:
+                if selected_surface == TECHNICAL_PAGE:
                     _set_surface_mode(TECHNICAL_PAGE)
                     st.switch_page("pages/4_Under_The_Hood.py")
-            with surface_right:
-                business_label = "● Business" if mode == BUSINESS_PAGE else "Business"
-                if st.button(
-                    business_label,
-                    key=f"surface_button_business_{active_page}",
-                    use_container_width=True,
-                ) and mode != BUSINESS_PAGE:
+                else:
                     _set_surface_mode(BUSINESS_PAGE)
-                    st.switch_page("app.py")
+                    st.switch_page("pages/0_Stress_Pulse.py")
         with top_right:
             st.markdown('<div class="section-menu-anchor"></div>', unsafe_allow_html=True)
             if mode == BUSINESS_PAGE:
