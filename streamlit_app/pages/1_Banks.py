@@ -166,8 +166,6 @@ failures = prepare_failures().sort_values(["year", "assets_millions"], ascending
 if failures.empty:
     empty_state("No FDIC failure rows are available from the current source run.")
 else:
-    selected_bank = st.selectbox("Selected failed bank", failures["bank_name"].tolist())
-    selected = failures.loc[failures["bank_name"] == selected_bank].iloc[0]
     total_failures = len(failures)
     latest_year = int(failures["year"].max())
     ttm_count = failures.loc[failures["year"] == latest_year, "bank_id"].count()
@@ -227,24 +225,6 @@ else:
             "Interpretation",
             "The acquirer chart shows which institutions absorbed failed banks in the current "
             "filter. Blank output means the selected records do not carry acquirer names.",
-        )
-
-    section_heading(
-        "Selected Failed Bank",
-        "The detail card stays simple in the resilient scope: institution identity, failure "
-        "timing, asset scale, and resolution context.",
-    )
-    detail1, detail2, detail3 = st.columns(3)
-    with detail1:
-        metric_card("Institution", selected["bank_name"], selected["state"])
-    with detail2:
-        metric_card("Failure year", f"{int(selected['year'])}", str(selected["closing_date"])[:10])
-    with detail3:
-        acquirer = selected.get("acquirer", "Unavailable")
-        metric_card(
-            "Acquirer",
-            str(acquirer) if pd.notna(acquirer) else "Unavailable",
-            selected["status"],
         )
 
     section_heading(

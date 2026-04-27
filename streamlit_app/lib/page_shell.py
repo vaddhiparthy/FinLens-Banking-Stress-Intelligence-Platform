@@ -137,22 +137,26 @@ def top_navigation(active_page: str, mode: str) -> None:
     with st.container(border=True):
         top_left, top_right = st.columns([1.15, 3.85], vertical_alignment="center")
         with top_left:
-            selected_surface = st.segmented_control(
-                "Surface",
-                options=[TECHNICAL_PAGE, BUSINESS_PAGE],
-                format_func=lambda value: (
-                    "Technical Surface" if value == TECHNICAL_PAGE else "Business Surface"
-                ),
-                selection_mode="single",
-                default=mode,
-                key=f"surface_mode_toggle_{active_page}",
-                label_visibility="collapsed",
-            )
-            if selected_surface and selected_surface != mode:
-                _set_surface_mode(selected_surface)
-                if selected_surface == TECHNICAL_PAGE:
+            surface_left, surface_right = st.columns(2, vertical_alignment="center")
+            with surface_left:
+                technical_label = (
+                    "● Technical" if mode == TECHNICAL_PAGE else "Technical"
+                )
+                if st.button(
+                    technical_label,
+                    key=f"surface_button_technical_{active_page}",
+                    use_container_width=True,
+                ) and mode != TECHNICAL_PAGE:
+                    _set_surface_mode(TECHNICAL_PAGE)
                     st.switch_page("pages/4_Under_The_Hood.py")
-                else:
+            with surface_right:
+                business_label = "● Business" if mode == BUSINESS_PAGE else "Business"
+                if st.button(
+                    business_label,
+                    key=f"surface_button_business_{active_page}",
+                    use_container_width=True,
+                ) and mode != BUSINESS_PAGE:
+                    _set_surface_mode(BUSINESS_PAGE)
                     st.switch_page("app.py")
         with top_right:
             if mode == BUSINESS_PAGE:
