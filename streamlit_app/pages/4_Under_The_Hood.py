@@ -593,6 +593,61 @@ def transform_rules_frame() -> pd.DataFrame:
     )
 
 
+def render_code_excerpts() -> None:
+    section_heading(
+        "Implementation Excerpts",
+        "Small representative excerpts from the pipeline path. These are not decorative tables; "
+        "they show the operating pattern behind ingestion, orchestration, modeling, and serving.",
+    )
+    excerpt_tabs = st.tabs(["Python Ingestion", "Airflow DAG", "dbt Model", "Serving Contract"])
+    with excerpt_tabs[0]:
+        st.code(
+            """def normalize_failure_record(record: dict) -> dict:
+    clean = {_clean_fdic_key(key): value for key, value in record.items()}
+    close_date = pd.to_datetime(clean.get("closing_date"), errors="coerce")
+    return {
+        "bank_name": _clean_public_text(clean.get("bank_name")),
+        "state": _clean_public_text(clean.get("state")),
+        "closing_date": close_date,
+        "year": int(close_date.year) if not pd.isna(close_date) else 0,
+        "acquirer": _clean_public_text(clean.get("acquiring_institution")) or "Unknown",
+    }""",
+            language="python",
+        )
+    with excerpt_tabs[1]:
+        st.code(
+            """with DAG("finlens_daily_public_ingestion", schedule="@daily") as dag:
+    fdic_to_bronze = PythonOperator(task_id="fdic_to_bronze", python_callable=ingest_fdic)
+    fred_to_bronze = PythonOperator(task_id="fred_to_bronze", python_callable=ingest_fred)
+    dbt_build = BashOperator(task_id="dbt_build", bash_command="dbt build")
+
+    [fdic_to_bronze, fred_to_bronze] >> dbt_build""",
+            language="python",
+        )
+    with excerpt_tabs[2]:
+        st.code(
+            """select
+    bank_id,
+    bank_name,
+    state,
+    cast(closing_date as date) as closing_date,
+    extract(year from closing_date) as failure_year,
+    acquirer
+from {{ ref('stg_fdic_failures') }}
+where closing_date is not null""",
+            language="sql",
+        )
+    with excerpt_tabs[3]:
+        st.code(
+            """def pipeline_status_table(frame: pd.DataFrame) -> pd.DataFrame:
+    return frame.assign(
+        status_label=lambda data: data["status"].map(indicator_map),
+        execution_tool=lambda data: data["flow_name"].map(tool_map),
+    )[["flow_no", "flow_name", "execution_tool", "status_label", "last_run", "rows"]]""",
+            language="python",
+        )
+
+
 def latest_pipeline_run_frame() -> pd.DataFrame:
     latest_run = latest_pipeline_run()
     if not latest_run:
@@ -727,9 +782,9 @@ def source_landing_frame() -> pd.DataFrame:
 
 def _render_page_buttons(page_key: str, current_page: int, total_pages: int) -> None:
     st.markdown('<div class="page-control-anchor"></div>', unsafe_allow_html=True)
-    _, left, middle, right, _ = st.columns([4.2, 0.52, 0.9, 0.52, 4.2], vertical_alignment="center")
+    _, left, middle, right, _ = st.columns([4.4, 0.25, 1, 0.25, 4.4], vertical_alignment="center")
     with left:
-        if st.button("Prev", key=f"{page_key}_previous", use_container_width=True):
+        if st.button("‹", key=f"{page_key}_previous", use_container_width=True):
             st.session_state[page_key] = max(1, current_page - 1)
     with middle:
         st.markdown(
@@ -737,59 +792,8 @@ def _render_page_buttons(page_key: str, current_page: int, total_pages: int) -> 
             unsafe_allow_html=True,
         )
     with right:
-        if st.button("Next", key=f"{page_key}_next", use_container_width=True):
+        if st.button("›", key=f"{page_key}_next", use_container_width=True):
             st.session_state[page_key] = min(total_pages, current_page + 1)
-
-
-def _stage_description(label: str, table_count: int) -> str:
-    descriptions = {
-        "Bronze/raw": "Source-shaped landing tables",
-        "Gold marts": "Dashboard-ready analytical outputs",
-        "All tables": "Complete warehouse browser",
-    }
-    return f"{table_count} tables · {descriptions.get(label, 'Warehouse stage')}"
-
-
-def _render_stage_flow(
-    stage_options: dict[str, list[str]],
-    selected_stage: str,
-    stage_key: str,
-) -> str:
-    st.markdown('<div class="browser-stage-anchor"></div>', unsafe_allow_html=True)
-    labels = list(stage_options)
-    columns = st.columns(len(labels), vertical_alignment="center")
-    for index, (column, label) in enumerate(zip(columns, labels, strict=False), start=1):
-        table_count = len(stage_options[label])
-        marker = "● " if label == selected_stage else ""
-        with column:
-            if st.button(
-                f"{marker}Stage {index}: {label}\n{_stage_description(label, table_count)}",
-                key=f"{stage_key}_stage_{label}",
-                use_container_width=True,
-            ):
-                st.session_state[f"{stage_key}_browser_stage"] = label
-                st.session_state[f"{stage_key}_browser_table"] = stage_options[label][0]
-                st.session_state[f"{stage_key}_browser_page"] = 1
-    return selected_stage
-
-
-def _render_table_menu(stage_key: str, tables: list[str], selected_table: str) -> str:
-    st.markdown('<div class="browser-table-anchor"></div>', unsafe_allow_html=True)
-    for row_start in range(0, len(tables), 4):
-        row_tables = tables[row_start : row_start + 4]
-        columns = st.columns(len(row_tables), vertical_alignment="center")
-        for column, table_ref in zip(columns, row_tables, strict=False):
-            label = table_ref.split(".", maxsplit=1)[-1]
-            marker = "● " if table_ref == selected_table else ""
-            with column:
-                if st.button(
-                    f"{marker}{label}",
-                    key=f"{stage_key}_table_{table_ref}",
-                    use_container_width=True,
-                ):
-                    st.session_state[f"{stage_key}_browser_table"] = table_ref
-                    st.session_state[f"{stage_key}_browser_page"] = 1
-    return selected_table
 
 
 def render_data_browser(stage_key: str = "pipeline") -> None:
@@ -811,14 +815,36 @@ def render_data_browser(stage_key: str = "pipeline") -> None:
     stage_key_name = f"{stage_key}_browser_stage"
     if st.session_state.get(stage_key_name) not in stage_options:
         st.session_state[stage_key_name] = next(iter(stage_options))
-    stage = str(st.session_state[stage_key_name])
-    _render_stage_flow(stage_options, stage, stage_key)
+    stage_label_col, stage_select_col = st.columns([1.35, 1], vertical_alignment="center")
+    with stage_label_col:
+        st.markdown(
+            '<div class="browser-control-copy">Select the warehouse stage to inspect.</div>',
+            unsafe_allow_html=True,
+        )
+    with stage_select_col:
+        stage = st.selectbox(
+            "Warehouse stage",
+            list(stage_options),
+            key=stage_key_name,
+            label_visibility="collapsed",
+        )
     available = stage_options[stage]
     table_key = f"{stage_key}_browser_table"
     if st.session_state.get(table_key) not in available:
         st.session_state[table_key] = available[0]
-    table_ref = str(st.session_state[table_key])
-    _render_table_menu(stage_key, available, table_ref)
+    table_label_col, table_select_col = st.columns([1.35, 1], vertical_alignment="center")
+    with table_label_col:
+        st.markdown(
+            '<div class="browser-control-copy">Select a table from the chosen stage.</div>',
+            unsafe_allow_html=True,
+        )
+    with table_select_col:
+        table_ref = st.selectbox(
+            "Warehouse table",
+            available,
+            key=table_key,
+            label_visibility="collapsed",
+        )
     preview_total = warehouse_table_preview(table_ref, limit=1, offset=0)["total_rows"]
     page_size = 6
     total_pages = max(1, (preview_total + page_size - 1) // page_size)
@@ -1074,68 +1100,6 @@ if active_section == "pipeline":
     styled_table(pipeline_status_table(pipeline_frame))
     render_data_browser("pipeline")
 
-    with st.expander("Core Data Engineering Stack", expanded=False):
-        section_heading(
-            "Tool Participation",
-            "Airflow schedules the work, dbt models and validates it, Snowflake is the cloud "
-            "warehouse target, and Streamlit/FastAPI serve the presentation surface.",
-        )
-        styled_table(tool_evidence_frame())
-        section_heading(
-            "Platform Stack Readiness",
-            "Infrastructure readiness for object storage, orchestration, transforms, warehouse, "
-            "API service, edge routing, and control-plane sync.",
-        )
-        styled_table(platform_stack_frame())
-
-    with st.expander("Source Artifacts", expanded=False):
-        section_heading(
-            "Source Landing Artifacts",
-            "Raw landing files created by active connectors, including retained artifact count, "
-            "latest source volume, ingest time, and storage path.",
-        )
-        styled_table(source_landing_frame())
-        section_heading(
-            "Source Activation Contract",
-            "Active production sources are separated from inactive contracts so deferred scope is "
-            "not confused with failed jobs.",
-        )
-        styled_table(source_activation_frame())
-
-    with st.expander("Warehouse And Run Ledger", expanded=False):
-        section_heading(
-            "Warehouse Table Inventory",
-            "DuckDB/Snowflake-parity warehouse objects currently serving the dashboard contract.",
-        )
-        styled_table(warehouse_inventory_frame())
-        section_heading(
-            "Latest Pipeline Run",
-            "Execution ledger written by the pipeline runner, including step status and duration.",
-        )
-        styled_table(latest_pipeline_run_frame())
-
-    with st.expander("Airflow And dbt Run Results", expanded=False):
-        section_heading(
-            "Airflow Run Results",
-            "Latest DAG states captured from the Airflow runtime.",
-        )
-        styled_table(airflow_runs_frame())
-        section_heading(
-            "dbt Build Result",
-            "Latest transformation run against the analytical warehouse target.",
-        )
-        styled_table(dbt_build_frame())
-        section_heading(
-            "dbt Data Quality Summary",
-            "Counts parsed from dbt artifacts: models, tests, failures, and total executed nodes.",
-        )
-        styled_table(dbt_quality_summary_frame())
-        section_heading(
-            "dbt Node-Level Results",
-            "Latest model and test outcomes from dbt artifacts.",
-        )
-        styled_table(dbt_results_frame())
-
 elif active_section == "status":
     section_heading(
         "Reconciliation (dbt Data Quality)",
@@ -1192,6 +1156,7 @@ elif active_section == "classification":
         "Durable rules applied across landing, canonical shaping, and Gold serving.",
     )
     styled_table(transform_rules_frame())
+    render_code_excerpts()
 
 elif active_section == "implementation":
     probes = load_state("platform_probe_report", default={})

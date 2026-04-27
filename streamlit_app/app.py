@@ -18,6 +18,7 @@ from streamlit_app.lib.page_shell import status_ribbon
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
 from streamlit_app.lib.ui_components import (
+    chart_note,
     inject_styles,
     metric_card,
     section_heading,
@@ -95,6 +96,28 @@ ensure_theme_state()
 inject_styles(app_css(get_theme_mode(), sidebar_open=False))
 record_page_view("home", "landing")
 
+
+@st.dialog("Important Use Notice")
+def _legal_disclaimer() -> None:
+    st.write(
+        "FinLens is a personal portfolio project built to demonstrate data engineering, public "
+        "data integration, and banking analytics presentation. It is not affiliated with, endorsed "
+        "by, or operated by any regulator or financial institution."
+    )
+    st.write(
+        "The project uses public sources such as FDIC and FRED where available, but it should not "
+        "be used as financial, investment, regulatory, or supervisory advice. For any decision "
+        "about a bank, deposit, investment, or financial institution, rely only on official U.S. "
+        "government and regulator sources."
+    )
+    if st.button("I understand", key="accept_home_disclaimer", use_container_width=True):
+        st.session_state["home_disclaimer_accepted"] = True
+        st.rerun()
+
+
+if not st.session_state.get("home_disclaimer_accepted"):
+    _legal_disclaimer()
+
 st.markdown(
     """
     <div class="home-center-brand">
@@ -116,14 +139,6 @@ st.markdown(
             <span>Banking</span>
             <span>Stress Intelligence</span>
         </div>
-        <div class="home-credit-inline">
-            <div class="home-credit-kicker">By</div>
-            <div class="home-credit-name">Sri Surya S. Vaddhiparthy</div>
-            <div class="home-credit-meta">M.S. (Data Science)</div>
-            <a class="home-credit-link" href="https://surya.vaddhiparthy.com" target="_blank">
-                surya.vaddhiparthy.com
-            </a>
-        </div>
         <div class="home-copy">
             A public-data banking intelligence platform that converts FDIC, FRED, QBP-style
             aggregates, institution metadata, and pipeline telemetry into governed business
@@ -134,9 +149,22 @@ st.markdown(
             interpreting banking stress and a technical surface for inspecting how the data
             is sourced, transformed, validated, and served.
         </div>
+        <div class="home-credit-inline">
+            <div class="home-credit-kicker">By</div>
+            <div class="home-credit-name">Sri Surya S. Vaddhiparthy</div>
+            <div class="home-credit-meta">M.S. (Data Science)</div>
+            <a class="home-credit-link" href="https://surya.vaddhiparthy.com" target="_blank">
+                surya.vaddhiparthy.com
+            </a>
+        </div>
     </div>
     """,
     unsafe_allow_html=True,
+)
+chart_note(
+    "Use notice",
+    "This is a personal analytical project using public data sources. It is not financial advice "
+    "or a substitute for official U.S. government/regulator sources.",
 )
 status_ribbon("Public banking data platform")
 

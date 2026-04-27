@@ -145,6 +145,33 @@ def inventory_table(frame: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+def _failure_inventory_page(total_rows: int) -> tuple[int, int]:
+    page_size = 12
+    total_pages = max(1, (total_rows + page_size - 1) // page_size)
+    page_key = "failure_inventory_page"
+    if st.session_state.get(page_key, 1) > total_pages:
+        st.session_state[page_key] = total_pages
+    if st.session_state.get(page_key, 1) < 1:
+        st.session_state[page_key] = 1
+    return int(st.session_state.get(page_key, 1)), total_pages
+
+
+def _render_inventory_pager(current_page: int, total_pages: int) -> None:
+    st.markdown('<div class="page-control-anchor"></div>', unsafe_allow_html=True)
+    _, left, middle, right, _ = st.columns([4.4, 0.25, 1, 0.25, 4.4], vertical_alignment="center")
+    with left:
+        if st.button("‹", key="failure_inventory_previous", use_container_width=True):
+            st.session_state["failure_inventory_page"] = max(1, current_page - 1)
+    with middle:
+        st.markdown(
+            f'<div class="page-number-display">Page {current_page} of {total_pages}</div>',
+            unsafe_allow_html=True,
+        )
+    with right:
+        if st.button("›", key="failure_inventory_next", use_container_width=True):
+            st.session_state["failure_inventory_page"] = min(total_pages, current_page + 1)
+
+
 st.set_page_config(
     page_title="FinLens | Failure Forensics",
     layout="wide",
@@ -234,4 +261,8 @@ else:
     if filtered.empty:
         empty_state("No failed-bank rows match the selected filters.")
     else:
-        styled_table(inventory_table(filtered))
+        inventory = inventory_table(filtered)
+        current_page, total_pages = _failure_inventory_page(len(inventory))
+        start = (current_page - 1) * 12
+        styled_table(inventory.iloc[start : start + 12])
+        _render_inventory_pager(current_page, total_pages)

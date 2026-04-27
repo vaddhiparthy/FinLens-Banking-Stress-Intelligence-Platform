@@ -147,24 +147,36 @@ def top_navigation(active_page: str, mode: str) -> None:
 
     st.markdown('<div style="height: 1.35rem;"></div>', unsafe_allow_html=True)
     st.markdown('<div class="topbar-anchor"></div>', unsafe_allow_html=True)
+    current_surface_label = "Technical" if mode == TECHNICAL_PAGE else "Business"
+
     with st.container(border=True):
         top_left, top_right = st.columns([1.45, 3.55], vertical_alignment="center")
         with top_left:
-            selected_surface = st.segmented_control(
-                "Surface",
-                [TECHNICAL_PAGE, BUSINESS_PAGE],
-                default=mode,
-                format_func=lambda value: "Technical" if value == TECHNICAL_PAGE else "Business",
-                key=f"surface_segment_{active_page}",
-                label_visibility="collapsed",
+            st.markdown(
+                f"""
+                <div class="surface-switch-card">
+                    <div class="surface-switch-label">Current Surface</div>
+                    <div class="surface-switch-value">{current_surface_label}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-            if selected_surface != mode:
-                if selected_surface == TECHNICAL_PAGE:
-                    _set_surface_mode(TECHNICAL_PAGE)
-                    st.switch_page("pages/4_Under_The_Hood.py")
-                else:
+            switch_label = (
+                "Switch to Business Surface"
+                if mode == TECHNICAL_PAGE
+                else "Switch to Technical Surface"
+            )
+            if st.button(
+                switch_label,
+                key=f"surface_switch_{active_page}",
+                use_container_width=True,
+            ):
+                if mode == TECHNICAL_PAGE:
                     _set_surface_mode(BUSINESS_PAGE)
                     st.switch_page("pages/0_Stress_Pulse.py")
+                else:
+                    _set_surface_mode(TECHNICAL_PAGE)
+                    st.switch_page("pages/4_Under_The_Hood.py")
         with top_right:
             st.markdown('<div class="section-menu-anchor"></div>', unsafe_allow_html=True)
             if mode == BUSINESS_PAGE:

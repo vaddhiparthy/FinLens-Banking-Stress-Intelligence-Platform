@@ -285,14 +285,15 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .edge-title {{
         font-family: "Fraunces", Georgia, serif;
-        font-size: .92rem;
+        font-size: .62rem;
         color: {palette["text_main"]};
         text-shadow: 0 1px 0 rgba(255,255,255,0.24);
     }}
     .edge-subtitle {{
-        color: {palette["text_soft"]};
-        font-size: .62rem;
-        font-weight: 650;
+        color: {palette["text_main"]};
+        font-family: "Fraunces", Georgia, serif;
+        font-size: .9rem;
+        font-weight: 700;
         margin-top: .06rem;
     }}
     .edge-credit {{
@@ -626,6 +627,27 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         box-shadow:
             0 10px 18px rgba(15, 23, 42, 0.08),
             inset 0 1px 0 rgba(255,255,255,0.22);
+    }}
+    .surface-switch-card {{
+        border: 1px solid {palette["border"]};
+        border-radius: 10px;
+        padding: .28rem .5rem;
+        background: rgba(255,250,243,.72);
+        margin-bottom: .22rem;
+    }}
+    .surface-switch-label {{
+        color: {palette["text_soft"]};
+        font-size: .56rem;
+        font-weight: 900;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        line-height: 1.1;
+    }}
+    .surface-switch-value {{
+        color: {palette["text_main"]};
+        font-family: "Fraunces", Georgia, serif;
+        font-size: .88rem;
+        line-height: 1.15;
     }}
     .topbar-anchor + div div[data-testid="stSegmentedControl"] [role="radiogroup"] {{
         gap: .18rem;
@@ -988,19 +1010,19 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .page-control-anchor + div button {{
         min-height: 1.32rem !important;
-        border-radius: 6px !important;
+        border-radius: 0 !important;
         padding: .02rem .12rem !important;
         background: transparent !important;
-        border: 1px solid rgba(228, 215, 198, .72) !important;
+        border: none !important;
         box-shadow: none !important;
         color: {palette["text_main"]} !important;
         -webkit-text-fill-color: {palette["text_main"]} !important;
-        font-size: .58rem !important;
-        font-weight: 750 !important;
+        font-size: 1.05rem !important;
+        font-weight: 850 !important;
     }}
     .page-number-display {{
         text-align: center;
-        font-size: .62rem;
+        font-size: .78rem;
         font-weight: 800;
         color: {palette["text_soft"]};
         border: 1px solid {palette["border"]};
@@ -1008,6 +1030,12 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         padding: .16rem .18rem;
         background: rgba(255, 250, 243, 0.54);
         white-space: nowrap;
+    }}
+    .browser-control-copy {{
+        color: {palette["text_muted"]};
+        font-size: .86rem;
+        font-weight: 700;
+        line-height: 1.45;
     }}
     .browser-stage-anchor + div button {{
         min-height: 4.2rem !important;
