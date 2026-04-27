@@ -257,14 +257,14 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     .edge-brand {{
         position: fixed;
         top: 1rem;
-        left: calc(1.35rem + {content_offset});
+        left: 50%;
+        transform: translateX(-50%);
         z-index: 1390;
         display: flex;
         align-items: center;
-        gap: .65rem;
         pointer-events: none;
         transition: left 240ms ease;
-        padding: .46rem .82rem;
+        padding: .42rem .88rem;
         border-radius: 999px;
         background: linear-gradient(180deg, rgba(255,250,243,0.96), rgba(244,239,230,0.94));
         border: 1px solid {palette["border"]};
@@ -280,19 +280,20 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     .edge-brand-copy {{
         display: flex;
         flex-direction: column;
-        line-height: 1.05;
+        line-height: .98;
+        text-align: center;
     }}
     .edge-title {{
         font-family: "Fraunces", Georgia, serif;
-        font-size: 1rem;
+        font-size: .92rem;
         color: {palette["text_main"]};
         text-shadow: 0 1px 0 rgba(255,255,255,0.24);
     }}
     .edge-subtitle {{
         color: {palette["text_soft"]};
-        font-size: .72rem;
-        font-weight: 500;
-        margin-top: .12rem;
+        font-size: .62rem;
+        font-weight: 650;
+        margin-top: .06rem;
     }}
     .edge-credit {{
         position: fixed;
@@ -334,8 +335,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         z-index: 1390;
         display: flex;
         align-items: center;
-        gap: .65rem;
-        padding: .46rem .9rem;
+        padding: .42rem .88rem;
         border-radius: 999px;
         background: linear-gradient(180deg, rgba(255,250,243,0.96), rgba(244,239,230,0.94));
         border: 1px solid {palette["border"]};
@@ -347,8 +347,8 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     .home-center-copy {{
         display: flex;
         flex-direction: column;
-        line-height: 1.05;
-        text-align: left;
+        line-height: .98;
+        text-align: center;
     }}
     .home-kicker {{
         color: {palette["text_soft"]};
@@ -364,6 +364,17 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         font-size: clamp(3.2rem, 7vw, 6.8rem);
         line-height: .92;
         letter-spacing: -.045em;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }}
+    .home-credit-inline {{
+        width: fit-content;
+        max-width: 360px;
+        margin: .85rem 2.2rem .35rem auto;
+        text-align: left;
+        padding: .45rem .6rem;
+        border-left: 2px solid {palette["accent"]};
     }}
     .home-copy {{
         max-width: 780px;
@@ -388,35 +399,30 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         font-size: .68rem;
         font-weight: 900;
     }}
-    .home-credit {{
-        max-width: 520px;
-        margin: 2.2rem auto 3.2rem;
-        text-align: center;
-        padding: 1.25rem 1.5rem;
-        border-radius: 24px;
-        background: linear-gradient(180deg, rgba(255,250,243,.82), rgba(244,239,230,.62));
-        border: 1px solid {palette["border"]};
-        box-shadow: 0 14px 28px rgba(15,23,42,.06);
-    }}
     .home-credit-kicker {{
         color: {palette["text_soft"]};
         text-transform: uppercase;
         letter-spacing: .18em;
-        font-size: .68rem;
+        font-size: .58rem;
         font-weight: 900;
-        margin-bottom: .28rem;
+        margin-bottom: .12rem;
     }}
     .home-credit-name {{
         color: {palette["text_main"]};
         font-family: "Fraunces", Georgia, serif;
-        font-size: 1.3rem;
+        font-size: .98rem;
         line-height: 1.2;
     }}
     .home-credit-meta,
     .home-credit-link {{
         color: {palette["text_muted"]};
-        font-size: .88rem;
-        line-height: 1.5;
+        font-size: .76rem;
+        line-height: 1.35;
+        text-decoration: none;
+    }}
+    .home-credit-link:hover {{
+        color: {palette["link_hover"]};
+        text-decoration: underline;
     }}
     .topbar-anchor + div div[data-testid="stVerticalBlockBorderWrapper"] {{
         position: sticky;

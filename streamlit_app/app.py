@@ -98,10 +98,10 @@ record_page_view("home", "landing")
 st.markdown(
     """
     <div class="home-center-brand">
-        <span class="topbar-mark edge-mark">FL</span>
         <span class="home-center-copy">
             <span class="edge-title">FinLens</span>
-            <span class="edge-subtitle">Banking stress intelligence</span>
+            <span class="edge-subtitle">Banking</span>
+            <span class="edge-subtitle">Stress Intelligence</span>
         </span>
     </div>
     """,
@@ -112,7 +112,18 @@ st.markdown(
     """
     <div class="home-hero">
         <div class="home-kicker">FinLens</div>
-        <div class="home-title">FinLens Banking Stress Intelligence</div>
+        <div class="home-title">
+            <span>Banking</span>
+            <span>Stress Intelligence</span>
+        </div>
+        <div class="home-credit-inline">
+            <div class="home-credit-kicker">By</div>
+            <div class="home-credit-name">Sri Surya S. Vaddhiparthy</div>
+            <div class="home-credit-meta">M.S. (Data Science)</div>
+            <a class="home-credit-link" href="https://surya.vaddhiparthy.com" target="_blank">
+                surya.vaddhiparthy.com
+            </a>
+        </div>
         <div class="home-copy">
             A public-data banking intelligence platform that converts FDIC, FRED, QBP-style
             aggregates, institution metadata, and pipeline telemetry into governed business
@@ -189,16 +200,4 @@ section_heading(
     "Business pages explain the banking story. Technical pages expose the source contracts, "
     "table inventory, transformation rules, run results, and operational controls behind that "
     "story.",
-)
-
-st.markdown(
-    """
-    <div class="home-credit">
-        <div class="home-credit-kicker">By</div>
-        <div class="home-credit-name">Sri Surya S. Vaddhiparthy</div>
-        <div class="home-credit-meta">M.S. (Data Science)</div>
-        <div class="home-credit-link">surya.vaddhiparthy.com</div>
-    </div>
-    """,
-    unsafe_allow_html=True,
 )

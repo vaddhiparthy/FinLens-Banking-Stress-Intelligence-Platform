@@ -134,10 +134,10 @@ def top_navigation(active_page: str, mode: str) -> None:
     st.markdown(
         """
         <div class="edge-brand">
-            <span class="topbar-mark edge-mark">FL</span>
             <span class="edge-brand-copy">
                 <span class="edge-title">FinLens</span>
-                <span class="edge-subtitle">Banking stress intelligence</span>
+                <span class="edge-subtitle">Banking</span>
+                <span class="edge-subtitle">Stress Intelligence</span>
             </span>
         </div>
         <div class="edge-credit">Built by Sri Surya S. Vaddhiparthy</div>
