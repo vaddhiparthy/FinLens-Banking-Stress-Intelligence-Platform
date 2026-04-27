@@ -185,7 +185,7 @@ def _format_latest(value: object, suffix: str = "") -> str:
 def _format_optional_count(value: object) -> str:
     numeric = pd.to_numeric(value, errors="coerce")
     if pd.isna(numeric):
-        return "Not published"
+        return "Not in feed"
     return f"{int(numeric):,}"
 
 
@@ -193,7 +193,7 @@ def _format_optional_delta(current: object, previous: object) -> str:
     current_value = pd.to_numeric(current, errors="coerce")
     previous_value = pd.to_numeric(previous, errors="coerce")
     if pd.isna(current_value) or pd.isna(previous_value):
-        return "Not available in FDIC summary API"
+        return "Problem Bank List is not published in the current aggregate feed"
     return f"QoQ {int(current_value - previous_value):+d}"
 
 

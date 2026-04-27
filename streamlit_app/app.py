@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
 PROJECT_ROOT = next(
     parent for parent in Path(__file__).resolve().parents if (parent / "pyproject.toml").exists()
@@ -97,26 +98,80 @@ inject_styles(app_css(get_theme_mode(), sidebar_open=False))
 record_page_view("home", "landing")
 
 
-@st.dialog("Important Use Notice")
-def _legal_disclaimer() -> None:
-    st.write(
-        "FinLens is a personal portfolio project built to demonstrate data engineering, public "
-        "data integration, and banking analytics presentation. It is not affiliated with, endorsed "
-        "by, or operated by any regulator or financial institution."
-    )
-    st.write(
-        "The project uses public sources such as FDIC and FRED where available, but it should not "
-        "be used as financial, investment, regulatory, or supervisory advice. For any decision "
-        "about a bank, deposit, investment, or financial institution, rely only on official U.S. "
-        "government and regulator sources."
-    )
-    if st.button("I understand", key="accept_home_disclaimer", use_container_width=True):
-        st.session_state["home_disclaimer_accepted"] = True
-        st.rerun()
-
-
-if not st.session_state.get("home_disclaimer_accepted"):
-    _legal_disclaimer()
+components.html(
+    """
+    <div id="finlens-disclaimer" class="notice-shell" style="display:none;">
+      <div class="notice-card">
+        <div class="notice-title">Important Use Notice</div>
+        <div class="notice-copy">
+          FinLens is a personal portfolio project built to demonstrate data engineering,
+          public-data integration, and banking analytics presentation. It is not affiliated
+          with or endorsed by any regulator or financial institution.
+        </div>
+        <div class="notice-copy">
+          Do not use this project as financial, investment, regulatory, or supervisory advice.
+          For decisions about a bank, deposit, investment, or financial institution, rely only
+          on official U.S. government and regulator sources.
+        </div>
+        <button id="finlens-disclaimer-accept" type="button">I understand</button>
+      </div>
+    </div>
+    <style>
+      .notice-shell {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 8px 0 4px;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+      }
+      .notice-card {
+        width: min(560px, calc(100vw - 24px));
+        border: 1px solid rgba(106, 90, 72, .24);
+        border-radius: 16px;
+        background: linear-gradient(145deg, rgba(255, 252, 246, .98), rgba(244, 239, 230, .96));
+        box-shadow: 0 18px 42px rgba(31, 41, 51, .16);
+        padding: 16px 18px 14px;
+        color: #1f2933;
+      }
+      .notice-title {
+        font-family: Georgia, serif;
+        font-size: 19px;
+        font-weight: 800;
+        margin-bottom: 8px;
+      }
+      .notice-copy {
+        color: #4f535a;
+        font-size: 13px;
+        line-height: 1.48;
+        margin: 7px 0;
+      }
+      #finlens-disclaimer-accept {
+        margin-top: 10px;
+        width: 100%;
+        min-height: 34px;
+        border-radius: 10px;
+        border: 1px solid rgba(106, 90, 72, .34);
+        background: #1f2933;
+        color: #fffaf3;
+        font-weight: 800;
+        cursor: pointer;
+      }
+    </style>
+    <script>
+      const key = "finlens_use_notice_accepted_v1";
+      const shell = document.getElementById("finlens-disclaimer");
+      if (!window.localStorage.getItem(key)) {
+        shell.style.display = "flex";
+      }
+      document.getElementById("finlens-disclaimer-accept").addEventListener("click", () => {
+        window.localStorage.setItem(key, "true");
+        shell.style.display = "none";
+      });
+    </script>
+    """,
+    height=245,
+)
 
 st.markdown(
     """

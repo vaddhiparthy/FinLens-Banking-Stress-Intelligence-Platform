@@ -1061,13 +1061,11 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         position: sticky;
         top: 4.4rem;
         z-index: 40;
-        border: 1px solid {palette["border"]};
+        border: 1px solid rgba(106, 90, 72, .18);
         border-radius: 16px;
-        background:
-            linear-gradient(145deg, rgba(255,255,255,.82), rgba(255,250,243,.72)),
-            {palette["content_bg"]};
-        box-shadow: 0 14px 30px rgba(31,41,51,.09), inset 0 1px 0 rgba(255,255,255,.7);
-        padding: .62rem .78rem;
+        background: rgba(255, 250, 243, .32);
+        box-shadow: 0 10px 24px rgba(31,41,51,.05);
+        padding: .54rem .7rem;
         width: fit-content;
         min-width: 15rem;
         margin-bottom: .55rem;
@@ -1119,11 +1117,17 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         color: {palette["text_main"]} !important;
         font-size: .78rem !important;
         line-height: 1.25 !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
     }}
     div[data-testid="stRadio"] label p {{
         color: {palette["text_main"]} !important;
         font-size: .78rem !important;
         line-height: 1.25 !important;
+    }}
+    div[data-testid="stRadio"] div[role="radiogroup"] {{
+        gap: .02rem !important;
     }}
     .browser-stage-anchor + div button {{
         min-height: 4.2rem !important;

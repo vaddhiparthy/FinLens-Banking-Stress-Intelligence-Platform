@@ -58,9 +58,9 @@ def _business_sections() -> list[tuple[str, str]]:
 def _technical_sections() -> list[tuple[str, str]]:
     return [
         ("pipeline", "Live Pipeline Status"),
-        ("status", "Reconciliation"),
-        ("classification", "Data Classification"),
-        ("implementation", "Data Quality"),
+        ("implementation", "Engineering Stack"),
+        ("status", "Data Quality"),
+        ("classification", "Source Contracts"),
         ("administration", "Administration"),
         ("wiki", "Wiki"),
     ]
