@@ -69,6 +69,94 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         color: {palette["text_main"]};
         font-family: "Manrope", system-ui, sans-serif;
     }}
+    html, body,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMarkdownContainer"],
+    [data-testid="stVerticalBlock"],
+    [data-testid="stHorizontalBlock"],
+    [data-testid="stWidgetLabel"],
+    [data-baseweb="tab-list"],
+    [data-baseweb="tab-panel"] {{
+        color: {palette["text_main"]} !important;
+    }}
+    .stApp p,
+    .stApp span,
+    .stApp label,
+    .stApp div,
+    .stApp h1,
+    .stApp h2,
+    .stApp h3,
+    .stApp h4,
+    .stApp h5,
+    .stApp h6 {{
+        color: inherit;
+    }}
+    input,
+    textarea,
+    [data-baseweb="input"],
+    [data-baseweb="input"] input,
+    [data-baseweb="textarea"],
+    [data-baseweb="textarea"] textarea,
+    [data-baseweb="select"] > div,
+    [data-baseweb="popover"],
+    [data-baseweb="menu"] {{
+        background: {palette["content_bg"]} !important;
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+    }}
+    input::placeholder,
+    textarea::placeholder {{
+        color: {palette["text_muted"]} !important;
+        -webkit-text-fill-color: {palette["text_muted"]} !important;
+        opacity: 1 !important;
+    }}
+    [data-testid="stDialog"],
+    [data-testid="stDialog"] *,
+    div[role="dialog"],
+    div[role="dialog"] * {{
+        background-color: {palette["content_bg"]};
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+    }}
+    [data-testid="stDataFrame"],
+    [data-testid="stDataFrame"] *,
+    [data-testid="stTable"],
+    [data-testid="stTable"] *,
+    table,
+    thead,
+    tbody,
+    tr,
+    th,
+    td {{
+        background-color: {palette["content_bg"]} !important;
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+    }}
+    [data-testid="stDataFrame"] canvas,
+    [data-testid="stDataFrame"] iframe {{
+        background: {palette["content_bg"]} !important;
+    }}
+    button,
+    button *,
+    button:disabled,
+    button:disabled *,
+    div[data-testid="stButton"] > button,
+    div[data-testid="stButton"] > button * {{
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+        opacity: 1 !important;
+    }}
+    div[data-testid="stTabs"] button,
+    div[data-testid="stTabs"] button *,
+    [data-baseweb="tab"],
+    [data-baseweb="tab"] * {{
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+    }}
+    div[data-testid="stTabs"] [aria-selected="true"] {{
+        border-bottom: 2px solid {palette["accent"]} !important;
+        box-shadow: inset 0 -2px 0 {palette["accent"]};
+    }}
     header[data-testid="stHeader"] {{
         display: none !important;
     }}
@@ -450,7 +538,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .topbar-anchor + div div[data-testid="stPageLink"] a:hover {{
         border-color: {palette["border"]};
-        background: rgba(255,255,255,0.04);
+        background: {palette["sand"]};
     }}
     .topbar-anchor + div div[data-testid="stPageLink"] a p,
     .topbar-anchor + div div[data-testid="stPageLink"] a span {{
@@ -459,7 +547,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         white-space: nowrap;
     }}
     .topbar-anchor + div div[data-testid="stPageLink"] a[aria-disabled="true"] {{
-        background: transparent;
+        background: {palette["content_bg"]};
         border-color: {palette["accent"]};
         box-shadow: 0 0 0 1px {palette["accent"]};
     }}
@@ -472,7 +560,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     .topbar-anchor + div div[data-testid="stButton"] > button {{
         border-radius: 10px;
         min-height: 2.2rem;
-        background: transparent;
+        background: {palette["content_bg"]};
         box-shadow: none;
         border: 1px solid transparent;
         color: {palette["text_main"]};
@@ -482,11 +570,11 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .topbar-anchor + div div[data-testid="stButton"] > button:hover {{
         border-color: {palette["border"]};
-        background: rgba(255,255,255,0.04);
+        background: {palette["sand"]};
         color: {palette["text_main"]};
     }}
     .topbar-anchor + div div[data-testid="stButton"] > button:disabled {{
-        background: transparent;
+        background: {palette["content_bg"]};
         border-color: {palette["accent"]};
         color: {palette["text_main"]} !important;
         -webkit-text-fill-color: {palette["text_main"]} !important;

@@ -16,7 +16,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from finlens.config import get_settings
 from finlens.warehouse import stress_pulse_source_mode
-from streamlit_app.lib.data import load_stress_pulse
+from streamlit_app.lib.data import load_failures, load_metrics, load_stress_pulse
 from streamlit_app.lib.page_shell import BUSINESS_PAGE, page_intro, status_ribbon, top_navigation
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
@@ -58,6 +58,7 @@ def earnings_chart(frame: pd.DataFrame) -> go.Figure:
         legend=dict(orientation="h"),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"),
     )
     add_recession_bands(figure)
     return figure
@@ -72,6 +73,7 @@ def funding_chart(frame: pd.DataFrame) -> go.Figure:
         legend=dict(orientation="h"),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"),
     )
     add_recession_bands(figure)
     return figure
@@ -93,6 +95,7 @@ def asset_quality_chart(frame: pd.DataFrame) -> go.Figure:
         legend=dict(orientation="h"),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"),
     )
     add_recession_bands(figure)
     return figure
@@ -117,6 +120,7 @@ def unrealized_losses_chart(frame: pd.DataFrame) -> go.Figure:
         legend=dict(orientation="h"),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"),
         annotations=[
             dict(
                 x="2023Q1",
@@ -129,6 +133,128 @@ def unrealized_losses_chart(frame: pd.DataFrame) -> go.Figure:
     )
     add_recession_bands(figure)
     return figure
+
+
+def _format_latest(value: object, suffix: str = "") -> str:
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return "Available after source refresh"
+    if pd.isna(numeric):
+        return "Available after source refresh"
+    return f"{numeric:.2f}{suffix}"
+
+
+def _macro_panel() -> pd.DataFrame:
+    metrics = load_metrics().copy()
+    if metrics.empty:
+        return pd.DataFrame(columns=["date"])
+    labels = {
+        "UNRATE": "Unemployment",
+        "DGS10": "10Y Treasury",
+        "DGS2": "2Y Treasury",
+        "GDP": "GDP",
+        "CPIAUCSL": "CPI",
+        "CSUSHPINSA": "Home Price Index",
+    }
+    metrics["series_label"] = metrics["series_id"].map(labels).fillna(metrics["metric_name"])
+    panel = (
+        metrics.pivot_table(index="date", columns="series_label", values="value", aggfunc="last")
+        .sort_index()
+        .reset_index()
+    )
+    if {"10Y Treasury", "2Y Treasury"}.issubset(panel.columns):
+        panel["10Y-2Y"] = panel["10Y Treasury"] - panel["2Y Treasury"]
+    return panel
+
+
+def _failure_timeline(frame: pd.DataFrame) -> go.Figure:
+    grouped = frame.groupby("year").size().reset_index(name="failures")
+    figure = go.Figure()
+    figure.add_bar(x=grouped["year"], y=grouped["failures"], name="FDIC failures")
+    figure.update_layout(
+        margin=dict(l=10, r=10, t=40, b=10),
+        paper_bgcolor="rgba(255,255,255,0)",
+        plot_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"),
+        yaxis_title="Failures",
+    )
+    return figure
+
+
+def _series_chart(frame: pd.DataFrame, series: list[str]) -> go.Figure:
+    figure = go.Figure()
+    for name in series:
+        if name in frame and frame[name].notna().any():
+            figure.add_scatter(x=frame["date"], y=frame[name], mode="lines", name=name)
+    figure.update_layout(
+        margin=dict(l=10, r=10, t=40, b=10),
+        paper_bgcolor="rgba(255,255,255,0)",
+        plot_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"),
+        legend=dict(orientation="h"),
+    )
+    return figure
+
+
+def render_public_data_stress_snapshot() -> None:
+    failures = load_failures().copy()
+    metrics = _macro_panel()
+    latest_macro = metrics.iloc[-1] if not metrics.empty else pd.Series(dtype="object")
+    latest_failure_year = int(failures["year"].max()) if not failures.empty else 0
+    latest_year_failures = (
+        int(failures.loc[failures["year"] == latest_failure_year].shape[0])
+        if latest_failure_year
+        else 0
+    )
+
+    section_heading(
+        "Live Public Data Snapshot",
+        "The QBP aggregate package is not populated yet, so this page is using live FDIC "
+        "failure history and FRED macro observations. This keeps the product useful without "
+        "inventing aggregate banking values.",
+    )
+    card1, card2, card3, card4 = st.columns(4)
+    with card1:
+        metric_card("FDIC failures", f"{len(failures):,}", "Live BankFind failure history")
+    with card2:
+        metric_card(
+            "Latest failure year",
+            str(latest_failure_year or "Available after source refresh"),
+            f"{latest_year_failures} failures in latest year" if latest_failure_year else "No rows",
+        )
+    with card3:
+        metric_card(
+            "Unemployment",
+            _format_latest(latest_macro.get("Unemployment"), "%"),
+            "FRED UNRATE latest observation",
+        )
+    with card4:
+        metric_card(
+            "10Y-2Y spread",
+            _format_latest(latest_macro.get("10Y-2Y")),
+            "FRED DGS10 minus DGS2",
+        )
+
+    left, right = st.columns(2)
+    with left:
+        section_heading("Failure Timeline", "Annual FDIC failed-bank counts from the live feed.")
+        if failures.empty:
+            empty_state("FDIC failure data is not available from the current run.")
+        else:
+            st.plotly_chart(_failure_timeline(failures), width="stretch")
+    with right:
+        section_heading(
+            "Macro Context",
+            "FRED indicators currently available in the gold layer.",
+        )
+        if metrics.empty:
+            empty_state("FRED macro data is not available from the current run.")
+        else:
+            st.plotly_chart(
+                _series_chart(metrics, ["Unemployment", "10Y-2Y", "CPI", "Home Price Index"]),
+                width="stretch",
+            )
 
 
 @st.dialog("Welcome to FinLens", width="large")
@@ -224,10 +350,7 @@ page_intro(
 )
 
 if frame.empty:
-    empty_state(
-        "Stress Pulse is waiting for a compatible FDIC QBP aggregate feed. "
-        "No synthetic aggregate values are shown in production mode."
-    )
+    render_public_data_stress_snapshot()
     st.stop()
 
 latest = frame.iloc[-1]

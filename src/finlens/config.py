@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     root_domain: str = "vaddhiparthy.vip"
     project_domain: str = "finlens.vaddhiparthy.vip"
     finlens_data_mode: str = "mock"
-    finlens_active_sources: str = "fdic,fred,qbp,nic"
+    finlens_active_sources: str = "fdic,fred"
     finlens_artifact_dir: str = "data"
     finlens_public_base_url: str | None = None
     finlens_api_base_url: str | None = None

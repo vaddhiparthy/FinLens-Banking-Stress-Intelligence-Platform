@@ -15,6 +15,21 @@ FLOW_LABELS = {
     "gold_to_dashboards": ("Gold -> Dashboards", "Serving"),
 }
 
+DEFERRED_FLOWS = {
+    "qbp": {
+        "status": "Deferred",
+        "last_run": "Not active",
+        "rows": "—",
+        "note": "Zero-risk build is running on FDIC failures and FRED until QBP package is wired",
+    },
+    "nic": {
+        "status": "Deferred",
+        "last_run": "Not active",
+        "rows": "—",
+        "note": "Current-parent metadata contract is reserved for the next source activation",
+    },
+}
+
 FLOW_ORDER = [
     "fdic",
     "qbp",
@@ -49,7 +64,7 @@ def pipeline_status_rows() -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for index, flow_key in enumerate(FLOW_ORDER, start=1):
         label, source = FLOW_LABELS[flow_key]
-        current = statuses.get(flow_key, {})
+        current = statuses.get(flow_key, DEFERRED_FLOWS.get(flow_key, {}))
         rows.append(
             {
                 "flow_no": index,

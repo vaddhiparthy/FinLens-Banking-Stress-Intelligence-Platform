@@ -17,15 +17,15 @@ from streamlit_app.lib.data import load_failures, load_metrics
 from streamlit_app.lib.page_shell import BUSINESS_PAGE, page_intro, status_ribbon, top_navigation
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_palette, get_theme_mode
-from streamlit_app.lib.ui_components import inject_styles, metric_card, section_heading
+from streamlit_app.lib.ui_components import empty_state, inject_styles, metric_card, section_heading
 
 SERIES_LABELS = {
     "UNRATE": "Unemployment",
     "DGS10": "10Y Treasury",
     "DGS2": "2Y Treasury",
-    "BAA": "BAA Yield",
-    "BAA10Y": "BAA-10Y Spread",
-    "NFCI": "NFCI",
+    "GDP": "GDP",
+    "CPIAUCSL": "CPI",
+    "CSUSHPINSA": "Home Price Index",
 }
 
 
@@ -53,16 +53,8 @@ def build_macro_panel() -> pd.DataFrame:
     pivot = pivot.sort_index().reset_index()
     if "10Y Treasury" in pivot and "2Y Treasury" in pivot:
         pivot["10Y-2Y"] = pivot["10Y Treasury"] - pivot["2Y Treasury"]
-    if "BAA Yield" in pivot and "10Y Treasury" in pivot and "BAA-AAA Spread" not in pivot:
-        pivot["BAA Spread"] = pivot["BAA Yield"] - pivot["10Y Treasury"]
-    elif "BAA10Y" in pivot:
-        pivot["BAA Spread"] = pivot["BAA10Y"]
-    else:
-        pivot["BAA Spread"] = pd.NA
     if "Unemployment" not in pivot and "Unemployment Rate" in pivot:
         pivot["Unemployment"] = pivot["Unemployment Rate"]
-    if "NFCI" not in pivot:
-        pivot["NFCI"] = pd.NA
     return pivot
 
 
@@ -90,7 +82,9 @@ def failure_count_series(frame: pd.DataFrame) -> pd.DataFrame:
 def lag_heatmap(frame: pd.DataFrame) -> go.Figure:
     palette = get_palette()
     series_names = [
-        name for name in ["10Y-2Y", "NFCI", "BAA Spread", "Unemployment"] if name in frame
+        name
+        for name in ["10Y-2Y", "Unemployment", "CPI", "GDP", "Home Price Index"]
+        if name in frame and frame[name].notna().any()
     ]
     lags = [0, 4, 8, 12, 18, 24]
     z_values: list[list[float]] = []
@@ -119,6 +113,7 @@ def lag_heatmap(frame: pd.DataFrame) -> go.Figure:
         margin=dict(l=10, r=10, t=40, b=10),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"),
     )
     return figure
 
@@ -130,20 +125,41 @@ def detail_chart(frame: pd.DataFrame, series: str) -> go.Figure:
         margin=dict(l=10, r=10, t=40, b=10),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"),
     )
     return figure
 
 
 def yield_curve_chart(frame: pd.DataFrame) -> go.Figure:
     figure = go.Figure()
-    figure.add_scatter(x=frame["date"], y=frame["10Y-2Y"], name="10Y-2Y spread")
+    if "10Y-2Y" in frame and frame["10Y-2Y"].notna().any():
+        figure.add_scatter(x=frame["date"], y=frame["10Y-2Y"], name="10Y-2Y spread")
     figure.add_hline(y=0, line_dash="dash")
     figure.update_layout(
         margin=dict(l=10, r=10, t=40, b=10),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"),
     )
     return figure
+
+
+def available_macro_series(frame: pd.DataFrame) -> list[str]:
+    return [
+        name
+        for name in ["10Y-2Y", "Unemployment", "CPI", "GDP", "Home Price Index"]
+        if name in frame and frame[name].notna().any()
+    ]
+
+
+def latest_metric(frame: pd.DataFrame, series: str, suffix: str = "") -> tuple[str, str]:
+    if series not in frame:
+        return "Available after source refresh", series
+    valid = frame.dropna(subset=[series])
+    if valid.empty:
+        return "Available after source refresh", series
+    latest = valid.iloc[-1]
+    return _format_metric(latest[series], suffix), str(latest["date"].date())
 
 
 st.set_page_config(
@@ -165,25 +181,25 @@ page_intro(
 
 frame = build_macro_panel()
 frame = failure_count_series(frame)
-available_series = [
-    name for name in ["10Y-2Y", "NFCI", "BAA Spread", "Unemployment"] if name in frame
-]
+available_series = available_macro_series(frame)
+if not available_series:
+    empty_state("No FRED observations are available from the current source run.")
+    st.stop()
 selected_series = st.selectbox("Indicator detail", available_series)
-latest = frame.iloc[-1]
 
 card1, card2, card3, card4 = st.columns(4)
 with card1:
-    metric_card("10Y-2Y", _format_metric(latest["10Y-2Y"]), "Latest monthly reading")
+    value, as_of = latest_metric(frame, "10Y-2Y")
+    metric_card("10Y-2Y", value, f"As of {as_of}")
 with card2:
-    metric_card("NFCI", _format_metric(latest.get("NFCI")), "Current financial conditions")
+    value, as_of = latest_metric(frame, "Unemployment", "%")
+    metric_card("Unemployment", value, f"As of {as_of}")
 with card3:
-    metric_card("BAA spread", _format_metric(latest["BAA Spread"]), "Credit stress signal")
+    value, as_of = latest_metric(frame, "CPI")
+    metric_card("CPI", value, f"As of {as_of}")
 with card4:
-    metric_card(
-        "Unemployment",
-        _format_metric(latest["Unemployment"], "%"),
-        "Current labor backdrop",
-    )
+    value, as_of = latest_metric(frame, "Home Price Index")
+    metric_card("Home Price Index", value, f"As of {as_of}")
 
 section_heading(
     "Lag Heatmap",

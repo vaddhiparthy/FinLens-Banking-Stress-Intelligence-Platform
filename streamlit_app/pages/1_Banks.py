@@ -23,56 +23,49 @@ from streamlit_app.lib.ui_components import empty_state, inject_styles, metric_c
 
 def prepare_failures() -> pd.DataFrame:
     frame = load_failures().copy()
-    frame["resolution_type"] = "Pending source mapping"
-    frame["dif_cost_pct"] = pd.NA
+    frame["resolution_type"] = "Resolution detail not standardized in current feed"
     frame["status"] = "Failed"
+    if "acquirer" not in frame:
+        frame["acquirer"] = pd.NA
     return frame
 
 
 def failure_timeline(frame: pd.DataFrame) -> go.Figure:
-    grouped = (
-        frame.groupby(["year", "resolution_type"])["bank_id"].count().reset_index(name="failures")
-    )
+    grouped = frame.groupby("year")["bank_id"].count().reset_index(name="failures")
     figure = px.bar(
         grouped,
         x="year",
         y="failures",
-        color="resolution_type",
-        barmode="stack",
+        color_discrete_sequence=["#bf6d47"],
     )
     figure.update_layout(
         margin=dict(l=10, r=10, t=40, b=10),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
-        legend_title_text="Resolution type",
+        font=dict(color="#1f2933"),
+        yaxis_title="Failures",
     )
     return figure
 
 
-def dif_cost_chart(frame: pd.DataFrame) -> go.Figure:
-    figure = go.Figure()
-    if frame["dif_cost_pct"].notna().any():
-        grouped = frame.groupby("year")["dif_cost_pct"].mean().reset_index()
-        figure.add_scatter(
-            x=grouped["year"],
-            y=grouped["dif_cost_pct"],
-            mode="lines+markers",
-            name="DIF cost as % of assets",
-        )
-    else:
-        figure.add_annotation(
-            text="DIF cost field pending source mapping",
-            xref="paper",
-            yref="paper",
-            x=0.5,
-            y=0.5,
-            showarrow=False,
-        )
+def acquirer_chart(frame: pd.DataFrame) -> go.Figure:
+    clean = frame.dropna(subset=["acquirer"]).copy()
+    clean = clean.loc[clean["acquirer"].astype(str).str.strip() != ""]
+    grouped = clean.groupby("acquirer").size().nlargest(15).reset_index(name="failures")
+    figure = px.bar(
+        grouped.sort_values("failures"),
+        x="failures",
+        y="acquirer",
+        orientation="h",
+        color_discrete_sequence=["#0f766e"],
+    )
     figure.update_layout(
         margin=dict(l=10, r=10, t=40, b=10),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
-        yaxis_title="% of assets",
+        font=dict(color="#1f2933"),
+        xaxis_title="Failures acquired",
+        yaxis_title="Acquirer",
     )
     return figure
 
@@ -93,6 +86,7 @@ def state_map(frame: pd.DataFrame) -> go.Figure:
         margin=dict(l=10, r=10, t=30, b=10),
         paper_bgcolor="rgba(255,255,255,0)",
         geo_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"),
     )
     return figure
 
@@ -121,47 +115,42 @@ else:
     selected_bank = st.selectbox("Selected failed bank", failures["bank_name"].tolist())
     selected = failures.loc[failures["bank_name"] == selected_bank].iloc[0]
     total_failures = len(failures)
-    has_assets = failures["assets_millions"].notna().any()
-    total_assets = failures["assets_millions"].sum(skipna=True)
-    has_dif_cost = failures["dif_cost_pct"].notna().any()
-    total_cost = failures["dif_cost_pct"].sum(skipna=True)
-    ttm_count = failures.loc[failures["year"] == failures["year"].max(), "bank_id"].count()
+    latest_year = int(failures["year"].max())
+    ttm_count = failures.loc[failures["year"] == latest_year, "bank_id"].count()
+    top_state = failures["state"].dropna().value_counts().index[0]
+    state_count = int(failures["state"].dropna().value_counts().iloc[0])
+    latest_failure = failures.sort_values("closing_date", ascending=False).iloc[0]
 
     card1, card2, card3, card4 = st.columns(4)
     with card1:
         metric_card("Total failures", f"{total_failures}", "1980-present FDIC feed view")
     with card2:
-        metric_card(
-            "Assets failed" if has_assets else "Assets available",
-            f"${total_assets:,.0f}M" if has_assets else "Not in current feed",
-            "Live total" if has_assets else "FDIC CSV feed lacks asset amounts",
-        )
+        metric_card("Top state", top_state, f"{state_count} failures in current feed")
     with card3:
         metric_card(
-            "DIF cost",
-            f"${total_cost:,.0f}M" if has_dif_cost else "Pending source mapping",
-            "Live field" if has_dif_cost else "No synthetic cost estimate shown",
+            "Latest failed bank",
+            latest_failure["bank_name"],
+            str(latest_failure["closing_date"])[:10],
         )
     with card4:
-        metric_card("Failures TTM", f"{ttm_count}", "Latest available year in current slice")
+        metric_card("Latest year count", f"{ttm_count}", f"{latest_year} current slice")
 
     section_heading(
         "Failure Timeline",
-        "Resolution type is the cleanest first cut for making the failure archive analytically "
-        "useful.",
+        "Annual failed-bank counts from the live FDIC failure feed.",
     )
     st.plotly_chart(failure_timeline(failures), width="stretch")
 
     section_heading(
-        "Cost And Geography",
-        "This layer answers two practical questions: how expensive failures were and where the "
-        "assets concentrated.",
+        "Geography And Acquirers",
+        "This layer uses durable fields from the current FDIC feed: state concentration and "
+        "acquirer coverage.",
     )
     left, right = st.columns(2)
     with left:
-        st.plotly_chart(dif_cost_chart(failures), width="stretch")
-    with right:
         st.plotly_chart(state_map(failures), width="stretch")
+    with right:
+        st.plotly_chart(acquirer_chart(failures), width="stretch")
 
     section_heading(
         "Selected Failed Bank",
@@ -172,32 +161,37 @@ else:
     with detail1:
         metric_card("Institution", selected["bank_name"], selected["state"])
     with detail2:
-        metric_card("Failure year", f"{int(selected['year'])}", selected["resolution_type"])
+        metric_card("Failure year", f"{int(selected['year'])}", str(selected["closing_date"])[:10])
     with detail3:
-        if pd.notna(selected["assets_millions"]):
-            metric_card("Assets", f"${selected['assets_millions']:,.0f}M", selected["status"])
-        else:
-            cert_value = selected.get("cert", "Unavailable")
-            metric_card("Cert", str(cert_value), selected["status"])
+        acquirer = selected.get("acquirer", "Unavailable")
+        metric_card(
+            "Acquirer",
+            str(acquirer) if pd.notna(acquirer) else "Unavailable",
+            selected["status"],
+        )
 
     section_heading(
         "Failure Inventory",
         "This is the one flat list in the business surface. It stays subordinate to the charts.",
     )
-    inventory_columns = ["Bank", "State", "Failure Year", "Resolution Type"]
+    inventory_columns = [
+        "Bank",
+        "City",
+        "State",
+        "Failure Date",
+        "Failure Year",
+        "Cert",
+        "Acquirer",
+    ]
     renamed = failures.rename(
         columns={
             "bank_name": "Bank",
+            "city": "City",
             "state": "State",
             "year": "Failure Year",
-            "assets_millions": "Assets (M)",
-            "resolution_type": "Resolution Type",
-            "dif_cost_pct": "Estimated DIF Cost (M)",
+            "closing_date": "Failure Date",
             "cert": "Cert",
+            "acquirer": "Acquirer",
         }
     )
-    if has_assets:
-        inventory_columns.extend(["Assets (M)", "Estimated DIF Cost (M)"])
-    else:
-        inventory_columns.append("Cert")
     st.dataframe(renamed[inventory_columns], width="stretch", hide_index=True)

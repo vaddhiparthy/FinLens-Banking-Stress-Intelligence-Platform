@@ -46,6 +46,7 @@ def _status_color(status: str, palette: dict[str, str]) -> str:
         "Failed": "rgba(212, 139, 102, 0.55)",
         "Running": "rgba(179, 141, 91, 0.55)",
         "Missing Data": "rgba(180, 170, 156, 0.5)",
+        "Deferred": "rgba(180, 170, 156, 0.35)",
     }.get(status, palette["text_soft"])
 
 
@@ -88,6 +89,7 @@ def dag_chart(frame: pd.DataFrame) -> go.Figure:
         margin=dict(l=10, r=10, t=40, b=10),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"),
     )
     return figure
 
@@ -98,6 +100,7 @@ def pipeline_status_table(frame: pd.DataFrame) -> pd.DataFrame:
         "Failed": "🔴 Failed",
         "Running": "🟠 Running",
         "Missing Data": "⚪ Missing Data",
+        "Deferred": "⚪ Deferred",
     }
     return frame.assign(
         status_label=lambda data: data["status"].map(indicator_map),
@@ -129,6 +132,7 @@ def anomaly_chart() -> go.Figure:
         margin=dict(l=10, r=10, t=40, b=10),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"),
         xaxis_title="Recent runs",
         yaxis_title="Rows",
     )
@@ -137,9 +141,9 @@ def anomaly_chart() -> go.Figure:
 
 def reconciliation_table() -> pd.DataFrame:
     mode = stress_pulse_source_mode()
-    status = "Pass" if mode == "live" else "Pending live QBP feed"
-    gold_value = "Live gold aggregate" if mode == "live" else "Demo aggregate"
-    qbp_value = "Connected" if mode == "live" else "Not connected"
+    status = "Pass" if mode == "live" else "Deferred"
+    gold_value = "Live gold aggregate" if mode == "live" else "Pending aggregate contract"
+    qbp_value = "Connected" if mode == "live" else "Not active in zero-risk build"
     return pd.DataFrame(
         [
             {
@@ -469,11 +473,15 @@ if active_section == "pipeline":
             pipeline_frame.iloc[0]["note"],
         )
     with card2:
-        metric_card("FDIC QBP", pipeline_frame.iloc[1]["status"], pipeline_frame.iloc[1]["note"])
-    with card3:
         metric_card("FRED", pipeline_frame.iloc[2]["status"], pipeline_frame.iloc[2]["note"])
+    with card3:
+        metric_card("Gold Marts", pipeline_frame.iloc[5]["status"], pipeline_frame.iloc[5]["note"])
     with card4:
-        metric_card("NIC", pipeline_frame.iloc[3]["status"], pipeline_frame.iloc[3]["note"])
+        metric_card(
+            "Dashboards",
+            pipeline_frame.iloc[6]["status"],
+            pipeline_frame.iloc[6]["note"],
+        )
     infra1, infra2, infra3, infra4 = st.columns(4)
     stack = platform_stack_frame()
     with infra1:
