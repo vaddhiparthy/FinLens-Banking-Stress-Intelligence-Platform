@@ -603,7 +603,7 @@ def transform_rules_frame() -> pd.DataFrame:
                 "Transform area": "Pipeline status standardization",
                 "Input pattern": "Connector, dbt, Airflow, and platform probe outputs",
                 "Applied rule": "Map raw tool states into Success, Running, Failed, Missing Data, or Deferred",
-                "Output impact": "Live Pipeline Status speaks one operational language across tools",
+                "Output impact": "Live Pipeline speaks one operational language across tools",
             },
             {
                 "Transform area": "Gold serving contract",
@@ -1135,7 +1135,7 @@ if active_section == "pipeline":
     with infra4:
         metric_card("Snowflake", stack.iloc[4]["Status"], "Warehouse contract readiness")
     section_heading(
-        "Live Pipeline Status",
+        "Live Pipeline",
         "Real-time run status by flow. The chart shows the movement across sources, bronze, "
         "silver, gold, and dashboard serving; the table names the runtime responsible for each "
         "movement.",
@@ -1146,7 +1146,7 @@ if active_section == "pipeline":
 
 elif active_section == "status":
     section_heading(
-        "Reconciliation",
+        "Reconciliation Controls",
         "The current live path includes FDIC failures, FRED macro data, FDIC aggregate summary "
         "data, and active institution metadata.",
     )

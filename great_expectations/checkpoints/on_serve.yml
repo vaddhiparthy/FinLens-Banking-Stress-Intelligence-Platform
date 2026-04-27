@@ -1,5 +1,0 @@
-name: on_serve
-config_version: 1.0
-class_name: Checkpoint
-run_name_template: "%Y%m%d-%H%M%S-on_serve"
-expectation_suite_name: finlens_on_serve

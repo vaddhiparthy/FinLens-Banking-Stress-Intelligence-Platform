@@ -114,10 +114,10 @@ def _component_catalog() -> pd.DataFrame:
                 "Activation status": "Modules scaffolded",
             },
             {
-                "Component": "Great Expectations",
+                "Component": "Runtime reconciliation",
                 "Architecture role": "Data quality checkpoint layer",
-                "Data architect view": "Reserved for load and serve quality checks where dbt tests are not expressive enough.",
-                "Activation status": "Scaffolded, not on the critical path",
+                "Data architect view": "Handles source-to-serving checks that should not live inside individual dbt models.",
+                "Activation status": "Active through the technical surface",
             },
             {
                 "Component": "DuckDB",
@@ -517,7 +517,7 @@ def _render_quality(query: str) -> None:
         section_heading(
             "Data Quality Strategy",
             "Quality checks are split by responsibility. dbt should own structural model tests, while "
-            "Great Expectations remains available for richer statistical or checkpoint-oriented checks.",
+            "runtime reconciliation handles source-to-serving checks and external aggregate comparisons.",
         )
         styled_table(
             pd.DataFrame(
@@ -634,10 +634,10 @@ def _render_theory(query: str) -> None:
             "cloud resources are reproducible.",
         ),
         (
-            "Great Expectations",
-            "Great Expectations is reserved for quality checks that are awkward to express as simple SQL "
-            "tests. dbt is still the primary model-test layer. GE becomes useful for checkpoint-style "
-            "validation, row-count ranges, distribution checks, and source-to-serving quality reports.",
+            "Runtime reconciliation",
+            "Runtime reconciliation covers quality checks that should compare produced marts against "
+            "external authority or operational artifacts. dbt remains the primary model-test layer; "
+            "reconciliation handles row-count ranges, source-to-serving quality reports, and aggregate checks.",
         ),
         (
             "DuckDB",

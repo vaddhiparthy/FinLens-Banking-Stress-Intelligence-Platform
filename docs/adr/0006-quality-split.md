@@ -6,4 +6,5 @@ Accepted
 
 ## Decision
 
-Use dbt tests for structural assertions and Great Expectations for statistical and checkpoint-oriented validation.
+Use dbt tests for structural assertions and use reconciliation tables plus lightweight runtime checks
+for source-to-serving validation.

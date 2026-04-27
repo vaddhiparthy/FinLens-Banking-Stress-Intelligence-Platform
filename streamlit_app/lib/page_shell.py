@@ -20,7 +20,6 @@ def _page_path(page_key: str) -> str:
         "banks": "pages/1_Banks.py",
         "metrics": "pages/2_Metrics.py",
         "predictive": "pages/3_Predictive_Analytics.py",
-        "business_docs": "pages/5_Business_Knowledge.py",
         "wiki": "pages/6_Wiki.py",
         "pipeline": "pages/4_Under_The_Hood.py",
         "status": "pages/4_Under_The_Hood.py",

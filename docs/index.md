@@ -8,13 +8,18 @@ engineering backbone.
 - `Stress Pulse`
 - `Failure Forensics`
 - `Macro Transmission`
+- `Predictive Analytics` (planned)
+- `Wiki`
 
 ## Technical Surface
 
-- `Live Pipeline Status`
-- `Reconciliation`
+- `Live Pipeline`
+- `Source Contracts`
+- `Engineering Stack`
 - `Data Quality`
 - `Architecture Decisions`
+- `Administration`
+- `Wiki`
 
 The Streamlit Architecture Decisions tab is the in-app knowledge surface. These markdown docs are
 the repository-facing companion for code review, onboarding, and implementation history.
@@ -28,7 +33,7 @@ the repository-facing companion for code review, onboarding, and implementation 
 - Snowflake for warehouse-grade modeling
 - FastAPI for health and telemetry
 - Streamlit for presentation
-- Cloudflare for the `finlens.vaddhiparthy.vip` edge
+- Cloudflare for the public edge
 - Postgres for home control-plane sync
 
 ## Active Source Policy

@@ -10,7 +10,7 @@ No secret values belong in committed code, markdown, YAML, SQL, notebooks, or sh
 |---|---|---|
 | `FINLENS_ENVIRONMENT` | Runtime environment label | shared config |
 | `ROOT_DOMAIN` | parent DNS zone, default `vaddhiparthy.vip` | deployment config |
-| `PROJECT_DOMAIN` | primary project domain, default `finlens.vaddhiparthy.vip` | deployment config |
+| `PROJECT_DOMAIN` | primary project domain | deployment config |
 | `FINLENS_PUBLIC_BASE_URL` | public Streamlit app URL | Streamlit / docs / health metadata |
 | `FINLENS_API_BASE_URL` | public FastAPI URL if hosted separately | API links / telemetry |
 | `FDIC_FAILED_BANKS_URL` | FDIC BankFind source URL | `ingestion/fdic.py` |
@@ -22,9 +22,9 @@ No secret values belong in committed code, markdown, YAML, SQL, notebooks, or sh
 | `AWS_ACCESS_KEY_ID` | AWS programmatic identity | optional export/deployment work |
 | `AWS_SECRET_ACCESS_KEY` | AWS programmatic secret | optional export/deployment work |
 | `AWS_DEFAULT_REGION` | default AWS region | optional export/deployment work |
-| `SNOWFLAKE_ACCOUNT` | Snowflake account locator | `snowflake`, `dbt`, `great_expectations` |
-| `SNOWFLAKE_USER` | Snowflake username | `snowflake`, `dbt`, `great_expectations` |
-| `SNOWFLAKE_PASSWORD` | Snowflake password | `snowflake`, `dbt`, `great_expectations` |
+| `SNOWFLAKE_ACCOUNT` | Snowflake account locator | `snowflake`, `dbt` |
+| `SNOWFLAKE_USER` | Snowflake username | `snowflake`, `dbt` |
+| `SNOWFLAKE_PASSWORD` | Snowflake password | `snowflake`, `dbt` |
 | `POSTGRES_SYNC_DSN` | home Postgres connection string | control-plane sync |
 | `POSTGRES_SYNC_SCHEMA` | target schema for synced state | control-plane sync |
 | `CLOUDFLARE_API_TOKEN` | DNS / deployment scripting | Cloudflare |

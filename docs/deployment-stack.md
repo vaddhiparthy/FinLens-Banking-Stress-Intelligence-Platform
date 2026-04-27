@@ -2,7 +2,7 @@
 
 Target public application:
 
-- `https://finlens.vaddhiparthy.vip`
+- `https://surya.vaddhiparthy.com/finlens/`
 
 ## Runtime Layers
 
@@ -21,7 +21,7 @@ Target public application:
 ## Ready-To-Plug Posture
 
 - FDIC ingestion runs locally now.
-- FRED, QBP, and NIC are wired behind connector values.
+- FRED, QBP, and NIC are wired behind connector values and source contracts.
 - S3 mirroring is implemented behind `AWS_S3_MIRROR_ENABLED`.
 - Airflow DAGs call the current bootstrap, transform, and sync scripts.
 - dbt models reflect the approved source set.
@@ -30,11 +30,10 @@ Target public application:
 
 ## Current Production State
 
-- Public app: `https://finlens.vaddhiparthy.vip`
+- Public app: `https://surya.vaddhiparthy.com/finlens/`
 - Health endpoint: `https://finlens-api.vaddhiparthy.vip/healthz`
 - Monitoring: `https://uptime.vaddhiparthy.vip`
-- FDIC and FRED source runs are populated.
-- QBP and NIC remain explicitly visible as connector gaps.
+- FDIC, FRED, QBP, and NIC source runs are populated when the corresponding source contracts are enabled.
 - Runtime data is mounted into the production containers instead of being hard-coded into images.
 - Caddy is the only public ingress path for application traffic.
 

@@ -17,5 +17,5 @@ Local endpoint:
 - `http://127.0.0.1:8010`
 
 Deployment target:
-- API endpoint behind the `finlens.vaddhiparthy.vip` deployment shape, either as a sibling
+- API endpoint behind the `finlens-api.vaddhiparthy.vip` deployment shape, either as a sibling
   service or as a separately routed API host.

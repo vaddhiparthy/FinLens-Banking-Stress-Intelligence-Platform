@@ -1,6 +1,6 @@
 site_name: FinLens Docs
 site_description: Regulatory-grade banking data platform documentation
-site_url: https://docs.finlens.vaddhiparthy.vip
+site_url: https://surya.vaddhiparthy.com/finlens/docs/
 theme:
   name: material
   features:

@@ -7,7 +7,7 @@ platform as an operational data system.
 
 Target public domain:
 
-- `https://finlens.vaddhiparthy.vip`
+- `https://surya.vaddhiparthy.com/finlens/`
 
 ## Active Product
 
@@ -16,13 +16,18 @@ Business Surface:
 - `Stress Pulse`
 - `Failure Forensics`
 - `Macro Transmission`
+- `Predictive Analytics` (planned)
+- `Wiki`
 
 Technical Surface:
 
-- `Live Pipeline Status`
-- `Reconciliation`
+- `Live Pipeline`
+- `Source Contracts`
+- `Engineering Stack`
 - `Data Quality`
 - `Architecture Decisions`
+- `Administration`
+- `Wiki`
 
 Dormant:
 
@@ -40,7 +45,7 @@ The intended stack is:
 - `Snowflake` for the warehouse target
 - `FastAPI` for health, telemetry, and machine-facing endpoints
 - `Streamlit` for the business and technical presentation surfaces
-- `Cloudflare` for the `finlens.vaddhiparthy.vip` edge and optional Turnstile protection
+- `Cloudflare` for the public edge and optional Turnstile protection
 - `Postgres` for home control-plane sync
 
 The code is built so missing account values are reported as connector gaps instead of blocking
@@ -113,7 +118,7 @@ Local URLs:
 
 Production endpoint:
 
-- `https://finlens.vaddhiparthy.vip`
+- `https://surya.vaddhiparthy.com/finlens/`
 
 Operational endpoints:
 
@@ -125,8 +130,8 @@ Current live data posture:
 - FDIC failed-bank ingestion is active and populated.
 - FRED macro ingestion is active and populated.
 - Bronze-to-Silver and Silver-to-Gold local marts are populated through DuckDB.
-- QBP and NIC remain visible as connector gaps until compatible source contracts are supplied.
-- Stress Pulse does not show synthetic aggregate values in live mode when QBP is absent.
+- QBP and NIC populate when compatible source contracts are configured.
+- Stress Pulse uses live aggregate data when QBP is present and otherwise fails closed.
 
 Cloud and platform wiring:
 
