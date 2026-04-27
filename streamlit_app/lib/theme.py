@@ -1059,7 +1059,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .wiki-brand-card {{
         position: sticky;
-        top: .55rem;
+        top: 4.4rem;
         z-index: 40;
         border: 1px solid {palette["border"]};
         border-radius: 16px;
@@ -1111,6 +1111,19 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         font-size: .98rem;
         font-weight: 800;
         margin: .6rem 0 .18rem;
+    }}
+    div[data-testid="stRadio"] label {{
+        min-height: 1.45rem !important;
+        padding: .08rem .1rem !important;
+        margin: 0 !important;
+        color: {palette["text_main"]} !important;
+        font-size: .78rem !important;
+        line-height: 1.25 !important;
+    }}
+    div[data-testid="stRadio"] label p {{
+        color: {palette["text_main"]} !important;
+        font-size: .78rem !important;
+        line-height: 1.25 !important;
     }}
     .browser-stage-anchor + div button {{
         min-height: 4.2rem !important;

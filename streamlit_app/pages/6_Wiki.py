@@ -18,7 +18,7 @@ from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
 from streamlit_app.lib.ui_components import chart_note, inject_styles, section_heading, styled_table
 
 ARTICLES = {
-    "About The Builder": {
+    "About The Data Architect And Engineer": {
         "cluster": "Orientation",
         "branch": "Author",
         "summary": "Author, credential, and project intent.",
@@ -241,7 +241,21 @@ ensure_theme_state()
 inject_styles(app_css(get_theme_mode(), sidebar_open=False))
 record_page_view("wiki", "shared")
 
-header_left, header_right = st.columns([1.25, 2.75], vertical_alignment="center")
+st.markdown(
+    """
+    <div class="edge-brand">
+        <span class="edge-brand-copy">
+            <span class="edge-title">FinLens</span>
+            <span class="edge-subtitle">Banking</span>
+            <span class="edge-subtitle">Stress Intelligence</span>
+        </span>
+    </div>
+    <div class="edge-credit">Built by Sri Surya S. Vaddhiparthy</div>
+    """,
+    unsafe_allow_html=True,
+)
+
+header_left, header_right = st.columns([1.08, 2.92], vertical_alignment="center")
 with header_left:
     st.markdown(
         """
@@ -271,19 +285,29 @@ with left:
     st.page_link("pages/0_Stress_Pulse.py", label="Business Surface", icon=":material/space_dashboard:")
     st.page_link("pages/4_Under_The_Hood.py", label="Technical Surface", icon=":material/account_tree:")
     st.markdown('<div class="wiki-nav-title wiki-nav-spaced">Contents</div>', unsafe_allow_html=True)
+    tree_labels = []
+    label_to_title = {}
     for cluster, branches in _tree(matches).items():
-        st.markdown(f'<div class="wiki-cluster">{cluster}</div>', unsafe_allow_html=True)
+        tree_labels.append(f"{cluster}")
         for branch, titles in branches.items():
-            with st.expander(branch, expanded=True):
-                for title in titles:
-                    if st.button(
-                        title,
-                        key=f"wiki_tree_{cluster}_{branch}_{title}",
-                        use_container_width=True,
-                        disabled=st.session_state.get("wiki_article") == title,
-                    ):
-                        st.session_state["wiki_article"] = title
-                        st.rerun()
+            tree_labels.append(f"  {branch}")
+            for title in titles:
+                label = f"    {title}"
+                tree_labels.append(label)
+                label_to_title[label] = title
+    current_title = st.session_state.get("wiki_article", matches[0])
+    current_label = next(
+        (label for label, title in label_to_title.items() if title == current_title),
+        next(iter(label_to_title)),
+    )
+    chosen_label = st.radio(
+        "Wiki content tree",
+        [label for label in tree_labels if label in label_to_title],
+        index=[label for label in tree_labels if label in label_to_title].index(current_label),
+        label_visibility="collapsed",
+        key="wiki_tree_radio",
+    )
+    st.session_state["wiki_article"] = label_to_title[chosen_label]
 
 selected = st.session_state["wiki_article"]
 with center:

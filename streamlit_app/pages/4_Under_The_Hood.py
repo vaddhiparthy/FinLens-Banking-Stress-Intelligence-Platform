@@ -1140,16 +1140,11 @@ if active_section == "pipeline":
 
 elif active_section == "status":
     section_heading(
-        "Reconciliation (dbt Data Quality)",
+        "Reconciliation",
         "The current live path includes FDIC failures, FRED macro data, FDIC aggregate summary "
         "data, and active institution metadata.",
     )
     styled_table(reconciliation_table())
-    section_heading(
-        "dbt Data Quality Summary",
-        "Latest dbt artifact metrics. Failures here would be the first reason not to trust a mart.",
-    )
-    styled_table(dbt_quality_summary_frame())
 
 elif active_section == "classification":
     section_heading(
@@ -1158,17 +1153,6 @@ elif active_section == "classification":
         "cadence they follow, and how they enter the bronze layer.",
     )
     styled_table(source_activation_frame())
-    section_heading(
-        "Source Freshness",
-        "Current source readiness from the connector report. This table is operational because "
-        "freshness failures change whether the business charts should be trusted.",
-    )
-    styled_table(freshness_table())
-    section_heading(
-        "Source Landing Artifacts",
-        "Raw files and source volumes retained from connector runs.",
-    )
-    styled_table(source_landing_frame())
     section_heading(
         "Warehouse Classification",
         "Tables currently available by layer, schema, row count, and column count.",
@@ -1194,9 +1178,28 @@ elif active_section == "classification":
         "Durable rules applied across landing, canonical shaping, and Gold serving.",
     )
     styled_table(transform_rules_frame())
-    render_code_excerpts()
 
 elif active_section == "implementation":
+    section_heading(
+        "dbt Data Quality Summary",
+        "Latest dbt artifact metrics. This belongs in Data Quality because it reports model and "
+        "test outcomes from the transformation layer.",
+    )
+    styled_table(dbt_quality_summary_frame())
+    section_heading(
+        "dbt Node-Level Results",
+        "Model and test outcomes parsed from dbt's generated artifacts. Pending rows mean the "
+        "artifact has not been produced yet; they are not presented as a successful quality run.",
+    )
+    styled_table(dbt_results_frame())
+    section_heading(
+        "Transformation Rule Catalog",
+        "Deterministic rules that protect data quality before values are exposed to Gold marts.",
+    )
+    styled_table(transform_rules_frame())
+    render_code_excerpts()
+
+elif active_section == "administration":
     probes = load_state("platform_probe_report", default={})
     section_heading(
         "Core Data Engineering Stack",
@@ -1204,20 +1207,42 @@ elif active_section == "implementation":
         "orchestration, dbt for model/test outcomes, and Snowflake/DuckDB for warehouse state.",
     )
     styled_table(tool_evidence_frame())
+    section_heading(
+        "Service Endpoint Catalog",
+        "Administration-facing routes for health checks, telemetry intake, and runtime summaries. "
+        "These are operational controls, not business analytics.",
+    )
+    styled_table(service_endpoints_frame())
+    section_heading(
+        "Control Sync (Postgres)",
+        "Telemetry and pipeline snapshots that can sync to the home control database.",
+    )
+    styled_table(control_sync_frame())
+    section_heading(
+        "Platform Stack Readiness",
+        "Current posture for the deployable platform components and administration controls.",
+    )
+    styled_table(platform_stack_frame())
     left, right = st.columns(2)
     with left:
-        section_heading(
-            "Airflow Run Results",
-            "Scheduler-visible DAG runs and states.",
-        )
+        section_heading("Airflow Run Results", "Scheduler-visible DAG runs and states.")
         styled_table(airflow_runs_frame())
     with right:
         section_heading(
-            "dbt Node-Level Results",
-            "Model and test results parsed from dbt's generated artifacts.",
+            "Latest Pipeline Run",
+            "Execution ledger written by the pipeline runner, including status, duration, and step detail.",
         )
-        styled_table(dbt_results_frame())
-
+        styled_table(latest_pipeline_run_frame())
+    section_heading(
+        "Source Freshness",
+        "Current readiness and freshness posture from the connector report.",
+    )
+    styled_table(freshness_table())
+    section_heading(
+        "Source Landing Artifacts",
+        "Raw files and source volumes retained from connector runs.",
+    )
+    styled_table(source_landing_frame())
     section_heading(
         "Warehouse Activation Checklist (Snowflake + dbt)",
         "Concrete checks needed before claiming the full warehouse path is live.",
@@ -1246,30 +1271,6 @@ elif active_section == "implementation":
         ]
     )
     styled_table(activation)
-    section_heading(
-        "Latest Pipeline Run",
-        "Execution ledger written by the pipeline runner, including status, duration, and step "
-        "detail.",
-    )
-    styled_table(latest_pipeline_run_frame())
-
-elif active_section == "administration":
-    section_heading(
-        "Service Endpoint Catalog",
-        "Administration-facing routes for health checks, telemetry intake, and runtime summaries. "
-        "These are operational controls, not business analytics.",
-    )
-    styled_table(service_endpoints_frame())
-    section_heading(
-        "Control Sync (Postgres)",
-        "Telemetry and pipeline snapshots that can sync to the home control database.",
-    )
-    styled_table(control_sync_frame())
-    section_heading(
-        "Platform Stack Readiness",
-        "Current posture for the deployable platform components and administration controls.",
-    )
-    styled_table(platform_stack_frame())
 
 elif active_section == "decisions":
     render_architecture_decisions()
