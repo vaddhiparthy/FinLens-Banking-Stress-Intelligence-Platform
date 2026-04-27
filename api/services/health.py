@@ -12,7 +12,7 @@ def health_payload() -> dict:
     connectors = connector_report.get("sources", []) if isinstance(connector_report, dict) else []
     pipeline = pipeline_status_rows()
     pipeline_states = {row["status"] for row in pipeline}
-    healthy_states = {"Success", "Missing Data"}
+    healthy_states = {"Success", "Deferred"}
     overall = "ok" if pipeline and pipeline_states.issubset(healthy_states) else "degraded"
     return {
         "status": overall,
