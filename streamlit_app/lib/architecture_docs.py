@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from streamlit_app.lib.ui_components import section_heading, tech_bulletin
+from streamlit_app.lib.ui_components import section_heading, styled_table, tech_bulletin
 
 REFERENCE_LINKS = {
     "AWS S3": "https://aws.amazon.com/documentation-overview/s3/",
@@ -342,7 +342,7 @@ def _render_filtered_table(frame: pd.DataFrame, query: str) -> None:
             axis=1,
         )
         frame = frame[mask]
-    st.dataframe(frame, width="stretch", hide_index=True)
+    styled_table(frame)
 
 
 def _render_platform(query: str) -> None:
@@ -419,7 +419,7 @@ def _render_orchestration(query: str) -> None:
             "Airflow is the run-control plane. It should make execution order, retries, and failure "
             "points explicit without hiding the business transformation logic inside operators.",
         )
-        st.dataframe(
+        styled_table(
             pd.DataFrame(
                 [
                     {
@@ -438,9 +438,7 @@ def _render_orchestration(query: str) -> None:
                         "Architecture note": "Operational metadata is synchronized separately from business facts.",
                     },
                 ]
-            ),
-            width="stretch",
-            hide_index=True,
+            )
         )
 
     with st.expander("Airflow design principles for this repo", expanded=not query):
@@ -466,7 +464,7 @@ def _render_warehouse(query: str) -> None:
             "Snowflake is the target analytical warehouse for the resume-grade version. The repo "
             "defines separate raw, staging, intermediate, and marts databases so each layer has a clear role.",
         )
-        st.dataframe(
+        styled_table(
             pd.DataFrame(
                 [
                     {
@@ -486,9 +484,7 @@ def _render_warehouse(query: str) -> None:
                         "Purpose": "Business-consumption layer for Streamlit and API reads.",
                     },
                 ]
-            ),
-            width="stretch",
-            hide_index=True,
+            )
         )
 
     if _match(query, "s3 landing partition"):
@@ -523,7 +519,7 @@ def _render_quality(query: str) -> None:
             "Quality checks are split by responsibility. dbt should own structural model tests, while "
             "Great Expectations remains available for richer statistical or checkpoint-oriented checks.",
         )
-        st.dataframe(
+        styled_table(
             pd.DataFrame(
                 [
                     {
@@ -547,9 +543,7 @@ def _render_quality(query: str) -> None:
                         "Example": "FDIC to Bronze succeeded; QBP to Bronze missing data.",
                     },
                 ]
-            ),
-            width="stretch",
-            hide_index=True,
+            )
         )
 
     with st.expander("Why reconciliation matters", expanded=not query):

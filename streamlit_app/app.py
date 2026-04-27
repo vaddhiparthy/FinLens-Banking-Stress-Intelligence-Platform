@@ -6,7 +6,6 @@ from pathlib import Path
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
-from streamlit.runtime.scriptrunner import get_script_run_ctx
 
 PROJECT_ROOT = next(
     parent for parent in Path(__file__).resolve().parents if (parent / "pyproject.toml").exists()
@@ -21,11 +20,11 @@ from streamlit_app.lib.page_shell import BUSINESS_PAGE, page_intro, status_ribbo
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
 from streamlit_app.lib.ui_components import (
+    chart_note,
     empty_state,
     inject_styles,
     metric_card,
     section_heading,
-    stack_badges,
     styled_table,
 )
 
@@ -40,6 +39,13 @@ def add_recession_bands(figure: go.Figure) -> None:
             line_width=0,
             layer="below",
         )
+
+
+def apply_readable_axes(figure: go.Figure) -> go.Figure:
+    figure.update_xaxes(title_font=dict(color="#1f2933"), tickfont=dict(color="#1f2933"))
+    figure.update_yaxes(title_font=dict(color="#1f2933"), tickfont=dict(color="#1f2933"))
+    figure.update_layout(font=dict(color="#1f2933"))
+    return figure
 
 
 def earnings_chart(frame: pd.DataFrame) -> go.Figure:
@@ -62,7 +68,7 @@ def earnings_chart(frame: pd.DataFrame) -> go.Figure:
         font=dict(color="#1f2933"),
     )
     add_recession_bands(figure)
-    return figure
+    return apply_readable_axes(figure)
 
 
 def funding_chart(frame: pd.DataFrame) -> go.Figure:
@@ -75,9 +81,11 @@ def funding_chart(frame: pd.DataFrame) -> go.Figure:
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
         font=dict(color="#1f2933"),
+        xaxis_title="Quarter",
+        yaxis_title="Rate (%)",
     )
     add_recession_bands(figure)
-    return figure
+    return apply_readable_axes(figure)
 
 
 def asset_quality_chart(frame: pd.DataFrame) -> go.Figure:
@@ -99,7 +107,7 @@ def asset_quality_chart(frame: pd.DataFrame) -> go.Figure:
         font=dict(color="#1f2933"),
     )
     add_recession_bands(figure)
-    return figure
+    return apply_readable_axes(figure)
 
 
 def unrealized_losses_chart(frame: pd.DataFrame) -> go.Figure:
@@ -131,9 +139,11 @@ def unrealized_losses_chart(frame: pd.DataFrame) -> go.Figure:
                 arrowhead=2,
             )
         ],
+        xaxis_title="Quarter",
+        yaxis_title="Unrealized gain/loss ($B)",
     )
     add_recession_bands(figure)
-    return figure
+    return apply_readable_axes(figure)
 
 
 def _format_latest(value: object, suffix: str = "") -> str:
@@ -174,13 +184,15 @@ def _failure_timeline(frame: pd.DataFrame) -> go.Figure:
     figure = go.Figure()
     figure.add_bar(x=grouped["year"], y=grouped["failures"], name="FDIC failures")
     figure.update_layout(
+        title="FDIC failed-bank count by year",
         margin=dict(l=10, r=10, t=40, b=10),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
         font=dict(color="#1f2933"),
-        yaxis_title="Failures",
+        xaxis=dict(title="Failure year", tickfont=dict(color="#1f2933")),
+        yaxis=dict(title="Failed banks", tickfont=dict(color="#1f2933")),
     )
-    return figure
+    return apply_readable_axes(figure)
 
 
 def _series_chart(frame: pd.DataFrame, series: list[str]) -> go.Figure:
@@ -195,7 +207,7 @@ def _series_chart(frame: pd.DataFrame, series: list[str]) -> go.Figure:
         font=dict(color="#1f2933"),
         legend=dict(orientation="h"),
     )
-    return figure
+    return apply_readable_axes(figure)
 
 
 def _single_series_chart(frame: pd.DataFrame, series: str, title: str) -> go.Figure:
@@ -209,9 +221,11 @@ def _single_series_chart(frame: pd.DataFrame, series: str, title: str) -> go.Fig
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
         font=dict(color="#1f2933"),
+        xaxis=dict(title="Date", tickfont=dict(color="#1f2933")),
+        yaxis=dict(title=title, tickfont=dict(color="#1f2933")),
         showlegend=False,
     )
-    return figure
+    return apply_readable_axes(figure)
 
 
 def _failure_inventory_for_year(frame: pd.DataFrame, year: int) -> pd.DataFrame:
@@ -274,6 +288,11 @@ def render_public_data_stress_snapshot() -> None:
             empty_state("FDIC failure data is not available from the current run.")
         else:
             st.plotly_chart(_failure_timeline(failures), width="stretch")
+            chart_note(
+                "Interpretation",
+                "The annual failure count is dominated by crisis periods. Use the year selector "
+                "below to inspect the actual failed institutions behind any year.",
+            )
             years = sorted(failures["year"].dropna().astype(int).unique().tolist(), reverse=True)
             selected_year = st.selectbox(
                 "Show failed banks for year",
@@ -295,75 +314,30 @@ def render_public_data_stress_snapshot() -> None:
                 _single_series_chart(metrics, "Unemployment", "Unemployment Rate (%)"),
                 width="stretch",
             )
+            chart_note(
+                "Interpretation",
+                "Unemployment is a percent-rate series and is available in the current FRED gold "
+                "feed. It should be read on its own scale, not mixed with CPI or home price "
+                "indexes.",
+            )
             st.plotly_chart(
                 _single_series_chart(metrics, "10Y-2Y", "10Y-2Y Treasury Spread"),
                 width="stretch",
+            )
+            chart_note(
+                "Interpretation",
+                "The 10Y-2Y spread shows yield-curve slope. Negative values indicate inversion; "
+                "they are a macro warning signal, not a standalone bank-failure prediction.",
             )
             st.plotly_chart(
                 _single_series_chart(metrics, "CPI", "Consumer Price Index"),
                 width="stretch",
             )
-
-
-@st.dialog("Welcome to FinLens", width="large")
-def show_welcome_dialog() -> None:
-    st.markdown(
-        """
-        <div class="welcome-summary">
-            FinLens is a banking stress intelligence platform architected end-to-end by
-            Sri Surya S. Vaddhiparthy. It demonstrates how stable public banking and macroeconomic
-            sources can be ingested, normalized, reconciled, and served through durable analytical
-            surfaces.
-        </div>
-        <div class="welcome-summary" style="margin-top:.55rem;">
-            Continuing to use this project means you understand it is an educational analytics
-            system, not supervisory advice or a prediction of any bank's success or failure.
-            For authoritative information, rely on official U.S. government sources.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    stack_badges(["FDIC BankFind", "FDIC QBP", "FRED", "NIC", "Bronze / Silver / Gold"])
-    st.markdown('<div class="welcome-grid">', unsafe_allow_html=True)
-    left, right = st.columns(2)
-    with left:
-        st.markdown(
-            """
-            <div class="welcome-card">
-                <div class="welcome-kicker">Technical Surface</div>
-                <div class="welcome-title">Open the control room</div>
-                <div class="welcome-copy">
-                    Inspect freshness, reconciliation, lineage, and the operating signals that
-                    make the platform trustworthy.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if st.button("Open", key="welcome_technical", use_container_width=True):
-            st.session_state["welcome_dismissed"] = True
-            st.switch_page("pages/4_Under_The_Hood.py")
-    with right:
-        st.markdown(
-            """
-            <div class="welcome-card">
-                <div class="welcome-kicker">Business Surface</div>
-                <div class="welcome-title">Open stress pulse</div>
-                <div class="welcome-copy">
-                    Read the industry-aggregate banking stress view built from resilient public
-                    data contracts and dashboard-ready gold models.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if st.button("Open", key="welcome_business", use_container_width=True):
-            st.session_state["welcome_dismissed"] = True
-            st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
-    if st.button("Close", key="welcome_close"):
-        st.session_state["welcome_dismissed"] = True
-        st.rerun()
+            chart_note(
+                "Interpretation",
+                "CPI is an index level, so it intentionally uses a separate axis from rates and "
+                "failure counts.",
+            )
 
 
 settings = get_settings()
@@ -374,14 +348,6 @@ st.set_page_config(
 )
 ensure_theme_state()
 inject_styles(app_css(get_theme_mode(), sidebar_open=False))
-
-if "welcome_dismissed" not in st.session_state:
-    st.session_state["welcome_dismissed"] = False
-if "welcome_shown_once" not in st.session_state:
-    st.session_state["welcome_shown_once"] = False
-if get_script_run_ctx() is not None and not st.session_state["welcome_shown_once"]:
-    st.session_state["welcome_shown_once"] = True
-    show_welcome_dialog()
 
 frame = load_stress_pulse()
 stress_pulse_mode = stress_pulse_source_mode()

@@ -19,6 +19,7 @@ from streamlit_app.lib.page_shell import BUSINESS_PAGE, page_intro, status_ribbo
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
 from streamlit_app.lib.ui_components import (
+    chart_note,
     empty_state,
     inject_styles,
     metric_card,
@@ -36,6 +37,13 @@ def prepare_failures() -> pd.DataFrame:
     return frame
 
 
+def apply_readable_axes(figure: go.Figure) -> go.Figure:
+    figure.update_xaxes(title_font=dict(color="#1f2933"), tickfont=dict(color="#1f2933"))
+    figure.update_yaxes(title_font=dict(color="#1f2933"), tickfont=dict(color="#1f2933"))
+    figure.update_layout(font=dict(color="#1f2933"))
+    return figure
+
+
 def failure_timeline(frame: pd.DataFrame) -> go.Figure:
     grouped = frame.groupby("year")["bank_id"].count().reset_index(name="failures")
     figure = px.bar(
@@ -50,8 +58,9 @@ def failure_timeline(frame: pd.DataFrame) -> go.Figure:
         plot_bgcolor="rgba(255,255,255,0)",
         font=dict(color="#1f2933"),
         yaxis_title="Failures",
+        xaxis_title="Failure year",
     )
-    return figure
+    return apply_readable_axes(figure)
 
 
 def acquirer_chart(frame: pd.DataFrame) -> go.Figure:
@@ -66,17 +75,36 @@ def acquirer_chart(frame: pd.DataFrame) -> go.Figure:
         color_discrete_sequence=["#0f766e"],
     )
     figure.update_layout(
+        title="Top acquirers in current filter",
         margin=dict(l=10, r=10, t=40, b=10),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
         font=dict(color="#1f2933"),
-        xaxis_title="Failures acquired",
-        yaxis_title="Acquirer",
+        xaxis=dict(title="Failures acquired", tickfont=dict(color="#1f2933")),
+        yaxis=dict(title="Acquirer", tickfont=dict(color="#1f2933")),
     )
-    return figure
+    return apply_readable_axes(figure)
 
 
 def state_map(frame: pd.DataFrame) -> go.Figure:
+    if frame.empty:
+        figure = go.Figure()
+        figure.add_annotation(
+            text="No failures match the selected filters",
+            xref="paper",
+            yref="paper",
+            x=0.5,
+            y=0.5,
+            showarrow=False,
+            font=dict(color="#1f2933"),
+        )
+        figure.update_layout(
+            margin=dict(l=10, r=10, t=30, b=10),
+            paper_bgcolor="rgba(255,255,255,0)",
+            plot_bgcolor="rgba(255,255,255,0)",
+            font=dict(color="#1f2933"),
+        )
+        return figure
     value_column = "assets_millions" if frame["assets_millions"].notna().any() else "bank_id"
     aggregation = "sum" if value_column == "assets_millions" else "count"
     grouped = frame.groupby("state")[value_column].agg(aggregation).reset_index()
@@ -89,12 +117,14 @@ def state_map(frame: pd.DataFrame) -> go.Figure:
         color_continuous_scale="Tealgrn",
     )
     figure.update_layout(
+        title="State-wise failures in current filter",
         margin=dict(l=10, r=10, t=30, b=10),
         paper_bgcolor="rgba(255,255,255,0)",
         geo_bgcolor="rgba(255,255,255,0)",
         font=dict(color="#1f2933"),
+        coloraxis_colorbar=dict(title="Failures", tickfont=dict(color="#1f2933")),
     )
-    return figure
+    return apply_readable_axes(figure)
 
 
 def inventory_table(frame: pd.DataFrame) -> pd.DataFrame:
@@ -185,9 +215,19 @@ else:
 
     left, right = st.columns(2)
     with left:
-        st.plotly_chart(state_map(failures), width="stretch")
+        st.plotly_chart(state_map(filtered), width="stretch")
+        chart_note(
+            "Interpretation",
+            "The map now reflects the selected year and state filters. Use it as a geographic "
+            "summary, then read the filtered inventory below for the actual banks.",
+        )
     with right:
-        st.plotly_chart(acquirer_chart(failures), width="stretch")
+        st.plotly_chart(acquirer_chart(filtered), width="stretch")
+        chart_note(
+            "Interpretation",
+            "The acquirer chart shows which institutions absorbed failed banks in the current "
+            "filter. Blank output means the selected records do not carry acquirer names.",
+        )
 
     section_heading(
         "Selected Failed Bank",
@@ -211,4 +251,7 @@ else:
         "Failure Inventory",
         "This is the one flat list in the business surface. It stays subordinate to the charts.",
     )
-    styled_table(inventory_table(filtered))
+    if filtered.empty:
+        empty_state("No failed-bank rows match the selected filters.")
+    else:
+        styled_table(inventory_table(filtered))

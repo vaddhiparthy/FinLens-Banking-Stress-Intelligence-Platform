@@ -32,6 +32,18 @@ def empty_state(message: str) -> None:
     st.markdown(f'<div class="empty-card">{message}</div>', unsafe_allow_html=True)
 
 
+def chart_note(title: str, copy: str) -> None:
+    st.markdown(
+        f"""
+        <div class="chart-note">
+            <div class="chart-note-title">{escape(title)}</div>
+            <div class="chart-note-copy">{escape(copy)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def styled_table(frame: pd.DataFrame) -> None:
     header = "".join(f"<th>{escape(str(column))}</th>" for column in frame.columns)
     rows = []

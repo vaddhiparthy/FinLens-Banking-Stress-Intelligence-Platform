@@ -18,6 +18,7 @@ from streamlit_app.lib.page_shell import BUSINESS_PAGE, page_intro, status_ribbo
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
 from streamlit_app.lib.ui_components import (
+    chart_note,
     empty_state,
     inject_styles,
     metric_card,
@@ -33,6 +34,13 @@ SERIES_LABELS = {
     "CPIAUCSL": "CPI",
     "CSUSHPINSA": "Home Price Index",
 }
+
+
+def apply_readable_axes(figure: go.Figure) -> go.Figure:
+    figure.update_xaxes(title_font=dict(color="#1f2933"), tickfont=dict(color="#1f2933"))
+    figure.update_yaxes(title_font=dict(color="#1f2933"), tickfont=dict(color="#1f2933"))
+    figure.update_layout(font=dict(color="#1f2933"))
+    return figure
 
 
 def _format_metric(value: object, suffix: str = "") -> str:
@@ -122,9 +130,10 @@ def detail_chart(frame: pd.DataFrame, series: str) -> go.Figure:
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
         font=dict(color="#1f2933"),
-        yaxis_title=series,
+        xaxis=dict(title="Date", tickfont=dict(color="#1f2933")),
+        yaxis=dict(title=series, tickfont=dict(color="#1f2933")),
     )
-    return figure
+    return apply_readable_axes(figure)
 
 
 def failure_overlay_chart(frame: pd.DataFrame, series: str) -> go.Figure:
@@ -147,11 +156,18 @@ def failure_overlay_chart(frame: pd.DataFrame, series: str) -> go.Figure:
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
         font=dict(color="#1f2933"),
-        yaxis=dict(title=series),
-        yaxis2=dict(title="Failures", overlaying="y", side="right", rangemode="tozero"),
+        xaxis=dict(title="Date", tickfont=dict(color="#1f2933")),
+        yaxis=dict(title=series, tickfont=dict(color="#1f2933")),
+        yaxis2=dict(
+            title="Monthly failures",
+            overlaying="y",
+            side="right",
+            rangemode="tozero",
+            tickfont=dict(color="#1f2933"),
+        ),
         legend=dict(orientation="h"),
     )
-    return figure
+    return apply_readable_axes(figure)
 
 
 def available_macro_series(frame: pd.DataFrame) -> list[str]:
@@ -195,7 +211,6 @@ available_series = available_macro_series(frame)
 if not available_series:
     empty_state("No FRED observations are available from the current source run.")
     st.stop()
-selected_series = st.selectbox("Indicator detail", available_series)
 
 card1, card2, card3, card4 = st.columns(4)
 with card1:
@@ -212,19 +227,35 @@ with card4:
     metric_card("Home Price Index", value, f"As of {as_of}")
 
 section_heading(
-    "Indicator Board",
-    "These are the stable FRED indicators currently loaded into gold. They are not plotted on "
-    "one shared axis because they have different units and ranges.",
+    "Macro Stress Drill-Down",
+    "Choose one macro signal, then read it two ways: first on its own native scale, then beside "
+    "monthly FDIC failure counts on a separate axis.",
 )
-styled_table(indicator_board(frame))
+selected_series = st.selectbox(
+    "Select macro signal",
+    available_series,
+    key="macro_signal_selector",
+)
 
-section_heading(
-    "Indicator Detail",
-    "The left chart shows the selected indicator on its own scale. The right chart overlays "
-    "monthly FDIC failure counts on a separate axis so the comparison is readable.",
-)
 left, right = st.columns(2)
 with left:
     st.plotly_chart(detail_chart(frame, selected_series), width="stretch")
+    chart_note(
+        "Interpretation",
+        f"This chart isolates {selected_series} on its own native scale so the line shape is not "
+        "distorted by unrelated units.",
+    )
 with right:
     st.plotly_chart(failure_overlay_chart(frame, selected_series), width="stretch")
+    chart_note(
+        "Interpretation",
+        "Bars show monthly FDIC failures on the right axis. The overlay is context only; it is not "
+        "a causal model or prediction.",
+    )
+
+section_heading(
+    "Indicator Board",
+    "These are the stable FRED indicators currently loaded into gold. They are summarized after "
+    "the drill-down because the charts are the primary analytical interaction on this page.",
+)
+styled_table(indicator_board(frame))

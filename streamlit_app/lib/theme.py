@@ -99,10 +99,23 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     [data-baseweb="textarea"] textarea,
     [data-baseweb="select"] > div,
     [data-baseweb="popover"],
-    [data-baseweb="menu"] {{
+    [data-baseweb="menu"],
+    [role="listbox"],
+    [role="option"] {{
         background: {palette["content_bg"]} !important;
         color: {palette["text_main"]} !important;
         -webkit-text-fill-color: {palette["text_main"]} !important;
+    }}
+    [data-baseweb="menu"] *,
+    [role="listbox"] *,
+    [role="option"] * {{
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+        background: transparent !important;
+    }}
+    [role="option"]:hover,
+    [role="option"][aria-selected="true"] {{
+        background: {palette["sand"]} !important;
     }}
     input::placeholder,
     textarea::placeholder {{
@@ -125,8 +138,16 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     button,
     button *,
+    button[disabled],
+    button[disabled] *,
+    button[aria-disabled="true"],
+    button[aria-disabled="true"] *,
     button:disabled,
     button:disabled *,
+    [data-testid="baseButton-secondary"],
+    [data-testid="baseButton-secondary"] *,
+    [data-testid="stBaseButton-secondary"],
+    [data-testid="stBaseButton-secondary"] *,
     div[data-testid="stButton"] > button,
     div[data-testid="stButton"] > button * {{
         color: {palette["text_main"]} !important;
@@ -143,6 +164,9 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     div[data-testid="stTabs"] [aria-selected="true"] {{
         border-bottom: 2px solid {palette["accent"]} !important;
         box-shadow: inset 0 -2px 0 {palette["accent"]};
+    }}
+    div[data-testid="stPlotlyChart"] svg text {{
+        fill: {palette["text_main"]} !important;
     }}
     header[data-testid="stHeader"] {{
         display: none !important;
@@ -501,7 +525,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         border: 1px solid transparent;
         color: {palette["text_main"]};
         font-weight: 700;
-        background: transparent;
+        background: {palette["content_bg"]} !important;
     }}
     .topbar-anchor + div
     div[data-testid="stSegmentedControl"]
@@ -515,7 +539,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         -webkit-text-fill-color: {palette["text_main"]} !important;
     }}
     .topbar-anchor + div div[data-testid="stPageLink"] a {{
-        background: transparent;
+        background: {palette["content_bg"]};
         border: 1px solid transparent;
         border-radius: 10px;
         padding: .38rem .7rem;
@@ -569,6 +593,24 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         opacity: 1;
     }}
     .topbar-anchor + div div[data-testid="stButton"] > button:disabled * {{
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+        opacity: 1 !important;
+    }}
+    .topbar-anchor + div button[disabled],
+    .topbar-anchor + div button[aria-disabled="true"],
+    .topbar-anchor + div [data-testid="baseButton-secondary"][disabled],
+    .topbar-anchor + div [data-testid="stBaseButton-secondary"][disabled] {{
+        background: {palette["content_bg"]} !important;
+        background-color: {palette["content_bg"]} !important;
+        border-color: {palette["accent"]} !important;
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+        box-shadow: 0 0 0 1px {palette["accent"]} !important;
+        opacity: 1 !important;
+    }}
+    .topbar-anchor + div button[disabled] *,
+    .topbar-anchor + div button[aria-disabled="true"] * {{
         color: {palette["text_main"]} !important;
         -webkit-text-fill-color: {palette["text_main"]} !important;
         opacity: 1 !important;
@@ -734,6 +776,25 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .finlens-table tr:last-child td {{
         border-bottom: 0;
+    }}
+    .chart-note {{
+        border-left: 3px solid {palette["accent"]};
+        background: linear-gradient(180deg, rgba(255,250,243,0.82), rgba(244,239,230,0.72));
+        border-radius: 12px;
+        padding: .72rem .82rem;
+        margin: .48rem 0 .9rem 0;
+        box-shadow: 0 5px 14px rgba(15, 23, 42, 0.04);
+    }}
+    .chart-note-title {{
+        color: {palette["text_main"]};
+        font-weight: 800;
+        font-size: .8rem;
+        margin-bottom: .16rem;
+    }}
+    .chart-note-copy {{
+        color: {palette["text_muted"]};
+        font-size: .8rem;
+        line-height: 1.45;
     }}
     .status-ribbon {{
         display: inline-flex;

@@ -112,18 +112,47 @@ def pipeline_status_table(frame: pd.DataFrame) -> pd.DataFrame:
         "Missing Data": "⚪ Missing Data",
         "Deferred": "⚪ Deferred",
     }
+    tool_map = {
+        "FDIC -> Bronze": "Airflow task + Python extractor",
+        "QBP -> Bronze": "Airflow task (deferred)",
+        "FRED -> Bronze": "Airflow task + FRED extractor",
+        "NIC -> Bronze": "Airflow task (deferred)",
+        "Bronze -> Silver": "dbt staging / canonical model",
+        "Silver -> Gold": "dbt mart build",
+        "Gold -> Dashboards": "Snowflake/DuckDB mart read + Streamlit",
+    }
+    evidence_map = {
+        "FDIC -> Bronze": "FDIC failure feed is landing into the active data contract",
+        "QBP -> Bronze": "Not active in zero-risk source scope",
+        "FRED -> Bronze": "FRED macro series are landing into the active data contract",
+        "NIC -> Bronze": "Not active in zero-risk source scope",
+        "Bronze -> Silver": "Canonical model layer rebuilds from source payloads",
+        "Silver -> Gold": "Dashboard-facing marts are refreshed from canonical tables",
+        "Gold -> Dashboards": "FastAPI health and Streamlit serving are live",
+    }
     return frame.assign(
         status_label=lambda data: data["status"].map(indicator_map),
+        execution_tool=lambda data: data["flow_name"].map(tool_map),
+        runtime_evidence=lambda data: data["flow_name"].map(evidence_map),
     )[
-        ["flow_no", "flow_name", "status_label", "last_run", "rows", "note"]
+        [
+            "flow_no",
+            "flow_name",
+            "execution_tool",
+            "status_label",
+            "last_run",
+            "rows",
+            "runtime_evidence",
+        ]
     ].rename(
         columns={
             "flow_no": "#",
-            "flow_name": "Flow",
+            "flow_name": "Data flow",
+            "execution_tool": "Tool / runtime",
             "status_label": "Status",
             "last_run": "Last run",
             "rows": "Rows / units",
-            "note": "Note",
+            "runtime_evidence": "Evidence shown",
         }
     )
 
@@ -310,6 +339,46 @@ def platform_stack_frame() -> pd.DataFrame:
                     f"Schema {settings.postgres_sync_schema}"
                     if settings.postgres_sync_dsn
                     else "Sync script is ready and waiting for POSTGRES_SYNC_DSN"
+                ),
+            },
+        ]
+    )
+
+
+def tool_evidence_frame() -> pd.DataFrame:
+    settings = get_settings()
+    return pd.DataFrame(
+        [
+            {
+                "Platform component": "Apache Airflow",
+                "Operating role": (
+                    "FDIC/FRED ingestion DAGs, source refresh ordering, retry boundaries"
+                ),
+                "Current state": "DAG definitions are present; scheduler runtime is not active yet",
+                "Next operational signal": (
+                    "Latest DAG run id, start time, duration, and task-level status"
+                ),
+            },
+            {
+                "Platform component": "dbt",
+                "Operating role": "Staging, intermediate, and mart builds",
+                "Current state": (
+                    "Model files are present; local gold outputs are serving the app"
+                ),
+                "Next operational signal": (
+                    "Run dbt build and expose model count, pass/fail tests, build duration"
+                ),
+            },
+            {
+                "Platform component": "Snowflake",
+                "Operating role": "Raw/staging/intermediate/marts warehouse objects",
+                "Current state": (
+                    f"Configured account {settings.snowflake_account}"
+                    if settings.snowflake_account
+                    else "Credentials not supplied to this runtime"
+                ),
+                "Next operational signal": (
+                    "Query INFORMATION_SCHEMA for table counts, row counts, and last altered time"
                 ),
             },
         ]
@@ -503,17 +572,22 @@ if active_section == "pipeline":
     with infra4:
         metric_card("Snowflake", stack.iloc[4]["Status"], "Warehouse contract readiness")
     section_heading(
+        "Core Data Engineering Stack",
+        "This section names the execution layer explicitly: Airflow schedules the work, dbt "
+        "models and validates it, and Snowflake is the warehouse target for the activated path.",
+    )
+    styled_table(tool_evidence_frame())
+    section_heading(
         "Live Pipeline Status",
-        "Green paths are active in the current zero-risk build. QBP and NIC are deliberately "
-        "shown as deferred, not failed, because they are not part of the active FDIC/FRED "
-        "runtime scope yet.",
+        "Each row shows both the business data movement and the engineering runtime responsible "
+        "for that movement. Deferred sources are marked separately from failed jobs.",
     )
     st.plotly_chart(dag_chart(pipeline_frame), width="stretch")
     styled_table(pipeline_status_table(pipeline_frame))
     section_heading(
         "Platform Stack Readiness",
-        "These are the infrastructure and platform components wrapped around the app so it can "
-        "graduate from a local demo into a resume-grade data platform.",
+        "Infrastructure readiness for the deployable platform: object storage, orchestration, "
+        "transforms, warehouse, API service, edge routing, and control-plane sync.",
     )
     styled_table(platform_stack_frame())
     tech_bulletin(
@@ -523,9 +597,9 @@ if active_section == "pipeline":
 
 elif active_section == "status":
     section_heading(
-        "Reconciliation",
-        "This is the credibility panel. It now includes QBP reconciliation posture plus the "
-        "service endpoints and sync channels that support the deployed product.",
+        "Reconciliation (dbt Data Quality)",
+        "This is the credibility panel. In the fully activated warehouse path, these checks belong "
+        "in dbt tests and marts-level reconciliation output.",
     )
     styled_table(reconciliation_table())
     left, right = st.columns(2)
@@ -538,63 +612,49 @@ elif active_section == "status":
         styled_table(service_endpoints_frame())
     with right:
         section_heading(
-            "Control Sync",
+            "Control Sync (Postgres)",
             "Telemetry and control-plane snapshots can sync back to home Postgres once the DSN "
             "is supplied.",
         )
         styled_table(control_sync_frame())
 
 elif active_section == "implementation":
-    top, bottom = st.columns(2)
-    with top:
-        section_heading(
-            "Freshness And Quality",
-            "This stays simple and durable, but now sits beside telemetry, sync readiness, and the "
-            "additional platform components that support the engineering story.",
-        )
-        styled_table(freshness_table())
-    with bottom:
-        section_heading(
-            "Row Count Stability",
-            "A compact anomaly chart is enough to show that the pipeline notices unexpected source "
-            "movement without pretending to be a full observability platform.",
-        )
-        st.plotly_chart(anomaly_chart(), width="stretch")
     section_heading(
-        "Interaction Telemetry",
-        "This internal summary shows what the product is already capturing so it can be synced "
-        "back into home Postgres and later exposed through operator reporting.",
+        "Data Quality (Airflow + dbt)",
+        "Operational quality checks are grouped by the platform component expected to produce "
+        "them: Airflow for freshness, dbt for tests, and Snowflake for warehouse observability.",
     )
-    st.json(telemetry_summary(), expanded=True)
+    styled_table(tool_evidence_frame())
     section_heading(
-        "Protection And Edge Controls",
-        "These are the deployment-facing controls already accounted for in config and API "
-        "plumbing.",
+        "Source Freshness (Airflow Inputs)",
+        "These are the active source contracts that Airflow should refresh when the scheduler is "
+        "enabled.",
     )
-    protection = pd.DataFrame(
+    styled_table(freshness_table())
+    section_heading(
+        "Warehouse Activation Checklist (Snowflake + dbt)",
+        "These are the concrete checks needed before claiming the full warehouse path is live.",
+    )
+    activation = pd.DataFrame(
         [
             {
-                "Control": "Cloudflare Turnstile",
-                "Status": (
-                    "Configured" if settings.cloudflare_turnstile_site_key else "Waiting on keys"
-                ),
-                "Note": (
-                    "Telemetry endpoint can verify Turnstile tokens when the secret is supplied"
-                ),
+                "Layer": "Snowflake connection",
+                "Required proof": "Successful SELECT CURRENT_ACCOUNT(), CURRENT_ROLE()",
+                "Status": "Configured" if settings.snowflake_account else "Pending",
             },
             {
-                "Control": "Cloudflare zone",
-                "Status": "Configured" if settings.cloudflare_zone_id else "Waiting on zone",
-                "Note": "Needed for final domain and edge posture on finlens.vaddhiparthy.vip",
+                "Layer": "dbt build",
+                "Required proof": "dbt build exits cleanly with model and test counts",
+                "Status": "Ready to run",
             },
             {
-                "Control": "Public base URLs",
-                "Status": "Configured" if settings.finlens_public_base_url else "Local-only",
-                "Note": "Used by the app/API once deployment targets are locked",
+                "Layer": "Airflow DAG",
+                "Required proof": "Latest DAG run status, duration, and task-level state",
+                "Status": "DAG scaffold present",
             },
         ]
     )
-    styled_table(protection)
+    styled_table(activation)
 
 elif active_section == "decisions":
     render_architecture_decisions()
