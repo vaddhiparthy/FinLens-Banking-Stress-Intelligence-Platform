@@ -32,6 +32,10 @@ def test_build_storage_path_uses_dlq_directory_when_requested() -> None:
 
     path = build_storage_path(target)
 
-    assert str(path).endswith(
-        "data\\dlq\\source=fred\\ingestion_date=2026-04-23\\unit-test.json"
+    assert path.parts[-5:] == (
+        "data",
+        "dlq",
+        "source=fred",
+        "ingestion_date=2026-04-23",
+        "unit-test.json",
     )
