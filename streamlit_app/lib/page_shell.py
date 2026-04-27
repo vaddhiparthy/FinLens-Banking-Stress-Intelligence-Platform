@@ -149,6 +149,7 @@ def top_navigation(active_page: str, mode: str) -> None:
     with st.container(border=True):
         top_left, top_right = st.columns([1.15, 3.85], vertical_alignment="center")
         with top_left:
+            st.markdown('<div class="surface-switch-anchor"></div>', unsafe_allow_html=True)
             surface_left, surface_right = st.columns(2, vertical_alignment="center")
             with surface_left:
                 technical_label = (
@@ -171,6 +172,7 @@ def top_navigation(active_page: str, mode: str) -> None:
                     _set_surface_mode(BUSINESS_PAGE)
                     st.switch_page("app.py")
         with top_right:
+            st.markdown('<div class="section-menu-anchor"></div>', unsafe_allow_html=True)
             if mode == BUSINESS_PAGE:
                 sections = _business_sections()
                 page_columns = st.columns(len(sections), vertical_alignment="center")

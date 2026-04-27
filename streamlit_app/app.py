@@ -88,6 +88,28 @@ def funding_chart(frame: pd.DataFrame) -> go.Figure:
     return apply_readable_axes(figure)
 
 
+def nim_chart(frame: pd.DataFrame) -> go.Figure:
+    figure = go.Figure()
+    clean = frame.dropna(subset=["nim"])
+    figure.add_scatter(
+        x=clean["quarter"],
+        y=clean["nim"],
+        name="Net interest margin",
+        mode="lines+markers",
+    )
+    figure.update_layout(
+        margin=dict(l=10, r=10, t=40, b=10),
+        legend=dict(orientation="h"),
+        paper_bgcolor="rgba(255,255,255,0)",
+        plot_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"),
+        xaxis_title="Quarter",
+        yaxis_title="NIM (%)",
+    )
+    add_recession_bands(figure)
+    return apply_readable_axes(figure)
+
+
 def asset_quality_chart(frame: pd.DataFrame) -> go.Figure:
     figure = go.Figure()
     figure.add_scatter(x=frame["quarter"], y=frame["noncurrent_rate"], name="Noncurrent loan rate")
@@ -108,6 +130,10 @@ def asset_quality_chart(frame: pd.DataFrame) -> go.Figure:
     )
     add_recession_bands(figure)
     return apply_readable_axes(figure)
+
+
+def has_chart_data(frame: pd.DataFrame, columns: list[str]) -> bool:
+    return all(column in frame and frame[column].notna().any() for column in columns)
 
 
 def unrealized_losses_chart(frame: pd.DataFrame) -> go.Figure:
@@ -420,7 +446,16 @@ left, right = st.columns(2)
 with left:
     st.plotly_chart(earnings_chart(frame), width="stretch")
 with right:
-    st.plotly_chart(funding_chart(frame), width="stretch")
+    if has_chart_data(frame, ["asset_yield", "funding_cost"]):
+        st.plotly_chart(funding_chart(frame), width="stretch")
+    else:
+        st.plotly_chart(nim_chart(frame), width="stretch")
+        chart_note(
+            "Funding-detail source gap",
+            "The active FDIC aggregate feed currently supplies NIM but does not publish the "
+            "asset-yield and funding-cost split in this contract. The panel therefore shows the "
+            "available margin trend instead of drawing a blank jaws chart.",
+        )
 
 section_heading(
     "Asset Quality",
@@ -434,4 +469,16 @@ section_heading(
     "The March 2023 regional banking crisis made this one of the most recognizable stress charts "
     "in the banking system. It stays here as a durable aggregate view for the final source feed.",
 )
-st.plotly_chart(unrealized_losses_chart(frame), width="stretch")
+if has_chart_data(frame, ["afs_losses", "htm_losses"]):
+    st.plotly_chart(unrealized_losses_chart(frame), width="stretch")
+else:
+    empty_state(
+        "AFS and HTM unrealized loss series are not available in the current FDIC aggregate "
+        "contract. This panel will activate when the source feed includes those fields."
+    )
+    chart_note(
+        "Interpretation",
+        "The section remains part of the Stress Pulse design because unrealized securities losses "
+        "are central to the 2023 regional-bank story. It is intentionally not filled with "
+        "estimated values.",
+    )

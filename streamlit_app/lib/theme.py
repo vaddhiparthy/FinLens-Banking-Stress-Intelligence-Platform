@@ -597,6 +597,50 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         -webkit-text-fill-color: {palette["text_main"]} !important;
         opacity: 1 !important;
     }}
+    .surface-switch-anchor + div {{
+        border: 1px solid {palette["accent"]};
+        background: linear-gradient(180deg, {palette["accent_soft"]}, rgba(255,250,243,.88));
+        border-radius: 16px;
+        padding: .18rem;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
+    }}
+    .surface-switch-anchor + div button {{
+        min-height: 2.25rem !important;
+        border-radius: 12px !important;
+        background: transparent !important;
+        border: 1px solid transparent !important;
+        font-weight: 850 !important;
+        letter-spacing: .01em;
+    }}
+    .surface-switch-anchor + div button:disabled {{
+        background: {palette["content_bg"]} !important;
+        border-color: {palette["accent"]} !important;
+        box-shadow: 0 0 0 1px {palette["accent"]} !important;
+    }}
+    .section-menu-anchor + div {{
+        border-left: 1px solid {palette["border"]};
+        padding-left: .75rem;
+    }}
+    .section-menu-anchor + div button {{
+        border-radius: 8px !important;
+        min-height: 2rem !important;
+        background: transparent !important;
+        border: 1px solid transparent !important;
+        box-shadow: none !important;
+        font-size: .77rem !important;
+        font-weight: 750 !important;
+    }}
+    .section-menu-anchor + div button:hover {{
+        background: {palette["sand"]} !important;
+        border-color: {palette["border"]} !important;
+    }}
+    .section-menu-anchor + div button:disabled {{
+        background: transparent !important;
+        border-color: transparent !important;
+        border-bottom: 2px solid {palette["accent"]} !important;
+        border-radius: 8px 8px 4px 4px !important;
+        box-shadow: none !important;
+    }}
     .topbar-anchor + div button[disabled],
     .topbar-anchor + div button[aria-disabled="true"],
     .topbar-anchor + div [data-testid="baseButton-secondary"][disabled],
@@ -810,31 +854,31 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         -webkit-text-fill-color: {palette["text_main"]} !important;
     }}
     .page-control-anchor + div {{
-        max-width: 18rem;
+        max-width: 13rem;
         margin: .15rem auto .9rem auto;
         align-items: center;
     }}
     .page-control-anchor + div button {{
-        min-height: 1.72rem !important;
-        border-radius: 999px !important;
-        padding: .08rem .28rem !important;
-        background: linear-gradient(180deg, {palette["content_bg"]}, {palette["sand"]}) !important;
-        border: 1px solid {palette["border"]} !important;
+        min-height: 1.32rem !important;
+        border-radius: 6px !important;
+        padding: .02rem .12rem !important;
+        background: transparent !important;
+        border: 1px solid rgba(228, 215, 198, .72) !important;
         box-shadow: none !important;
         color: {palette["text_main"]} !important;
         -webkit-text-fill-color: {palette["text_main"]} !important;
-        font-size: .68rem !important;
-        font-weight: 800 !important;
+        font-size: .58rem !important;
+        font-weight: 750 !important;
     }}
     .page-number-display {{
         text-align: center;
-        font-size: .72rem;
+        font-size: .62rem;
         font-weight: 800;
         color: {palette["text_soft"]};
         border: 1px solid {palette["border"]};
-        border-radius: 999px;
-        padding: .26rem .35rem;
-        background: rgba(255, 250, 243, 0.72);
+        border-radius: 6px;
+        padding: .16rem .18rem;
+        background: rgba(255, 250, 243, 0.54);
         white-space: nowrap;
     }}
     .browser-stage-anchor + div button {{

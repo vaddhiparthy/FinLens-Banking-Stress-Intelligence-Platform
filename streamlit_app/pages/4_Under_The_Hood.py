@@ -729,7 +729,7 @@ def _render_page_buttons(page_key: str, current_page: int, total_pages: int) -> 
     st.markdown('<div class="page-control-anchor"></div>', unsafe_allow_html=True)
     left, middle, right = st.columns([1, 1.2, 1], vertical_alignment="center")
     with left:
-        if st.button("Previous", key=f"{page_key}_previous", use_container_width=True):
+        if st.button("Prev", key=f"{page_key}_previous", use_container_width=True):
             st.session_state[page_key] = max(1, current_page - 1)
             st.rerun()
     with middle:
