@@ -13,85 +13,147 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from streamlit_app.lib.architecture_docs import render_architecture_decisions
-from streamlit_app.lib.page_shell import BUSINESS_PAGE, page_intro, status_ribbon, top_navigation
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
 from streamlit_app.lib.ui_components import chart_note, inject_styles, section_heading, styled_table
 
 ARTICLES = {
-    "About Me": {
-        "group": "Project Orientation",
+    "About The Builder": {
+        "cluster": "Orientation",
+        "branch": "Author",
         "summary": "Author, credential, and project intent.",
         "body": """
 FinLens was authored and engineered by **Sri Surya S. Vaddhiparthy, M.S. (Data Science)** as a public-data banking intelligence and data engineering portfolio system.
 
-The project demonstrates how a banking-domain analytical product can be built from public feeds while preserving a traceable data path: source contract, raw landing, canonical shaping, governed marts, quality checks, serving layer, and operational monitoring.
+The project demonstrates an end-to-end data product: public source acquisition, raw retention, warehouse-style modeling, analytical marts, data quality controls, technical observability, and a business-facing analytical surface.
 
 Portfolio: [surya.vaddhiparthy.com](https://surya.vaddhiparthy.com)
 """,
     },
-    "Platform Overview": {
-        "group": "Project Orientation",
-        "summary": "What the product does and how the surfaces are organized.",
+    "Product Operating Model": {
+        "cluster": "Orientation",
+        "branch": "System Map",
+        "summary": "How the product is organized for business and technical readers.",
         "body": """
 FinLens is organized as two complementary surfaces. The **Business Surface** explains banking stress through industry health, failure history, and macro context. The **Technical Surface** shows how the data is acquired, landed, modeled, validated, and served.
 
-The product is intentionally not a bank-failure prediction tool. It is a governed analytical system that turns public banking and macroeconomic data into readable decision context and traceable engineering artifacts.
+The product is not a bank-failure prediction system and does not represent a regulator, bank, or investment advisor. It is a governed analytical system that converts public banking and macroeconomic feeds into readable decision context and traceable engineering artifacts.
+
+The Wiki is the shared knowledge bank. It explains what the numbers mean, how the data moves, what each platform component contributes, and where the operating evidence lives.
 """,
     },
-    "Business Concepts": {
-        "group": "Business Knowledge",
-        "summary": "Plain-English definitions for the banking analysis.",
+    "Banking Stress Concepts": {
+        "cluster": "Business Concepts",
+        "branch": "Banking Interpretation",
+        "summary": "Plain-English definitions behind the business charts.",
         "body": """
-The business layer focuses on a few durable questions: whether the industry is profitable, where historical failures clustered, what macro conditions existed around stress periods, and whether the displayed numbers can be traced back to stable public sources.
+Banking stress is read through profitability, funding pressure, credit quality, failure history, and macro conditions. FinLens keeps those concepts separate so a user does not mistake a macro warning sign for a bank-specific supervisory conclusion.
 
-Key concepts include aggregate net income, return on assets, net interest margin, noncurrent loan rate, failure count, failure year, acquirer, yield-curve spread, unemployment, CPI, and GDP. These measures are presented as context, not supervisory ratings or investment advice.
+**Aggregate net income** describes industry profit after expenses. **ROA** normalizes earnings by asset size. **NIM** shows the spread between asset income and funding cost. **Noncurrent loans** indicate serious delinquency or nonaccrual pressure. **Failure counts** show historical closures, not forward-looking predictions.
+
+The business surface therefore answers practical questions: how healthy does the industry look at the aggregate level, where did failures cluster, what macro conditions surrounded historical stress, and which data points are source-backed.
+""",
+    },
+    "Failure Forensics Concepts": {
+        "cluster": "Business Concepts",
+        "branch": "Failure Analysis",
+        "summary": "How failed-bank records are converted into analysis.",
+        "body": """
+The FDIC failed-bank list is useful only after it is shaped into analytical fields: institution name, closing date, failure year, state, acquirer, and record-level identifiers where available.
+
+FinLens turns that source list into a timeline, geography view, inventory table, and selected-bank readout. The analytical value comes from standardizing the event date, making year/state filters reliable, cleaning public text fields, and preserving acquirer context without presenting the result as a predictive model.
+""",
+    },
+    "Macro Context Concepts": {
+        "cluster": "Business Concepts",
+        "branch": "Economic Context",
+        "summary": "What macro indicators contribute and what they do not prove.",
+        "body": """
+FRED indicators provide economic context around banking stress: yield-curve spreads, unemployment, CPI, GDP, and housing-related series. These series differ by frequency, units, scale, and history length, so they should not be forced into one misleading combined axis.
+
+FinLens presents macro indicators as context and lead-lag exploration. It does not claim that one indicator mechanically causes a bank failure. The value is disciplined framing: current value, history, trend shape, and relation to prior stress windows.
+""",
+    },
+    "Architecture Desk": {
+        "cluster": "Technical Concepts",
+        "branch": "Architect Desk",
+        "summary": "Architecture principles that govern the platform.",
+        "body": """
+The architecture is built around one rule: dashboards read governed Gold outputs, not raw source payloads. That separation lets the source layer change without forcing every chart to be rewritten.
+
+The control path is source contract -> Bronze retention -> Silver normalization -> Intermediate shaping -> Gold mart -> dashboard/API serving. Each boundary has a clear responsibility and produces evidence that can be inspected from the technical surface.
+
+The design favors low-cost operation, source traceability, and explainable controls over heavy enterprise infrastructure that would be expensive to maintain for a portfolio-scale deployment.
+""",
+    },
+    "Data Plumbing": {
+        "cluster": "Technical Concepts",
+        "branch": "Data Plumbing",
+        "summary": "How public records move into analytical tables.",
+        "body": """
+Data plumbing is the movement layer: connectors pull public source records, write source-shaped artifacts, load the warehouse runtime, and trigger model builds.
+
+The intended resume stack is explicit: **AWS S3** for durable Bronze storage, **Airflow** for orchestration, **dbt** for SQL modeling and tests, **Snowflake** as the cloud warehouse target, **Terraform** for reproducible infrastructure, and **Streamlit/FastAPI** for serving. DuckDB remains the low-cost local/runtime fallback that keeps the product working without forcing every read through cloud compute.
 """,
     },
     "Source Contracts": {
-        "group": "Data Engineering",
+        "cluster": "Technical Concepts",
+        "branch": "Data Plumbing",
         "summary": "Public feeds and the role each source plays.",
         "body": """
-The active source design centers on public, repeatable feeds: FDIC failed-bank records, FDIC/QBP-style aggregate banking data, FRED macroeconomic series, and current institution metadata. Each source is treated as a contract with a cadence, landing pattern, and Gold-layer usage.
+Each public source is treated as a contract with a grain, cadence, landing pattern, and Gold-layer usage. The contract is separate from runtime status. A source can be configured, actively landed, blocked, deferred, or unavailable.
 
-The platform separates source readiness from runtime evidence. A source can be configured, actively landed, or deferred. The technical surface should report the current runtime state from artifacts and pipeline status rather than stale configuration flags.
+Runtime source classification should be based on artifacts and pipeline status, not stale configuration text. If FDIC, QBP, FRED, or NIC artifacts exist and the corresponding flow passed, the technical surface should report that evidence clearly.
 """,
     },
     "Warehouse Layers": {
-        "group": "Data Engineering",
+        "cluster": "Technical Concepts",
+        "branch": "Data Plumbing",
         "summary": "Bronze, Silver, Intermediate, and Gold boundaries.",
         "body": """
-The platform follows a layered warehouse pattern. **Bronze** preserves source-shaped raw artifacts. **Silver** standardizes names, dates, identifiers, and types. **Intermediate** is reserved for reusable joins and business shaping. **Gold** is the dashboard contract consumed by Streamlit.
+**Bronze** preserves source-shaped raw artifacts. **Silver** standardizes names, dates, identifiers, and types. **Intermediate** is reserved for reusable joins and business shaping. **Gold** is the dashboard contract consumed by Streamlit and the API.
 
-Dashboards should bind to Gold tables only. This keeps visualization code stable even when source fields or ingestion formats change.
+The Interactive Data Browser exists to make those layers inspectable. It should let a reviewer choose a warehouse stage, choose a table in that stage, and preview a small read-only slice without modifying the data.
 """,
     },
     "Orchestration And Modeling": {
-        "group": "Data Engineering",
-        "summary": "How Airflow, dbt, Snowflake, DuckDB, and Streamlit fit together.",
+        "cluster": "Technical Concepts",
+        "branch": "Data Plumbing",
+        "summary": "Where Airflow, dbt, Snowflake, DuckDB, and Streamlit fit.",
         "body": """
-Airflow owns scheduling, dependencies, retry behavior, and run visibility. Python connectors perform source acquisition. dbt owns SQL modeling, semantic shaping, and data tests. Snowflake is the enterprise warehouse target. DuckDB keeps the system testable and demonstrable at low cost. Streamlit serves the analytical surfaces.
+Airflow owns scheduling, dependencies, retry behavior, and run visibility. Python connectors perform acquisition. dbt owns SQL modeling, semantic shaping, and tests. Snowflake is the enterprise warehouse target. DuckDB keeps the system testable and demonstrable at low cost. Streamlit serves the analytical surfaces and FastAPI exposes machine-readable health.
 
-The intended operating path is source acquisition, raw landing, model build, quality checks, mart publication, and dashboard serving.
+The operating path is acquisition, raw landing, model build, quality checks, mart publication, and serving. The technical surface should expose enough evidence to prove those steps happened without drowning the viewer in raw logs.
 """,
     },
-    "Data Quality": {
-        "group": "Data Engineering",
+    "Data Quality And Reconciliation": {
+        "cluster": "Technical Concepts",
+        "branch": "Controls",
         "summary": "Controls that make the numbers credible.",
         "body": """
-The quality posture is based on row counts, source freshness, schema-aware contracts, dbt test artifacts, reconciliation checks, and read-only table previews. These controls are designed to show whether the pipeline is current, complete, and internally consistent.
+The quality posture is based on source freshness, row counts, schema-aware contracts, dbt test artifacts, reconciliation checks, and read-only table previews.
 
-Quality language should be precise: a table is passed, blocked, missing, or deferred. It should not imply validation that has not actually run.
+Quality language must be precise. A table is passed, blocked, missing, or deferred. The application should not imply that a reconciliation or test ran if the source contract was not active or the artifact was not produced.
 """,
     },
     "Deployment And Operations": {
-        "group": "Operations",
-        "summary": "Serving model, health checks, and production runtime.",
+        "cluster": "Technical Concepts",
+        "branch": "Operations",
+        "summary": "Serving model, health checks, monitoring, and domain strategy.",
         "body": """
-The production deployment uses Docker Compose behind Caddy and Cloudflare. Streamlit serves the user-facing application, FastAPI exposes machine-readable health status, and Uptime Kuma can monitor the public health endpoint.
+Production runs through Docker Compose behind Caddy and Cloudflare. Streamlit serves the user-facing application, FastAPI exposes health status, and Uptime Kuma monitors service reachability.
 
-The preferred public route is a subdomain because Streamlit handles root-path deployment more reliably than path-prefix deployment. A path route such as `/portfolio/FinLens` is possible, but it requires reverse-proxy and Streamlit base-path testing.
+The most reliable public route is a subdomain because Streamlit is naturally simpler at a root path. A route such as `/portfolio/FinLens` is possible, but it requires reverse-proxy and Streamlit base-path testing so assets and websocket paths resolve correctly.
 """,
+    },
+    "Architecture Handbook": {
+        "cluster": "Technical Concepts",
+        "branch": "Architect Desk",
+        "summary": "Full architecture decision register and technical handbook.",
+        "body": """
+This article contains the full architecture handbook. It is intentionally separated from the shorter Wiki articles so the handbook acts as a reference work instead of appearing as repeated appendix material under every article.
+""",
+        "render_handbook": True,
     },
 }
 
@@ -99,7 +161,12 @@ The preferred public route is a subdomain because Streamlit handles root-path de
 def _article_index() -> pd.DataFrame:
     return pd.DataFrame(
         [
-            {"Section": article["group"], "Article": title, "Summary": article["summary"]}
+            {
+                "Cluster": article["cluster"],
+                "Branch": article["branch"],
+                "Article": title,
+                "Summary": article["summary"],
+            }
             for title, article in ARTICLES.items()
         ]
     )
@@ -111,103 +178,130 @@ def _matching_articles(query: str) -> list[str]:
     text = query.lower()
     matches = []
     for title, article in ARTICLES.items():
-        haystack = " ".join([title, article["group"], article["summary"], article["body"]]).lower()
+        haystack = " ".join(
+            [title, article["cluster"], article["branch"], article["summary"], article["body"]]
+        ).lower()
         if text in haystack:
             matches.append(title)
     return matches or list(ARTICLES)
 
 
+def _tree(matches: list[str]) -> dict[str, dict[str, list[str]]]:
+    tree: dict[str, dict[str, list[str]]] = {}
+    for title in matches:
+        article = ARTICLES[title]
+        tree.setdefault(article["cluster"], {}).setdefault(article["branch"], []).append(title)
+    return tree
+
+
+def _source_contract_table() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "Source": "FDIC failed-bank records",
+                "Cadence": "Manual / periodic",
+                "Landing": "Bronze raw artifact",
+                "Gold usage": "Failure timeline, inventory, filters",
+            },
+            {
+                "Source": "FRED macro series",
+                "Cadence": "Daily",
+                "Landing": "Bronze observation panel",
+                "Gold usage": "Macro context and indicator detail",
+            },
+            {
+                "Source": "FDIC/QBP aggregate banking data",
+                "Cadence": "Quarterly",
+                "Landing": "Bronze aggregate artifact",
+                "Gold usage": "Stress Pulse industry metrics",
+            },
+            {
+                "Source": "Current institution metadata",
+                "Cadence": "Quarterly / periodic",
+                "Landing": "Bronze metadata artifact",
+                "Gold usage": "Institution and parent context",
+            },
+        ]
+    )
+
+
+def _warehouse_layer_table() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {"Layer": "Bronze", "Purpose": "Source fidelity", "Consumer": "Normalization jobs"},
+            {"Layer": "Silver", "Purpose": "Canonical shaping", "Consumer": "Intermediate models"},
+            {"Layer": "Intermediate", "Purpose": "Reusable business logic", "Consumer": "Gold marts"},
+            {"Layer": "Gold", "Purpose": "Dashboard contract", "Consumer": "Streamlit / FastAPI"},
+        ]
+    )
+
+
 st.set_page_config(page_title="FinLens | Wiki", layout="wide", initial_sidebar_state="collapsed")
 ensure_theme_state()
 inject_styles(app_css(get_theme_mode(), sidebar_open=False))
-top_navigation("wiki", st.session_state.get("surface_mode", BUSINESS_PAGE))
 record_page_view("wiki", "shared")
-status_ribbon("Shared knowledge bank")
-page_intro(
-    "FinLens Wiki",
-    "Knowledge Bank",
-    "A shared reference surface for the business meaning, data engineering design, source contracts, "
-    "quality posture, and operational model behind FinLens.",
-)
 
-query = st.text_input(
-    "Search Wiki",
-    placeholder="Search source contracts, warehouse layers, Airflow, dbt, business concepts...",
-    key="wiki_search",
-).strip()
+header_left, header_right = st.columns([1.25, 2.75], vertical_alignment="center")
+with header_left:
+    st.markdown(
+        """
+        <div class="wiki-brand-card">
+            <div class="wiki-brand-kicker">FinLens Wiki</div>
+            <div class="wiki-brand-title">Knowledge Bank</div>
+            <div class="wiki-brand-copy">Business meaning, data architecture, and operating evidence.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+with header_right:
+    query = st.text_input(
+        "Search Wiki",
+        placeholder="Search source contracts, warehouse layers, Airflow, dbt, business concepts...",
+        key="wiki_search",
+    ).strip()
 
-left, center = st.columns([0.95, 3.05], gap="large")
 matches = _matching_articles(query)
 if st.session_state.get("wiki_article") not in matches:
     st.session_state["wiki_article"] = matches[0]
+
+left, center = st.columns([0.92, 3.08], gap="large")
 with left:
-    st.markdown("#### Contents")
-    selected = st.radio(
-        "Wiki articles",
-        matches,
-        label_visibility="collapsed",
-        key="wiki_article",
-    )
-    st.markdown("---")
+    st.markdown('<div class="wiki-nav-title">Navigation</div>', unsafe_allow_html=True)
     st.page_link("app.py", label="Main Landing Page", icon=":material/home:")
     st.page_link("pages/0_Stress_Pulse.py", label="Business Surface", icon=":material/space_dashboard:")
     st.page_link("pages/4_Under_The_Hood.py", label="Technical Surface", icon=":material/account_tree:")
+    st.markdown('<div class="wiki-nav-title wiki-nav-spaced">Contents</div>', unsafe_allow_html=True)
+    for cluster, branches in _tree(matches).items():
+        st.markdown(f'<div class="wiki-cluster">{cluster}</div>', unsafe_allow_html=True)
+        for branch, titles in branches.items():
+            with st.expander(branch, expanded=True):
+                for title in titles:
+                    if st.button(
+                        title,
+                        key=f"wiki_tree_{cluster}_{branch}_{title}",
+                        use_container_width=True,
+                        disabled=st.session_state.get("wiki_article") == title,
+                    ):
+                        st.session_state["wiki_article"] = title
+                        st.rerun()
 
+selected = st.session_state["wiki_article"]
 with center:
     article = ARTICLES[selected]
-    section_heading(selected, f"{article['group']} · {article['summary']}")
+    section_heading(selected, f"{article['cluster']} / {article['branch']} · {article['summary']}")
     st.markdown(article["body"])
     chart_note(
         "Reference posture",
-        "FinLens documentation describes the implemented platform and its intended operating model. "
+        "FinLens documentation describes the implemented platform and intended operating model. "
         "Credentials, secrets, and private infrastructure details are intentionally excluded.",
     )
 
-    if selected == "Platform Overview":
-        section_heading("Article Index", "Current Wiki articles and where they fit.")
+    if selected == "Product Operating Model":
+        section_heading("Article Index", "Current Wiki articles grouped by cluster and branch.")
         styled_table(_article_index())
     if selected == "Source Contracts":
-        styled_table(
-            pd.DataFrame(
-                [
-                    {
-                        "Source": "FDIC failed-bank records",
-                        "Cadence": "Manual / periodic",
-                        "Landing": "Bronze raw artifact",
-                        "Gold usage": "Failure timeline, inventory, filters",
-                    },
-                    {
-                        "Source": "FRED macro series",
-                        "Cadence": "Daily",
-                        "Landing": "Bronze observation panel",
-                        "Gold usage": "Macro context and indicator detail",
-                    },
-                    {
-                        "Source": "FDIC/QBP aggregate banking data",
-                        "Cadence": "Quarterly",
-                        "Landing": "Bronze aggregate artifact",
-                        "Gold usage": "Stress Pulse industry metrics",
-                    },
-                    {
-                        "Source": "Current institution metadata",
-                        "Cadence": "Quarterly / periodic",
-                        "Landing": "Bronze metadata artifact",
-                        "Gold usage": "Institution and parent context",
-                    },
-                ]
-            )
-        )
+        styled_table(_source_contract_table())
     if selected == "Warehouse Layers":
-        styled_table(
-            pd.DataFrame(
-                [
-                    {"Layer": "Bronze", "Purpose": "Source fidelity", "Consumer": "Normalization jobs"},
-                    {"Layer": "Silver", "Purpose": "Canonical shaping", "Consumer": "Intermediate models"},
-                    {"Layer": "Intermediate", "Purpose": "Reusable business logic", "Consumer": "Gold marts"},
-                    {"Layer": "Gold", "Purpose": "Dashboard contract", "Consumer": "Streamlit / FastAPI"},
-                ]
-            )
-        )
-
-    with st.expander("Full Architecture Handbook", expanded=False):
+        styled_table(_warehouse_layer_table())
+    if article.get("render_handbook"):
         render_architecture_decisions()

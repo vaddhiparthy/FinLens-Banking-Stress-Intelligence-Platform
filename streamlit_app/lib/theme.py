@@ -1057,6 +1057,61 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         color: {palette["text_main"]} !important;
         -webkit-text-fill-color: {palette["text_main"]} !important;
     }}
+    .wiki-brand-card {{
+        position: sticky;
+        top: .55rem;
+        z-index: 40;
+        border: 1px solid {palette["border"]};
+        border-radius: 16px;
+        background:
+            linear-gradient(145deg, rgba(255,255,255,.82), rgba(255,250,243,.72)),
+            {palette["content_bg"]};
+        box-shadow: 0 14px 30px rgba(31,41,51,.09), inset 0 1px 0 rgba(255,255,255,.7);
+        padding: .62rem .78rem;
+        width: fit-content;
+        min-width: 15rem;
+        margin-bottom: .55rem;
+    }}
+    .wiki-brand-kicker {{
+        font-family: "Fraunces", Georgia, serif;
+        font-size: .72rem;
+        font-weight: 700;
+        color: {palette["text_soft"]};
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }}
+    .wiki-brand-title {{
+        font-family: "Fraunces", Georgia, serif;
+        color: {palette["text_main"]};
+        font-size: 1.18rem;
+        font-weight: 800;
+        line-height: 1.05;
+    }}
+    .wiki-brand-copy {{
+        color: {palette["text_muted"]};
+        font-size: .72rem;
+        font-weight: 650;
+        line-height: 1.3;
+        margin-top: .16rem;
+    }}
+    .wiki-nav-title {{
+        color: {palette["text_soft"]};
+        font-size: .7rem;
+        font-weight: 900;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+        margin: .15rem 0 .35rem;
+    }}
+    .wiki-nav-spaced {{
+        margin-top: 1rem;
+    }}
+    .wiki-cluster {{
+        color: {palette["text_main"]};
+        font-family: "Fraunces", Georgia, serif;
+        font-size: .98rem;
+        font-weight: 800;
+        margin: .6rem 0 .18rem;
+    }}
     .browser-stage-anchor + div button {{
         min-height: 4.2rem !important;
         border-radius: 18px !important;
