@@ -19,6 +19,7 @@ data/
 .streamlit/*
 !.streamlit/config.toml
 .dbt/
+dbt/.user.yml
 target/
 logs/
 site/

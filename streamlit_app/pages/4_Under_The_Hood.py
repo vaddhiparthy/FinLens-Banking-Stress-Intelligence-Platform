@@ -14,6 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from finlens.config import get_settings
+from finlens.pipeline_runs import latest_pipeline_run
 from finlens.pipeline_status import pipeline_status_rows
 from finlens.state import load_state
 from finlens.telemetry import telemetry_summary
@@ -347,6 +348,21 @@ def platform_stack_frame() -> pd.DataFrame:
 
 def tool_evidence_frame() -> pd.DataFrame:
     settings = get_settings()
+    probes = load_state("platform_probe_report", default={})
+    dbt_report = load_state("dbt_build_report", default={})
+    latest_run = latest_pipeline_run()
+    latest_run_label = latest_run.get("run_id", "No run recorded")
+
+    def probe_detail(key: str, fallback: str) -> str:
+        payload = probes.get(key, {}) if isinstance(probes, dict) else {}
+        status = payload.get("status")
+        detail = payload.get("detail")
+        if status and detail:
+            return f"{status}: {detail}"
+        if status:
+            return str(status)
+        return fallback
+
     return pd.DataFrame(
         [
             {
@@ -354,7 +370,10 @@ def tool_evidence_frame() -> pd.DataFrame:
                 "Operating role": (
                     "FDIC/FRED ingestion DAGs, source refresh ordering, retry boundaries"
                 ),
-                "Current state": "DAG definitions are present; scheduler runtime is not active yet",
+                "Current state": probe_detail(
+                    "airflow",
+                    "DAG definitions are present; scheduler runtime is not active yet",
+                ),
                 "Next operational signal": (
                     "Latest DAG run id, start time, duration, and task-level status"
                 ),
@@ -363,7 +382,13 @@ def tool_evidence_frame() -> pd.DataFrame:
                 "Platform component": "dbt",
                 "Operating role": "Staging, intermediate, and mart builds",
                 "Current state": (
-                    "Model files are present; local gold outputs are serving the app"
+                    f"{dbt_report.get('status')} build on {dbt_report.get('target')} "
+                    f"at {dbt_report.get('captured_at')}"
+                    if dbt_report
+                    else probe_detail(
+                        "dbt",
+                        "Model files are present; local gold outputs are serving the app",
+                    )
                 ),
                 "Next operational signal": (
                     "Run dbt build and expose model count, pass/fail tests, build duration"
@@ -372,15 +397,84 @@ def tool_evidence_frame() -> pd.DataFrame:
             {
                 "Platform component": "Snowflake",
                 "Operating role": "Raw/staging/intermediate/marts warehouse objects",
-                "Current state": (
+                "Current state": probe_detail(
+                    "snowflake",
                     f"Configured account {settings.snowflake_account}"
                     if settings.snowflake_account
-                    else "Credentials not supplied to this runtime"
+                    else "Credentials not supplied to this runtime",
                 ),
                 "Next operational signal": (
                     "Query INFORMATION_SCHEMA for table counts, row counts, and last altered time"
                 ),
             },
+            {
+                "Platform component": "Pipeline run ledger",
+                "Operating role": "Durable execution summary for the technical surface",
+                "Current state": latest_run_label,
+                "Next operational signal": "Run scripts/run_local_pipeline.py --probe-platform",
+            },
+        ]
+    )
+
+
+def latest_pipeline_run_frame() -> pd.DataFrame:
+    latest_run = latest_pipeline_run()
+    if not latest_run:
+        return pd.DataFrame(
+            [
+                {
+                    "Step": "No run recorded",
+                    "Status": "Pending",
+                    "Duration": "—",
+                    "Detail": "Run scripts/run_local_pipeline.py --probe-platform",
+                }
+            ]
+        )
+    rows = []
+    for step in latest_run.get("steps", []):
+        rows.append(
+            {
+                "Step": step.get("name"),
+                "Status": step.get("status"),
+                "Duration": f"{step.get('duration_seconds', 0)}s",
+                "Detail": step.get("detail"),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def dbt_build_frame() -> pd.DataFrame:
+    report = load_state("dbt_build_report", default={})
+    if not report:
+        return pd.DataFrame(
+            [
+                {
+                    "Target": "local",
+                    "Status": "Pending",
+                    "Return code": "—",
+                    "Captured at": "—",
+                    "Summary": "Run scripts/run_local_pipeline.py --run-dbt-build",
+                }
+            ]
+        )
+    stdout = str(report.get("stdout_tail", ""))
+    summary_line = next(
+        (
+            line.strip()
+            for line in reversed(stdout.splitlines())
+            if line.strip().startswith("Done.")
+        ),
+        report.get("status", "Unknown"),
+    )
+    return pd.DataFrame(
+        [
+            {
+                "Target": report.get("target"),
+                "Status": report.get("status"),
+                "Return code": report.get("returncode"),
+                "Captured at": report.get("captured_at"),
+                "Summary": summary_line,
+            }
         ]
     )
 
@@ -577,6 +671,17 @@ if active_section == "pipeline":
         "models and validates it, and Snowflake is the warehouse target for the activated path.",
     )
     styled_table(tool_evidence_frame())
+    section_heading(
+        "dbt Build Result",
+        "Latest transformation run against the local analytical warehouse target.",
+    )
+    styled_table(dbt_build_frame())
+    section_heading(
+        "Latest Pipeline Run",
+        "Execution ledger written by the pipeline runner. This is the operational bridge between "
+        "local/source jobs and the technical dashboard.",
+    )
+    styled_table(latest_pipeline_run_frame())
     section_heading(
         "Live Pipeline Status",
         "Each row shows both the business data movement and the engineering runtime responsible "

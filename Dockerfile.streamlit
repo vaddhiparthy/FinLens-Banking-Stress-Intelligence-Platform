@@ -8,6 +8,10 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock README.md /app/
 COPY src /app/src
+COPY ingestion /app/ingestion
+COPY scripts /app/scripts
+COPY dbt /app/dbt
+COPY airflow/dags /app/airflow/dags
 COPY streamlit_app /app/streamlit_app
 COPY data /app/data
 

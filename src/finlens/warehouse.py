@@ -248,6 +248,7 @@ def initialise_local_duckdb() -> Path:
             rows="4 contracts",
             note="Normalizing raw source payloads",
         )
+        conn.execute("create schema if not exists raw")
         conn.execute("create schema if not exists marts")
         conn.register("failures_df", failures)
         conn.register("metrics_df", metrics)
@@ -267,6 +268,25 @@ def initialise_local_duckdb() -> Path:
             last_run=datetime.now(UTC).isoformat(),
             rows="4 views",
             note="Refreshing marts schema",
+        )
+        conn.execute(
+            "create or replace table raw.fdic_failed_banks_raw as select * from failures_df"
+        )
+        conn.execute(
+            "create or replace table raw.fred_observations_raw as select * from metrics_df"
+        )
+        conn.execute("create or replace table raw.fdic_qbp_raw as select * from stress_pulse_df")
+        conn.execute(
+            """
+            create or replace table raw.nic_current_parent_raw as
+            select
+                cast(null as varchar) as rssd_id,
+                cast(null as varchar) as fdic_certificate_number,
+                cast(null as varchar) as institution_name,
+                cast(null as varchar) as current_parent_rssd_id,
+                cast(null as varchar) as current_parent_name
+            where false
+            """
         )
         conn.execute(
             "create or replace table marts.fct_bank_failures as select * from failures_df"

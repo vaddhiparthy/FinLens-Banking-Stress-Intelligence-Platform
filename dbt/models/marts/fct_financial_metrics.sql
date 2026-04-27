@@ -5,4 +5,4 @@ SELECT
   date,
   value,
   metric_name
-FROM marts.fct_financial_metrics
+FROM {{ ref('stg_fred_observations') }}

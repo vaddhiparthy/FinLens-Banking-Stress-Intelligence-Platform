@@ -1,0 +1,16 @@
+finlens:
+  target: local
+  outputs:
+    local:
+      type: duckdb
+      path: "{{ env_var('FINLENS_DUCKDB_PATH', './.duckdb/finlens.duckdb') }}"
+      schema: marts
+    snowflake:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'FINLENS_ROLE') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_TRANSFORMING_WAREHOUSE', 'FINLENS_TRANSFORMING_WH') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE_MARTS', 'FINLENS_MARTS') }}"
+      schema: PUBLIC

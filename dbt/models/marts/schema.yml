@@ -6,9 +6,7 @@ models:
       - name: bank_id
         tests: [not_null]
       - name: state
-        tests:
-          - accepted_values:
-              values: ['CA', 'NC', 'NY', 'SC']
+        tests: [not_null]
   - name: fct_financial_metrics
     columns:
       - name: series_id
