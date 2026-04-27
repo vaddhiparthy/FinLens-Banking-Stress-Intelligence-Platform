@@ -773,9 +773,43 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         padding: .72rem .78rem;
         border-bottom: 1px solid rgba(228, 215, 198, 0.62);
         vertical-align: top;
+        max-width: 26rem;
+        word-break: break-word;
+    }}
+    .finlens-table tbody tr:nth-child(even) td {{
+        background: rgba(244, 239, 230, 0.42);
     }}
     .finlens-table tr:last-child td {{
         border-bottom: 0;
+    }}
+    [data-testid="stExpander"] {{
+        border: 1px solid {palette["border"]} !important;
+        border-radius: 18px !important;
+        background: rgba(255, 250, 243, 0.62) !important;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+        margin: .75rem 0;
+    }}
+    [data-testid="stExpander"] details,
+    [data-testid="stExpander"] summary,
+    [data-testid="stExpander"] summary * {{
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+    }}
+    [data-testid="stSlider"] {{
+        background: rgba(255, 250, 243, 0.7);
+        border: 1px solid {palette["border"]};
+        border-radius: 999px;
+        padding: .18rem .75rem .1rem;
+        margin: .25rem auto .95rem;
+    }}
+    [data-testid="stSlider"] label,
+    [data-testid="stSlider"] label * {{
+        color: {palette["text_soft"]} !important;
+        -webkit-text-fill-color: {palette["text_soft"]} !important;
+        font-size: .72rem !important;
+        font-weight: 800 !important;
+        letter-spacing: .08em;
+        text-transform: uppercase;
     }}
     .chart-note {{
         border-left: 3px solid {palette["accent"]};

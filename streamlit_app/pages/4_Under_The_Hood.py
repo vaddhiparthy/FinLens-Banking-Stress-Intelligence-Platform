@@ -681,41 +681,60 @@ def render_data_browser(stage_key: str = "pipeline") -> None:
     if not tables:
         tech_bulletin("Interactive Data Browser", "Run the pipeline to create browsable tables.")
         return
+    section_heading(
+        "Interactive Data Browser",
+        "Read-only preview of the tables created by the pipeline. Use this to inspect the "
+        "bronze/raw and gold/mart outputs without modifying warehouse data.",
+    )
     stage_options = {
         "Bronze/raw": [table for table in tables if table.startswith("raw.")],
         "Gold marts": [table for table in tables if table.startswith("marts.")],
         "All tables": tables,
     }
-    stage = st.selectbox(
-        "Pipeline stage",
-        list(stage_options),
-        key=f"{stage_key}_browser_stage",
-    )
+    stage_options = {label: values for label, values in stage_options.items() if values}
+    controls_left, controls_right = st.columns(2)
+    with controls_left:
+        stage = st.selectbox(
+            "Pipeline stage",
+            list(stage_options),
+            key=f"{stage_key}_browser_stage",
+        )
     available = stage_options[stage]
-    table_ref = st.selectbox(
-        "Table",
-        available,
-        key=f"{stage_key}_browser_table",
-    )
+    with controls_right:
+        table_ref = st.selectbox(
+            "Table",
+            available,
+            key=f"{stage_key}_browser_table",
+        )
     preview_total = warehouse_table_preview(table_ref, limit=1, offset=0)["total_rows"]
     page_size = 6
     total_pages = max(1, (preview_total + page_size - 1) // page_size)
-    page = st.number_input(
-        "Preview page",
-        min_value=1,
-        max_value=total_pages,
-        value=1,
-        step=1,
-        key=f"{stage_key}_browser_page",
+    page_key = f"{stage_key}_browser_page"
+    if st.session_state.get(page_key, 1) > total_pages:
+        st.session_state[page_key] = total_pages
+    if st.session_state.get(page_key, 1) < 1:
+        st.session_state[page_key] = 1
+    current_page = int(st.session_state.get(page_key, 1))
+    preview = warehouse_table_preview(
+        table_ref,
+        limit=page_size,
+        offset=(current_page - 1) * page_size,
     )
-    preview = warehouse_table_preview(table_ref, limit=page_size, offset=(int(page) - 1) * page_size)
-    section_heading(
-        "Interactive Data Browser",
-        f"Live read-only preview from `{table_ref}`. Showing {len(preview['rows'])} rows out "
-        f"of {preview['total_rows']:,}; this executes a limited warehouse query and never "
-        "modifies data.",
+    st.caption(
+        f"`{table_ref}` · showing rows {(current_page - 1) * page_size + 1:,}-"
+        f"{(current_page - 1) * page_size + len(preview['rows']):,} of "
+        f"{preview['total_rows']:,}"
     )
     styled_table(pd.DataFrame(preview["rows"], columns=preview["columns"]))
+    _, pager, _ = st.columns([1.4, 2.2, 1.4])
+    with pager:
+        st.slider(
+            "Page",
+            min_value=1,
+            max_value=total_pages,
+            value=current_page,
+            key=page_key,
+        )
 
 
 def airflow_runs_frame() -> pd.DataFrame:
@@ -928,75 +947,76 @@ if active_section == "pipeline":
     with infra4:
         metric_card("Snowflake", stack.iloc[4]["Status"], "Warehouse contract readiness")
     section_heading(
-        "Core Data Engineering Stack",
-        "This section names the execution layer explicitly: Airflow schedules the work, dbt "
-        "models and validates it, and Snowflake is the warehouse target for the activated path.",
-    )
-    styled_table(tool_evidence_frame())
-    section_heading(
-        "Source Landing Evidence",
-        "Raw landing files created by the active connectors. This shows which source artifacts "
-        "exist, how many raw files were retained, and the latest source record volume.",
-    )
-    styled_table(source_landing_frame())
-    section_heading(
-        "Source Activation Contract",
-        "This separates active sources from any intentionally inactive contracts. FDIC, FRED, "
-        "QBP, and institution metadata are active in the current production path.",
-    )
-    styled_table(source_activation_frame())
-    section_heading(
-        "Warehouse Table Inventory",
-        "DuckDB/Snowflake-parity warehouse objects currently serving the dashboard contract. "
-        "Rows and columns are counted from the live warehouse file.",
-    )
-    styled_table(warehouse_inventory_frame())
-    section_heading(
-        "Airflow Run Evidence",
-        "Latest DAG states captured from the Airflow runtime. Failed historical retries can remain "
-        "in history, but the latest successful transform run is the operational proof.",
-    )
-    styled_table(airflow_runs_frame())
-    section_heading(
-        "dbt Build Result",
-        "Latest transformation run against the local analytical warehouse target.",
-    )
-    styled_table(dbt_build_frame())
-    section_heading(
-        "dbt Data Quality Summary",
-        "Counts parsed from dbt's run_results artifact: models, tests, failures, "
-        "and total executed nodes. This is the proof layer for transformation quality.",
-    )
-    styled_table(dbt_quality_summary_frame())
-    section_heading(
-        "dbt Node-Level Results",
-        "Latest model and test outcomes from dbt artifacts.",
-    )
-    styled_table(dbt_results_frame())
-    section_heading(
-        "Latest Pipeline Run",
-        "Execution ledger written by the pipeline runner. This is the operational bridge between "
-        "local/source jobs and the technical dashboard.",
-    )
-    styled_table(latest_pipeline_run_frame())
-    section_heading(
         "Live Pipeline Status",
-        "Each row shows both the business data movement and the engineering runtime responsible "
-        "for that movement. Deferred sources are marked separately from failed jobs.",
+        "Real-time run status by flow. The chart shows the movement across sources, bronze, "
+        "silver, gold, and dashboard serving; the table names the runtime responsible for each "
+        "movement.",
     )
     st.plotly_chart(dag_chart(pipeline_frame), width="stretch")
     styled_table(pipeline_status_table(pipeline_frame))
-    section_heading(
-        "Platform Stack Readiness",
-        "Infrastructure readiness for the deployable platform: object storage, orchestration, "
-        "transforms, warehouse, API service, edge routing, and control-plane sync.",
-    )
-    styled_table(platform_stack_frame())
-    tech_bulletin(
-        "Health endpoint",
-        "/healthz is the machine-facing endpoint intended for Uptime Kuma.",
-    )
     render_data_browser("pipeline")
+
+    with st.expander("Core Data Engineering Stack", expanded=False):
+        section_heading(
+            "Tool Participation",
+            "Airflow schedules the work, dbt models and validates it, Snowflake is the cloud "
+            "warehouse target, and Streamlit/FastAPI serve the portfolio surface.",
+        )
+        styled_table(tool_evidence_frame())
+        section_heading(
+            "Platform Stack Readiness",
+            "Infrastructure readiness for object storage, orchestration, transforms, warehouse, "
+            "API service, edge routing, and control-plane sync.",
+        )
+        styled_table(platform_stack_frame())
+
+    with st.expander("Source Evidence", expanded=False):
+        section_heading(
+            "Source Landing Evidence",
+            "Raw landing files created by active connectors, including retained artifact count, "
+            "latest source volume, ingest time, and storage path.",
+        )
+        styled_table(source_landing_frame())
+        section_heading(
+            "Source Activation Contract",
+            "Active production sources are separated from inactive contracts so deferred scope is "
+            "not confused with failed jobs.",
+        )
+        styled_table(source_activation_frame())
+
+    with st.expander("Warehouse And Run Ledger", expanded=False):
+        section_heading(
+            "Warehouse Table Inventory",
+            "DuckDB/Snowflake-parity warehouse objects currently serving the dashboard contract.",
+        )
+        styled_table(warehouse_inventory_frame())
+        section_heading(
+            "Latest Pipeline Run",
+            "Execution ledger written by the pipeline runner, including step status and duration.",
+        )
+        styled_table(latest_pipeline_run_frame())
+
+    with st.expander("Airflow And dbt Evidence", expanded=False):
+        section_heading(
+            "Airflow Run Evidence",
+            "Latest DAG states captured from the Airflow runtime.",
+        )
+        styled_table(airflow_runs_frame())
+        section_heading(
+            "dbt Build Result",
+            "Latest transformation run against the analytical warehouse target.",
+        )
+        styled_table(dbt_build_frame())
+        section_heading(
+            "dbt Data Quality Summary",
+            "Counts parsed from dbt artifacts: models, tests, failures, and total executed nodes.",
+        )
+        styled_table(dbt_quality_summary_frame())
+        section_heading(
+            "dbt Node-Level Results",
+            "Latest model and test outcomes from dbt artifacts.",
+        )
+        styled_table(dbt_results_frame())
 
 elif active_section == "status":
     section_heading(
@@ -1006,16 +1026,10 @@ elif active_section == "status":
     )
     styled_table(reconciliation_table())
     section_heading(
-        "Warehouse Table Inventory",
-        "Current table-level row counts used for status and reconciliation context.",
-    )
-    styled_table(warehouse_inventory_frame())
-    section_heading(
         "dbt Data Quality Summary",
         "Latest dbt artifact metrics. Failures here would be the first reason not to trust a mart.",
     )
     styled_table(dbt_quality_summary_frame())
-    render_data_browser("status")
     left, right = st.columns(2)
     with left:
         section_heading(
@@ -1040,32 +1054,36 @@ elif active_section == "implementation":
         "them: Airflow for freshness, dbt for tests, and Snowflake for warehouse observability.",
     )
     styled_table(tool_evidence_frame())
-    section_heading(
-        "Airflow Run Evidence",
-        "Scheduler-visible DAG runs and states. This is the operational trace that proves Airflow "
-        "is participating rather than being listed as a resume keyword.",
-    )
-    styled_table(airflow_runs_frame())
-    section_heading(
-        "dbt Node-Level Results",
-        "Model and test results parsed from dbt's generated artifacts.",
-    )
-    styled_table(dbt_results_frame())
-    section_heading(
-        "Source Freshness (Airflow Inputs)",
-        "These are the active source contracts that Airflow should refresh when the scheduler is "
-        "enabled.",
-    )
-    styled_table(freshness_table())
-    section_heading(
-        "Source Activation Contract",
-        "Active connectors are separated from source contracts that are present in code but not "
-        "activated in production.",
-    )
-    styled_table(source_activation_frame())
+    left, right = st.columns(2)
+    with left:
+        section_heading(
+            "Airflow Run Evidence",
+            "Scheduler-visible DAG runs and states.",
+        )
+        styled_table(airflow_runs_frame())
+    with right:
+        section_heading(
+            "dbt Node-Level Results",
+            "Model and test results parsed from dbt's generated artifacts.",
+        )
+        styled_table(dbt_results_frame())
+
+    with st.expander("Source Freshness And Activation", expanded=False):
+        section_heading(
+            "Source Freshness (Airflow Inputs)",
+            "Active source contracts Airflow refreshes when the scheduler runs.",
+        )
+        styled_table(freshness_table())
+        section_heading(
+            "Source Activation Contract",
+            "Active connectors are separated from source contracts present in code but not "
+            "activated in production.",
+        )
+        styled_table(source_activation_frame())
+
     section_heading(
         "Warehouse Activation Checklist (Snowflake + dbt)",
-        "These are the concrete checks needed before claiming the full warehouse path is live.",
+        "Concrete checks needed before claiming the full warehouse path is live.",
     )
     activation = pd.DataFrame(
         [
@@ -1106,7 +1124,6 @@ elif active_section == "implementation":
         ]
     )
     styled_table(example)
-    render_data_browser("implementation")
 
 elif active_section == "decisions":
     render_architecture_decisions()
