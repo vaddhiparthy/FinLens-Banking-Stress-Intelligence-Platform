@@ -133,7 +133,7 @@ def pipeline_status_table(frame: pd.DataFrame) -> pd.DataFrame:
         "Silver -> Gold": "dbt mart build",
         "Gold -> Dashboards": "Snowflake/DuckDB mart read + Streamlit",
     }
-    evidence_map = {
+    artifact_map = {
         "FDIC -> Bronze": "FDIC failure feed is landing into the active data contract",
         "QBP -> Bronze": "FDIC aggregate banking summary lands into the active data contract",
         "FRED -> Bronze": "FRED macro series are landing into the active data contract",
@@ -145,7 +145,7 @@ def pipeline_status_table(frame: pd.DataFrame) -> pd.DataFrame:
     return frame.assign(
         status_label=lambda data: data["status"].map(indicator_map),
         execution_tool=lambda data: data["flow_name"].map(tool_map),
-        runtime_evidence=lambda data: data["flow_name"].map(evidence_map),
+        runtime_artifact=lambda data: data["flow_name"].map(artifact_map),
     )[
         [
             "flow_no",
@@ -154,7 +154,7 @@ def pipeline_status_table(frame: pd.DataFrame) -> pd.DataFrame:
             "status_label",
             "last_run",
             "rows",
-            "runtime_evidence",
+            "runtime_artifact",
         ]
     ].rename(
         columns={
@@ -164,7 +164,7 @@ def pipeline_status_table(frame: pd.DataFrame) -> pd.DataFrame:
             "status_label": "Status",
             "last_run": "Last run",
             "rows": "Rows / units",
-            "runtime_evidence": "Evidence shown",
+            "runtime_artifact": "Operational artifact",
         }
     )
 
@@ -207,28 +207,28 @@ def reconciliation_table() -> pd.DataFrame:
                 "Gold aggregate": gold_value,
                 "FDIC QBP": qbp_value,
                 "Status": status,
-                "Evidence": detail,
+                "Validation note": detail,
             },
             {
                 "Metric": "Total deposits",
                 "Gold aggregate": gold_value,
                 "FDIC QBP": qbp_value,
                 "Status": status,
-                "Evidence": detail,
+                "Validation note": detail,
             },
             {
                 "Metric": "Total equity",
                 "Gold aggregate": gold_value,
                 "FDIC QBP": qbp_value,
                 "Status": status,
-                "Evidence": detail,
+                "Validation note": detail,
             },
             {
                 "Metric": "Net income",
                 "Gold aggregate": gold_value,
                 "FDIC QBP": qbp_value,
                 "Status": status,
-                "Evidence": detail,
+                "Validation note": detail,
             },
         ]
     )
@@ -544,6 +544,55 @@ def tool_evidence_frame() -> pd.DataFrame:
     )
 
 
+def transform_rules_frame() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "Transform area": "Source contract normalization",
+                "Input pattern": "Public API payloads with source-specific field names",
+                "Applied rule": "Rename source columns into stable snake_case canonical fields",
+                "Output impact": "Dashboards can bind to one contract instead of source-specific names",
+            },
+            {
+                "Transform area": "Date handling",
+                "Input pattern": "Failure dates and observation dates as public-source strings",
+                "Applied rule": "Parse to typed dates and derive quarter/year fields",
+                "Output impact": "Charts, filters, and annual summaries use consistent time keys",
+            },
+            {
+                "Transform area": "Public text cleanup",
+                "Input pattern": "Replacement characters and broken spacing in public text fields",
+                "Applied rule": "Normalize whitespace and repair common encoding artifacts",
+                "Output impact": "Institution names and acquirer names render cleanly in tables",
+            },
+            {
+                "Transform area": "QBP unit scaling",
+                "Input pattern": "FDIC aggregate monetary values reported in source units",
+                "Applied rule": "Scale monetary fields into dashboard-readable billions",
+                "Output impact": "Stress Pulse values are human-readable and avoid inflated labels",
+            },
+            {
+                "Transform area": "Macro panel shaping",
+                "Input pattern": "Long FRED series observations by series id and date",
+                "Applied rule": "Pivot selected indicators into a curated analytical panel",
+                "Output impact": "Macro charts and lag views use named business indicators",
+            },
+            {
+                "Transform area": "Pipeline status standardization",
+                "Input pattern": "Connector, dbt, Airflow, and platform probe outputs",
+                "Applied rule": "Map raw tool states into Success, Running, Failed, Missing Data, or Deferred",
+                "Output impact": "Live Pipeline Status speaks one operational language across tools",
+            },
+            {
+                "Transform area": "Gold serving contract",
+                "Input pattern": "Bronze/raw and silver/canonical tables",
+                "Applied rule": "Expose only dashboard-ready marts to the business surface",
+                "Output impact": "Business tabs stay insulated from source drift and engineering churn",
+            },
+        ]
+    )
+
+
 def latest_pipeline_run_frame() -> pd.DataFrame:
     latest_run = latest_pipeline_run()
     if not latest_run:
@@ -676,6 +725,30 @@ def source_landing_frame() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _render_page_buttons(page_key: str, current_page: int, total_pages: int) -> None:
+    window_size = 5
+    start_page = max(1, current_page - window_size // 2)
+    end_page = min(total_pages, start_page + window_size - 1)
+    start_page = max(1, end_page - window_size + 1)
+    page_targets = list(range(start_page, end_page + 1))
+    controls: list[tuple[str, int]] = []
+    if current_page > 1:
+        controls.append(("‹", current_page - 1))
+    controls.extend(
+        [(f"● {page}" if page == current_page else str(page), page) for page in page_targets]
+    )
+    if current_page < total_pages:
+        controls.append(("›", current_page + 1))
+
+    st.markdown('<div class="page-control-anchor"></div>', unsafe_allow_html=True)
+    columns = st.columns([1.45, *([0.42] * len(controls)), 1.45], vertical_alignment="center")
+    for column, (label, target_page) in zip(columns[1:-1], controls, strict=False):
+        with column:
+            if st.button(label, key=f"{page_key}_{label}_{target_page}", use_container_width=True):
+                st.session_state[page_key] = target_page
+                st.rerun()
+
+
 def render_data_browser(stage_key: str = "pipeline") -> None:
     tables = warehouse_table_names()
     if not tables:
@@ -726,15 +799,7 @@ def render_data_browser(stage_key: str = "pipeline") -> None:
         f"{preview['total_rows']:,}"
     )
     styled_table(pd.DataFrame(preview["rows"], columns=preview["columns"]))
-    _, pager, _ = st.columns([1.4, 2.2, 1.4])
-    with pager:
-        st.slider(
-            "Page",
-            min_value=1,
-            max_value=total_pages,
-            value=current_page,
-            key=page_key,
-        )
+    _render_page_buttons(page_key, current_page, total_pages)
 
 
 def airflow_runs_frame() -> pd.DataFrame:
@@ -743,8 +808,8 @@ def airflow_runs_frame() -> pd.DataFrame:
         return pd.DataFrame(
             [
                 {
-                    "DAG": "No run evidence",
-                    "Latest run": "Run Airflow evidence collector",
+                    "DAG": "No run artifact",
+                    "Latest run": "Run Airflow collector",
                     "State": "Pending",
                     "Started": "—",
                     "Ended": "—",
@@ -901,12 +966,21 @@ top_navigation("hood", TECHNICAL_PAGE)
 record_page_view("control_room", TECHNICAL_PAGE)
 status_ribbon("Technical systems view")
 active_section = get_technical_section()
-intro_title = "Architecture Decisions" if active_section == "decisions" else "Control Room"
+section_titles = {
+    "pipeline": "Live Pipeline Status",
+    "status": "Reconciliation",
+    "implementation": "Data Quality",
+    "administration": "Administration",
+    "decisions": "Architecture Decisions",
+}
+intro_title = section_titles.get(active_section, "Control Room")
 intro_copy = (
     "Internal data architecture handbook for the platform stack, source contracts, modeling "
     "standards, warehouse design, and activation path."
     if active_section == "decisions"
-    else "This is the engineering proof surface: source freshness, reconciliation, quality "
+    else "Administrative runtime controls, service endpoints, and control-plane sync status."
+    if active_section == "administration"
+    else "This is the engineering operations surface: source freshness, reconciliation, quality "
     "posture, and the rule that dashboards read only from the gold layer."
 )
 page_intro(
@@ -970,9 +1044,9 @@ if active_section == "pipeline":
         )
         styled_table(platform_stack_frame())
 
-    with st.expander("Source Evidence", expanded=False):
+    with st.expander("Source Artifacts", expanded=False):
         section_heading(
-            "Source Landing Evidence",
+            "Source Landing Artifacts",
             "Raw landing files created by active connectors, including retained artifact count, "
             "latest source volume, ingest time, and storage path.",
         )
@@ -996,9 +1070,9 @@ if active_section == "pipeline":
         )
         styled_table(latest_pipeline_run_frame())
 
-    with st.expander("Airflow And dbt Evidence", expanded=False):
+    with st.expander("Airflow And dbt Run Results", expanded=False):
         section_heading(
-            "Airflow Run Evidence",
+            "Airflow Run Results",
             "Latest DAG states captured from the Airflow runtime.",
         )
         styled_table(airflow_runs_frame())
@@ -1030,21 +1104,6 @@ elif active_section == "status":
         "Latest dbt artifact metrics. Failures here would be the first reason not to trust a mart.",
     )
     styled_table(dbt_quality_summary_frame())
-    left, right = st.columns(2)
-    with left:
-        section_heading(
-            "Service Endpoints",
-            "These are the machine-facing endpoints and public surfaces currently wired for the "
-            "stack.",
-        )
-        styled_table(service_endpoints_frame())
-    with right:
-        section_heading(
-            "Control Sync (Postgres)",
-            "Telemetry and control-plane snapshots can sync back to home Postgres once the DSN "
-            "is supplied.",
-        )
-        styled_table(control_sync_frame())
 
 elif active_section == "implementation":
     probes = load_state("platform_probe_report", default={})
@@ -1057,7 +1116,7 @@ elif active_section == "implementation":
     left, right = st.columns(2)
     with left:
         section_heading(
-            "Airflow Run Evidence",
+            "Airflow Run Results",
             "Scheduler-visible DAG runs and states.",
         )
         styled_table(airflow_runs_frame())
@@ -1089,7 +1148,7 @@ elif active_section == "implementation":
         [
             {
                 "Layer": "Snowflake connection",
-                "Required proof": "Successful SELECT CURRENT_ACCOUNT(), CURRENT_ROLE()",
+                "Validation artifact": "Successful SELECT CURRENT_ACCOUNT(), CURRENT_ROLE()",
                 "Status": _probe_status(
                     probes,
                     "snowflake",
@@ -1098,12 +1157,12 @@ elif active_section == "implementation":
             },
             {
                 "Layer": "dbt build",
-                "Required proof": "dbt build exits cleanly with model and test counts",
+                "Validation artifact": "dbt build exits cleanly with model and test counts",
                 "Status": _probe_status(probes, "dbt", "Ready to run"),
             },
             {
                 "Layer": "Airflow DAG",
-                "Required proof": "Latest DAG run status, duration, and task-level state",
+                "Validation artifact": "Latest DAG run status, duration, and task-level state",
                 "Status": _probe_status(probes, "airflow", "DAG scaffold present"),
             },
         ]
@@ -1124,6 +1183,31 @@ elif active_section == "implementation":
         ]
     )
     styled_table(example)
+    section_heading(
+        "Transformation Rule Catalog",
+        "The rules below are the durable business transformations applied across source landing, "
+        "canonical shaping, and Gold serving. They explain what changes between raw payloads and "
+        "dashboard-ready tables.",
+    )
+    styled_table(transform_rules_frame())
+
+elif active_section == "administration":
+    section_heading(
+        "Service Endpoint Catalog",
+        "Administration-facing routes for health checks, telemetry intake, and runtime summaries. "
+        "These are operational controls, not business analytics.",
+    )
+    styled_table(service_endpoints_frame())
+    section_heading(
+        "Control Sync (Postgres)",
+        "Telemetry and pipeline snapshots that can sync to the home control database.",
+    )
+    styled_table(control_sync_frame())
+    section_heading(
+        "Platform Stack Readiness",
+        "Current posture for the deployable platform components and administration controls.",
+    )
+    styled_table(platform_stack_frame())
 
 elif active_section == "decisions":
     render_architecture_decisions()

@@ -22,6 +22,7 @@ def _page_path(page_key: str) -> str:
         "pipeline": "pages/4_Under_The_Hood.py",
         "status": "pages/4_Under_The_Hood.py",
         "implementation": "pages/4_Under_The_Hood.py",
+        "administration": "pages/4_Under_The_Hood.py",
         "decisions": "pages/4_Under_The_Hood.py",
     }
     return page_map[page_key]
@@ -61,6 +62,7 @@ def _technical_sections() -> list[tuple[str, str]]:
         ("pipeline", "Live Pipeline Status"),
         ("status", "Reconciliation"),
         ("implementation", "Data Quality"),
+        ("administration", "Administration"),
         ("decisions", "Architecture Decisions"),
     ]
 

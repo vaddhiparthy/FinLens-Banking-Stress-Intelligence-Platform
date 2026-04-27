@@ -785,9 +785,23 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     [data-testid="stExpander"] {{
         border: 1px solid {palette["border"]} !important;
         border-radius: 18px !important;
-        background: rgba(255, 250, 243, 0.62) !important;
+        background: {palette["content_bg"]} !important;
         box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
         margin: .75rem 0;
+    }}
+    [data-testid="stExpander"] details,
+    [data-testid="stExpander"] details[open],
+    [data-testid="stExpander"] details > div {{
+        background: {palette["content_bg"]} !important;
+    }}
+    [data-testid="stExpander"] summary {{
+        background: linear-gradient(180deg, {palette["content_bg"]}, {palette["sand"]}) !important;
+        border-radius: 17px !important;
+    }}
+    [data-testid="stExpander"] details[open] summary {{
+        border-bottom: 1px solid {palette["border"]} !important;
+        border-bottom-left-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
     }}
     [data-testid="stExpander"] details,
     [data-testid="stExpander"] summary,
@@ -795,21 +809,22 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         color: {palette["text_main"]} !important;
         -webkit-text-fill-color: {palette["text_main"]} !important;
     }}
-    [data-testid="stSlider"] {{
-        background: rgba(255, 250, 243, 0.7);
-        border: 1px solid {palette["border"]};
-        border-radius: 999px;
-        padding: .18rem .75rem .1rem;
-        margin: .25rem auto .95rem;
+    .page-control-anchor + div {{
+        max-width: 28rem;
+        margin: .25rem auto 1rem auto;
+        align-items: center;
     }}
-    [data-testid="stSlider"] label,
-    [data-testid="stSlider"] label * {{
-        color: {palette["text_soft"]} !important;
-        -webkit-text-fill-color: {palette["text_soft"]} !important;
-        font-size: .72rem !important;
+    .page-control-anchor + div button {{
+        min-height: 2rem !important;
+        border-radius: 999px !important;
+        padding: .15rem .35rem !important;
+        background: linear-gradient(180deg, {palette["content_bg"]}, {palette["sand"]}) !important;
+        border: 1px solid {palette["border"]} !important;
+        box-shadow: none !important;
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+        font-size: .76rem !important;
         font-weight: 800 !important;
-        letter-spacing: .08em;
-        text-transform: uppercase;
     }}
     .chart-note {{
         border-left: 3px solid {palette["accent"]};
