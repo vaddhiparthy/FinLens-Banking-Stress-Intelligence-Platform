@@ -225,7 +225,7 @@ def freshness_table() -> pd.DataFrame:
         [
             {
                 "Source": item["label"],
-                "Freshness": "Configured" if item["ready"] else "Missing connector",
+                "Freshness": "Success" if item["ready"] else "Missing connector",
                 "SLA": item["cadence"],
                 "Status": item["status"],
             }
@@ -235,9 +235,38 @@ def freshness_table() -> pd.DataFrame:
     )
 
 
+def _success_status(status: str | None) -> str:
+    if status in {"Ready", "Success", "Pass"}:
+        return "Success"
+    if status in {"Failed", "Unavailable", "Missing"}:
+        return "Failed"
+    if status in {"Scaffolded", "Deferred"}:
+        return str(status)
+    return "Pending"
+
+
+def _probe_status(probes: dict, key: str, fallback: str = "Pending") -> str:
+    payload = probes.get(key, {}) if isinstance(probes, dict) else {}
+    status = payload.get("status")
+    runtime_status = payload.get("runtime_status")
+    if runtime_status == "Ready":
+        return "Success"
+    if status:
+        return _success_status(str(status))
+    return fallback
+
+
+def _probe_detail(probes: dict, key: str, fallback: str) -> str:
+    payload = probes.get(key, {}) if isinstance(probes, dict) else {}
+    detail = payload.get("detail")
+    if detail:
+        return str(detail)
+    return fallback
+
+
 def _tool_status(*, configured: bool, scaffolded: bool = True) -> str:
     if configured:
-        return "Configured"
+        return "Success"
     if scaffolded:
         return "Scaffolded"
     return "Not ready"
@@ -245,42 +274,61 @@ def _tool_status(*, configured: bool, scaffolded: bool = True) -> str:
 
 def platform_stack_frame() -> pd.DataFrame:
     settings = get_settings()
+    probes = load_state("platform_probe_report", default={})
     return pd.DataFrame(
         [
             {
                 "Component": "AWS S3 bronze mirror",
                 "Role": "Raw landing and durable artifact storage",
-                "Status": _tool_status(
-                    configured=bool(
-                        settings.aws_s3_mirror_enabled
-                        and settings.aws_access_key_id
-                        and settings.aws_secret_access_key
-                    )
+                "Status": _probe_status(
+                    probes,
+                    "s3",
+                    _tool_status(
+                        configured=bool(
+                            settings.aws_s3_mirror_enabled
+                            and settings.aws_access_key_id
+                            and settings.aws_secret_access_key
+                        )
+                    ),
                 ),
-                "Readiness note": (
-                    "Buckets: "
-                    f"raw={settings.aws_s3_raw_bucket}, "
-                    f"marts={settings.aws_s3_marts_bucket}"
-                    if settings.aws_s3_mirror_enabled
-                    else "Scaffolded in code, waiting for AWS credentials and bucket wiring"
+                "Readiness note": _probe_detail(
+                    probes,
+                    "s3",
+                    (
+                        "Buckets: "
+                        f"raw={settings.aws_s3_raw_bucket}, "
+                        f"marts={settings.aws_s3_marts_bucket}"
+                        if settings.aws_s3_mirror_enabled
+                        else "Scaffolded in code, waiting for AWS credentials and bucket wiring"
+                    ),
                 ),
             },
             {
                 "Component": "Airflow orchestration",
                 "Role": "Scheduled ingestion, transforms, and control-plane sync",
-                "Status": _tool_status(
-                    configured=Path(PROJECT_ROOT / "airflow" / "dags").exists()
+                "Status": _probe_status(
+                    probes,
+                    "airflow",
+                    _tool_status(configured=Path(PROJECT_ROOT / "airflow" / "dags").exists()),
                 ),
-                "Readiness note": "DAGs exist for FDIC, FRED, QBP, NIC, transforms, and sync",
+                "Readiness note": _probe_detail(
+                    probes,
+                    "airflow",
+                    "DAGs exist for FDIC, FRED, QBP, NIC, transforms, and sync",
+                ),
             },
             {
                 "Component": "dbt modeling",
                 "Role": "Silver and gold transformations",
-                "Status": _tool_status(
-                    configured=Path(PROJECT_ROOT / "dbt" / "models").exists()
+                "Status": _probe_status(
+                    probes,
+                    "dbt",
+                    _tool_status(configured=Path(PROJECT_ROOT / "dbt" / "models").exists()),
                 ),
-                "Readiness note": (
-                    "Staging and mart models are scaffolded for resilient MVP sources"
+                "Readiness note": _probe_detail(
+                    probes,
+                    "dbt",
+                    "Staging and mart models are scaffolded for resilient MVP sources",
                 ),
             },
             {
@@ -294,17 +342,26 @@ def platform_stack_frame() -> pd.DataFrame:
             {
                 "Component": "Snowflake warehouse",
                 "Role": "Resume-grade analytical warehouse target",
-                "Status": _tool_status(
-                    configured=bool(
-                        settings.snowflake_account
-                        and settings.snowflake_user
-                        and settings.snowflake_password
-                    )
+                "Status": _probe_status(
+                    probes,
+                    "snowflake",
+                    _tool_status(
+                        configured=bool(
+                            settings.snowflake_account
+                            and settings.snowflake_user
+                            and settings.snowflake_password
+                        )
+                    ),
                 ),
-                "Readiness note": (
-                    f"Role {settings.snowflake_role}, marts DB {settings.snowflake_database_marts}"
-                    if settings.snowflake_account
-                    else "Contract and env vars are scaffolded, waiting for account credentials"
+                "Readiness note": _probe_detail(
+                    probes,
+                    "snowflake",
+                    (
+                        f"Role {settings.snowflake_role}, "
+                        f"marts DB {settings.snowflake_database_marts}"
+                        if settings.snowflake_account
+                        else "Contract and env vars are scaffolded, waiting for account credentials"
+                    ),
                 ),
             },
             {
@@ -335,11 +392,19 @@ def platform_stack_frame() -> pd.DataFrame:
             {
                 "Component": "Postgres control sync",
                 "Role": "Telemetry and control-plane snapshot sync back home",
-                "Status": _tool_status(configured=bool(settings.postgres_sync_dsn)),
-                "Readiness note": (
-                    f"Schema {settings.postgres_sync_schema}"
-                    if settings.postgres_sync_dsn
-                    else "Sync script is ready and waiting for POSTGRES_SYNC_DSN"
+                "Status": _probe_status(
+                    probes,
+                    "postgres",
+                    _tool_status(configured=bool(settings.postgres_sync_dsn)),
+                ),
+                "Readiness note": _probe_detail(
+                    probes,
+                    "postgres",
+                    (
+                        f"Schema {settings.postgres_sync_schema}"
+                        if settings.postgres_sync_dsn
+                        else "Sync script is ready and waiting for POSTGRES_SYNC_DSN"
+                    ),
                 ),
             },
         ]
@@ -521,6 +586,12 @@ def service_endpoints_frame() -> pd.DataFrame:
 
 def control_sync_frame() -> pd.DataFrame:
     settings = get_settings()
+    probes = load_state("platform_probe_report", default={})
+    sync_status = _probe_status(
+        probes,
+        "postgres",
+        "Success" if settings.postgres_sync_dsn else "Waiting on DSN",
+    )
     sync_state = load_state("postgres_sync_state", default={})
     telemetry = telemetry_summary()
     return pd.DataFrame(
@@ -528,7 +599,7 @@ def control_sync_frame() -> pd.DataFrame:
             {
                 "Channel": "Telemetry events",
                 "Destination": "Home Postgres",
-                "Status": "Configured" if settings.postgres_sync_dsn else "Waiting on DSN",
+                "Status": sync_status,
                 "Detail": (
                     f"{telemetry['event_count']} local events, "
                     f"{len(sync_state.get('telemetry_event_ids', []))} already synced"
@@ -537,13 +608,13 @@ def control_sync_frame() -> pd.DataFrame:
             {
                 "Channel": "Connector report snapshots",
                 "Destination": "Home Postgres",
-                "Status": "Configured" if settings.postgres_sync_dsn else "Waiting on DSN",
+                "Status": sync_status,
                 "Detail": f"Target schema: {settings.postgres_sync_schema}",
             },
             {
                 "Channel": "Pipeline status snapshots",
                 "Destination": "Home Postgres",
-                "Status": "Configured" if settings.postgres_sync_dsn else "Waiting on DSN",
+                "Status": sync_status,
                 "Detail": "Sync script persists pipeline, connector, and telemetry summaries",
             },
         ]
@@ -724,6 +795,7 @@ elif active_section == "status":
         styled_table(control_sync_frame())
 
 elif active_section == "implementation":
+    probes = load_state("platform_probe_report", default={})
     section_heading(
         "Data Quality (Airflow + dbt)",
         "Operational quality checks are grouped by the platform component expected to produce "
@@ -745,17 +817,21 @@ elif active_section == "implementation":
             {
                 "Layer": "Snowflake connection",
                 "Required proof": "Successful SELECT CURRENT_ACCOUNT(), CURRENT_ROLE()",
-                "Status": "Configured" if settings.snowflake_account else "Pending",
+                "Status": _probe_status(
+                    probes,
+                    "snowflake",
+                    "Success" if settings.snowflake_account else "Pending",
+                ),
             },
             {
                 "Layer": "dbt build",
                 "Required proof": "dbt build exits cleanly with model and test counts",
-                "Status": "Ready to run",
+                "Status": _probe_status(probes, "dbt", "Ready to run"),
             },
             {
                 "Layer": "Airflow DAG",
                 "Required proof": "Latest DAG run status, duration, and task-level state",
-                "Status": "DAG scaffold present",
+                "Status": _probe_status(probes, "airflow", "DAG scaffold present"),
             },
         ]
     )
