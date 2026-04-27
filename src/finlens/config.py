@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     root_domain: str = "vaddhiparthy.vip"
     project_domain: str = "finlens.vaddhiparthy.vip"
     finlens_data_mode: str = "mock"
-    finlens_active_sources: str = "fdic,fred"
+    finlens_active_sources: str = "fdic,fred,qbp,nic"
     finlens_artifact_dir: str = "data"
     finlens_public_base_url: str | None = None
     finlens_api_base_url: str | None = None
@@ -29,11 +29,21 @@ class Settings(BaseSettings):
     aws_s3_docs_bucket: str = "finlens-docs"
     aws_s3_tfstate_bucket: str = "finlens-tfstate"
     fdic_failed_banks_url: str = "https://www.fdic.gov/bank-failures/download-data.csv"
-    fdic_qbp_source_url: str | None = None
+    fdic_qbp_source_url: str | None = (
+        "https://api.fdic.gov/banks/summary?"
+        "fields=YEAR,ASSET,DEP,EQ,NETINC,NIM,DRLNLS,P9LNLS&"
+        "filters=YEAR:%5B%221985%22%20TO%20%222025%22%5D&"
+        "agg_by=YEAR&agg_sum_fields=ASSET,DEP,EQ,NETINC,NIM,DRLNLS,P9LNLS&"
+        "agg_limit=100&sort_by=YEAR&sort_order=ASC&limit=1&format=json"
+    )
     fred_api_key: str | None = None
     fred_base_url: str = "https://api.stlouisfed.org/fred"
     fred_series_ids: str = "UNRATE,DGS10,DGS2,BAA10Y,NFCI,CPIAUCSL"
-    nic_current_parent_source_url: str | None = None
+    nic_current_parent_source_url: str | None = (
+        "https://api.fdic.gov/banks/institutions?"
+        "filters=ACTIVE:1&fields=CERT,NAME,ACTIVE,BKCLASS,STALP,REGAGNT,ASSET,DEP,ROA,ROE,DATEUPDT&"
+        "sort_by=ASSET&sort_order=DESC&limit=10000&format=json"
+    )
     postgres_sync_dsn: str | None = None
     postgres_sync_schema: str = "finlens"
     cloudflare_turnstile_site_key: str | None = None

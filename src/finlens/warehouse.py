@@ -24,10 +24,15 @@ def _latest_source_json(source: str) -> dict | None:
     source_dir = RAW_DATA_DIR / f"source={source}"
     if not source_dir.exists():
         return None
-    candidates = sorted(source_dir.glob("ingestion_date=*/*.json"))
+    candidates = [
+        path
+        for path in source_dir.glob("ingestion_date=*/*.json")
+        if not path.name.endswith(".data.json")
+    ]
     if not candidates:
         return None
-    return json.loads(candidates[-1].read_text(encoding="utf-8"))
+    latest = max(candidates, key=lambda path: path.stat().st_mtime)
+    return json.loads(latest.read_text(encoding="utf-8"))
 
 
 def latest_source_manifest(source: str) -> dict | None:
@@ -189,6 +194,40 @@ def _stress_pulse_frame():
     return frame.copy()
 
 
+def _nic_current_parent_frame():
+    expected_columns = [
+        "rssd_id",
+        "fdic_certificate_number",
+        "institution_name",
+        "current_parent_rssd_id",
+        "current_parent_name",
+        "active",
+        "charter_class",
+        "state",
+        "primary_regulator",
+        "total_assets",
+        "total_deposits",
+        "roa",
+        "roe",
+        "source_updated_at",
+        "source_code",
+    ]
+    payload = _latest_source_json("nic")
+    if not payload:
+        return pd.DataFrame(columns=expected_columns)
+    artifact_path = payload.get("artifact_path")
+    if not artifact_path:
+        return pd.DataFrame(columns=expected_columns)
+    path = Path(artifact_path)
+    if not path.exists() or path.suffix.lower() != ".json":
+        return pd.DataFrame(columns=expected_columns)
+    frame = pd.DataFrame(json.loads(path.read_text(encoding="utf-8")))
+    for column in expected_columns:
+        if column not in frame.columns:
+            frame[column] = None
+    return frame[expected_columns].copy()
+
+
 def stress_pulse_source_mode() -> str:
     settings = get_settings()
     payload = _latest_source_json("qbp")
@@ -239,6 +278,7 @@ def initialise_local_duckdb() -> Path:
     metrics = _fred_metrics_frame()
     acquirers = _fdic_acquirers_frame(failures)
     stress_pulse = _stress_pulse_frame()
+    nic_current_parent = _nic_current_parent_frame()
 
     with duckdb.connect(str(db_path)) as conn:
         update_flow_status(
@@ -254,6 +294,7 @@ def initialise_local_duckdb() -> Path:
         conn.register("metrics_df", metrics)
         conn.register("acquirers_df", acquirers)
         conn.register("stress_pulse_df", stress_pulse)
+        conn.register("nic_current_parent_df", nic_current_parent)
         update_flow_status(
             "bronze_to_silver",
             status="Success",
@@ -279,13 +320,7 @@ def initialise_local_duckdb() -> Path:
         conn.execute(
             """
             create or replace table raw.nic_current_parent_raw as
-            select
-                cast(null as varchar) as rssd_id,
-                cast(null as varchar) as fdic_certificate_number,
-                cast(null as varchar) as institution_name,
-                cast(null as varchar) as current_parent_rssd_id,
-                cast(null as varchar) as current_parent_name
-            where false
+            select * from nic_current_parent_df
             """
         )
         conn.execute(
