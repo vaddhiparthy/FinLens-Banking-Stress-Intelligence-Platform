@@ -1,8 +1,8 @@
 apache-airflow==2.9.3
 apache-airflow-providers-postgres==5.11.3
 astronomer-cosmos==1.6.0
-dbt-core==1.11.8
-dbt-duckdb==1.10.1
+dbt-core==1.8.9
+dbt-duckdb==1.8.4
 boto3>=1.39.0
 duckdb>=1.5.0
 pandas>=2.2.3
@@ -10,6 +10,5 @@ psycopg[binary]>=3.2.9
 pydantic-settings>=2.6.0
 python-dotenv>=1.0.1
 requests>=2.32.3
-snowflake-connector-python>=4.4.0
 structlog>=24.4.0
 tenacity>=9.0.0
