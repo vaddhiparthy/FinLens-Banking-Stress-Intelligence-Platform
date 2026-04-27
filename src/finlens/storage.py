@@ -7,6 +7,10 @@ from typing import Any
 
 def ensure_parent(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        path.parent.chmod(0o777)
+    except OSError:
+        pass
 
 
 def write_json(path: Path, payload: Any) -> Path:
