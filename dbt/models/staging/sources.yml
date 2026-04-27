@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: public
+    tables:
+      - name: fdic_failed_banks_raw
+      - name: fred_observations_raw
+      - name: fdic_qbp_raw
+      - name: nic_current_parent_raw

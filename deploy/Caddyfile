@@ -1,0 +1,15 @@
+finlens.vaddhiparthy.vip {
+	reverse_proxy finlens-streamlit:8501
+}
+
+finlens-api.vaddhiparthy.vip {
+	reverse_proxy finlens-api:8000
+}
+
+uptime.vaddhiparthy.vip {
+	reverse_proxy uptime-kuma:3001
+}
+
+:80 {
+	reverse_proxy finlens-streamlit:8501
+}

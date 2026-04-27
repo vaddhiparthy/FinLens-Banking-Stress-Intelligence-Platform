@@ -1,0 +1,14 @@
+.git
+.github
+.duckdb
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.venv
+data/raw
+data/bronze
+data/silver
+data/gold
+private_notes
+FinLens_private_notes

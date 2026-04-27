@@ -1,0 +1,22 @@
+site_name: FinLens Docs
+site_description: Regulatory-grade banking data platform documentation
+site_url: https://docs.finlens.vaddhiparthy.vip
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+nav:
+  - Overview: docs/index.md
+  - Data Model: docs/data-model.md
+  - Secrets: docs/secrets.md
+  - ADRs:
+      - ADR Index: docs/adr/README.md
+      - ADR 0001: docs/adr/0001-cloud-object-storage.md
+      - ADR 0002: docs/adr/0002-warehouse-lifecycle.md
+      - ADR 0003: docs/adr/0003-kimball-star-schema.md
+      - ADR 0004: docs/adr/0004-scd-strategy.md
+      - ADR 0005: docs/adr/0005-airflow-cosmos.md
+      - ADR 0006: docs/adr/0006-quality-split.md
+      - ADR 0008: docs/adr/0008-terraform-boundary.md

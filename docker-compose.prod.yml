@@ -1,0 +1,58 @@
+services:
+  finlens-streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    container_name: finlens-streamlit
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./.duckdb:/app/.duckdb
+    restart: unless-stopped
+    expose:
+      - "8501"
+
+  finlens-api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: finlens-api
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./.duckdb:/app/.duckdb
+    restart: unless-stopped
+    expose:
+      - "8000"
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - uptime-kuma-data:/app/data
+    expose:
+      - "3001"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: finlens-caddy
+    restart: unless-stopped
+    depends_on:
+      - finlens-streamlit
+      - finlens-api
+      - uptime-kuma
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  caddy-data:
+  caddy-config:
+  uptime-kuma-data:

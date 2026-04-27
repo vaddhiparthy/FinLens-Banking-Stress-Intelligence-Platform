@@ -1,0 +1,6 @@
+apache-airflow==2.9.3
+apache-airflow-providers-postgres==5.11.3
+astronomer-cosmos==1.6.0
+dbt-duckdb==1.8.4
+boto3>=1.39.0
+requests>=2.32.3
