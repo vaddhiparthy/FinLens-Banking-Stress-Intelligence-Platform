@@ -68,14 +68,38 @@ def probe_dbt_project() -> dict[str, Any]:
 
 
 def probe_airflow_project() -> dict[str, Any]:
+    settings = get_settings()
     dags_dir = ROOT_DIR / "airflow" / "dags"
     dags = sorted(path for path in dags_dir.glob("dag_*.py") if path.is_file())
-    return {
+    result: dict[str, Any] = {
         "status": "Ready" if dags else "Missing",
         "dag_count": len(dags),
         "dags": [path.stem for path in dags],
         "detail": f"{len(dags)} DAG definitions found",
     }
+    if not dags:
+        return result
+    try:
+        import requests
+
+        response = requests.get(f"{settings.airflow_api_base_url}/health", timeout=8)
+        response.raise_for_status()
+        payload = response.json()
+    except Exception as exc:
+        result["runtime_status"] = "Unavailable"
+        result["detail"] = f"{len(dags)} DAG definitions found; webserver probe failed: {exc}"
+        return result
+
+    metadatabase = payload.get("metadatabase", {}).get("status")
+    scheduler = payload.get("scheduler", {}).get("status")
+    result["runtime_status"] = "Ready"
+    result["metadatabase"] = metadatabase
+    result["scheduler"] = scheduler
+    result["detail"] = (
+        f"{len(dags)} DAGs found; Airflow webserver healthy; "
+        f"metadatabase={metadatabase}; scheduler={scheduler}"
+    )
+    return result
 
 
 def probe_snowflake_connection() -> dict[str, Any]:

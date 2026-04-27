@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from finlens.config import get_settings
 from finlens.pipeline_status import pipeline_status_rows
+from finlens.platform_probes import probe_postgres_sync
 from finlens.state import load_state
 from finlens.warehouse import stress_pulse_source_mode
 
@@ -19,6 +20,7 @@ def health_payload() -> dict:
         "environment": settings.fastapi_env,
         "data_mode": settings.finlens_data_mode,
         "stress_pulse_mode": stress_pulse_source_mode(),
+        "postgres_sync": probe_postgres_sync(),
         "connectors": connectors,
         "pipeline": pipeline,
     }

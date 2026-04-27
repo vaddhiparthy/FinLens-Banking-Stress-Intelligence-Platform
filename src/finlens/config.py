@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     cloudflare_turnstile_secret_key: str | None = None
     cloudflare_account_id: str | None = None
     cloudflare_zone_id: str | None = None
+    airflow_api_base_url: str = "http://airflow-webserver:8080"
     snowflake_account: str | None = None
     snowflake_user: str | None = None
     snowflake_password: str | None = None
