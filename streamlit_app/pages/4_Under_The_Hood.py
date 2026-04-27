@@ -1071,7 +1071,7 @@ record_page_view("control_room", TECHNICAL_PAGE)
 status_ribbon("Technical systems view")
 active_section = get_technical_section()
 section_titles = {
-    "pipeline": "Live Pipeline Status",
+    "pipeline": "Live Pipeline",
     "status": "Data Quality",
     "classification": "Source Contracts",
     "implementation": "Engineering Stack",

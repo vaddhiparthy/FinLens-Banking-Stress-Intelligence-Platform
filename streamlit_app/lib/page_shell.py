@@ -19,6 +19,7 @@ def _page_path(page_key: str) -> str:
         "overview": "pages/0_Stress_Pulse.py",
         "banks": "pages/1_Banks.py",
         "metrics": "pages/2_Metrics.py",
+        "predictive": "pages/3_Predictive_Analytics.py",
         "business_docs": "pages/5_Business_Knowledge.py",
         "wiki": "pages/6_Wiki.py",
         "pipeline": "pages/4_Under_The_Hood.py",
@@ -36,6 +37,12 @@ def _business_pages() -> list[tuple[str, str, str, str]]:
         ("overview", "pages/0_Stress_Pulse.py", "Stress Pulse", ":material/space_dashboard:"),
         ("banks", "pages/1_Banks.py", "Failure Forensics", ":material/account_balance:"),
         ("metrics", "pages/2_Metrics.py", "Macro Transmission", ":material/show_chart:"),
+        (
+            "predictive",
+            "pages/3_Predictive_Analytics.py",
+            "Predictive Analytics",
+            ":material/neurology:",
+        ),
         ("wiki", "pages/6_Wiki.py", "Wiki", ":material/menu_book:"),
     ]
     if STRESS_LAB_ENABLED:
@@ -48,6 +55,7 @@ def _business_sections() -> list[tuple[str, str]]:
         ("overview", "Stress Pulse"),
         ("banks", "Failure Forensics"),
         ("metrics", "Macro Transmission"),
+        ("predictive", "Predictive Analytics"),
         ("wiki", "Wiki"),
     ]
     if STRESS_LAB_ENABLED:
@@ -57,10 +65,11 @@ def _business_sections() -> list[tuple[str, str]]:
 
 def _technical_sections() -> list[tuple[str, str]]:
     return [
-        ("pipeline", "Live Pipeline Status"),
+        ("pipeline", "Live Pipeline"),
+        ("classification", "Source Contracts"),
         ("implementation", "Engineering Stack"),
         ("status", "Data Quality"),
-        ("classification", "Source Contracts"),
+        ("decisions", "Architecture Decisions"),
         ("administration", "Administration"),
         ("wiki", "Wiki"),
     ]
