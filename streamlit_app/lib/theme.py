@@ -1037,6 +1037,26 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         font-weight: 700;
         line-height: 1.45;
     }}
+    .browser-control-copy + div {{
+        margin-left: 0 !important;
+    }}
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {{
+        background: {palette["content_bg"]} !important;
+        border: 1px solid {palette["border"]} !important;
+        border-radius: 8px !important;
+        color: {palette["text_main"]} !important;
+        min-height: 2.15rem !important;
+    }}
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] svg {{
+        color: {palette["text_main"]} !important;
+        fill: {palette["text_main"]} !important;
+        opacity: 1 !important;
+    }}
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] span,
+    div[data-testid="stSelectbox"] div[data-baseweb="select"] input {{
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+    }}
     .browser-stage-anchor + div button {{
         min-height: 4.2rem !important;
         border-radius: 18px !important;

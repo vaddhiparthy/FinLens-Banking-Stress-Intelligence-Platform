@@ -20,6 +20,7 @@ def _page_path(page_key: str) -> str:
         "banks": "pages/1_Banks.py",
         "metrics": "pages/2_Metrics.py",
         "business_docs": "pages/5_Business_Knowledge.py",
+        "wiki": "pages/6_Wiki.py",
         "pipeline": "pages/4_Under_The_Hood.py",
         "status": "pages/4_Under_The_Hood.py",
         "classification": "pages/4_Under_The_Hood.py",
@@ -35,12 +36,7 @@ def _business_pages() -> list[tuple[str, str, str, str]]:
         ("overview", "pages/0_Stress_Pulse.py", "Stress Pulse", ":material/space_dashboard:"),
         ("banks", "pages/1_Banks.py", "Failure Forensics", ":material/account_balance:"),
         ("metrics", "pages/2_Metrics.py", "Macro Transmission", ":material/show_chart:"),
-        (
-            "business_docs",
-            "pages/5_Business_Knowledge.py",
-            "Business Knowledge",
-            ":material/menu_book:",
-        ),
+        ("wiki", "pages/6_Wiki.py", "Wiki", ":material/menu_book:"),
     ]
     if STRESS_LAB_ENABLED:
         pages.append(("stress", "pages/3_Stress_Lab.py", "Stress Lab", ":material/model_training:"))
@@ -52,7 +48,7 @@ def _business_sections() -> list[tuple[str, str]]:
         ("overview", "Stress Pulse"),
         ("banks", "Failure Forensics"),
         ("metrics", "Macro Transmission"),
-        ("business_docs", "Business Knowledge"),
+        ("wiki", "Wiki"),
     ]
     if STRESS_LAB_ENABLED:
         sections.append(("stress", "Stress Lab"))
@@ -66,7 +62,7 @@ def _technical_sections() -> list[tuple[str, str]]:
         ("classification", "Data Classification"),
         ("implementation", "Data Quality"),
         ("administration", "Administration"),
-        ("decisions", "Architecture Decisions"),
+        ("wiki", "Wiki"),
     ]
 
 
@@ -180,7 +176,7 @@ def top_navigation(active_page: str, mode: str) -> None:
         with top_right:
             st.markdown('<div class="section-menu-anchor"></div>', unsafe_allow_html=True)
             if mode == BUSINESS_PAGE:
-                sections = _business_sections()
+                sections = [("home", "Home"), *_business_sections()]
                 page_columns = st.columns(len(sections), vertical_alignment="center")
                 for column, (key, label) in zip(page_columns, sections, strict=False):
                     with column:
@@ -192,11 +188,27 @@ def top_navigation(active_page: str, mode: str) -> None:
                         ):
                             st.switch_page(_page_path(key))
             else:
-                sections = _technical_sections()
+                sections = [("home", "Home"), *_technical_sections()]
                 section_columns = st.columns(len(sections), vertical_alignment="center")
                 current_section = get_technical_section()
                 for column, (key, label) in zip(section_columns, sections, strict=False):
                     with column:
+                        if key == "home":
+                            if st.button(
+                                label,
+                                key=f"top_section_{key}_{active_page}",
+                                use_container_width=True,
+                            ):
+                                st.switch_page(_page_path(key))
+                            continue
+                        if key == "wiki":
+                            if st.button(
+                                label,
+                                key=f"top_section_{key}_{active_page}",
+                                use_container_width=True,
+                            ):
+                                st.switch_page(_page_path(key))
+                            continue
                         if st.button(
                             label,
                             key=f"top_section_{key}_{active_page}",

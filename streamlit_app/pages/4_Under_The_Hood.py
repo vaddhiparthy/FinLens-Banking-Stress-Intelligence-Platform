@@ -259,6 +259,19 @@ def freshness_table() -> pd.DataFrame:
 def source_activation_frame() -> pd.DataFrame:
     connector_report = load_state("connector_report", default={})
     sources = connector_report.get("sources", []) if isinstance(connector_report, dict) else []
+    pipeline_rows = pipeline_status_rows()
+    successful_sources = {
+        str(row.get("source", "")).lower()
+        for row in pipeline_rows
+        if row.get("status") == "Success"
+    }
+    landing_sources = {str(row.get("Source", "")).lower() for row in source_landing_rows()}
+    runtime_aliases = {
+        "FDIC BankFind failures": ("fdic bankfind", "fdic"),
+        "FRED series batch": ("fred",),
+        "FDIC QBP workbook": ("fdic qbp", "qbp"),
+        "NIC current parent metadata": ("nic",),
+    }
     if not sources:
         return pd.DataFrame(
             [
@@ -272,10 +285,19 @@ def source_activation_frame() -> pd.DataFrame:
         )
     rows = []
     for item in sources:
+        label = item["label"]
         missing = item.get("missing_env", [])
-        if item.get("ready"):
+        aliases = runtime_aliases.get(label, (label.lower(),))
+        has_runtime_evidence = any(alias in successful_sources for alias in aliases) or any(
+            alias in landing_source for alias in aliases for landing_source in landing_sources
+        )
+        if item.get("ready") or has_runtime_evidence:
             activation = "Active"
-            reason = "Connector inputs present and runtime check passed"
+            reason = (
+                "Runtime artifact present and latest pipeline status passed"
+                if has_runtime_evidence
+                else "Connector inputs present and runtime check passed"
+            )
         elif item.get("enabled"):
             activation = "Blocked"
             reason = f"Missing: {', '.join(missing)}" if missing else "Connector not ready"
@@ -288,7 +310,7 @@ def source_activation_frame() -> pd.DataFrame:
             )
         rows.append(
             {
-                "Source": item["label"],
+                "Source": label,
                 "Activation": activation,
                 "Reason": reason,
                 "Cadence": item["cadence"],
@@ -804,21 +826,30 @@ def render_data_browser(stage_key: str = "pipeline") -> None:
     section_heading(
         "Interactive Data Browser",
         "Read-only preview of the tables created by the pipeline. Use this to inspect the "
-        "bronze/raw and gold/mart outputs without modifying warehouse data.",
+        "Bronze, Silver, Intermediate, and Gold outputs without modifying warehouse data.",
     )
     stage_options = {
-        "Bronze/raw": [table for table in tables if table.startswith("raw.")],
-        "Gold marts": [table for table in tables if table.startswith("marts.")],
+        "Bronze / Raw": [table for table in tables if table.startswith("raw.")],
+        "Silver / Staging": [
+            table
+            for table in tables
+            if table.startswith("staging.") or table.startswith("snapshots.")
+        ],
+        "Intermediate": [table for table in tables if table.startswith("intermediate.")],
+        "Gold / Marts": [table for table in tables if table.startswith("marts.")],
         "All tables": tables,
     }
     stage_options = {label: values for label, values in stage_options.items() if values}
     stage_key_name = f"{stage_key}_browser_stage"
     if st.session_state.get(stage_key_name) not in stage_options:
         st.session_state[stage_key_name] = next(iter(stage_options))
-    stage_label_col, stage_select_col = st.columns([1.35, 1], vertical_alignment="center")
+    stage_label_col, stage_select_col, stage_spacer = st.columns(
+        [0.88, 0.92, 2.2],
+        vertical_alignment="center",
+    )
     with stage_label_col:
         st.markdown(
-            '<div class="browser-control-copy">Select the warehouse stage to inspect.</div>',
+            '<div class="browser-control-copy">Select warehouse stage</div>',
             unsafe_allow_html=True,
         )
     with stage_select_col:
@@ -828,14 +859,19 @@ def render_data_browser(stage_key: str = "pipeline") -> None:
             key=stage_key_name,
             label_visibility="collapsed",
         )
+    with stage_spacer:
+        st.empty()
     available = stage_options[stage]
     table_key = f"{stage_key}_browser_table"
     if st.session_state.get(table_key) not in available:
         st.session_state[table_key] = available[0]
-    table_label_col, table_select_col = st.columns([1.35, 1], vertical_alignment="center")
+    table_label_col, table_select_col, table_spacer = st.columns(
+        [0.88, 0.92, 2.2],
+        vertical_alignment="center",
+    )
     with table_label_col:
         st.markdown(
-            '<div class="browser-control-copy">Select a table from the chosen stage.</div>',
+            '<div class="browser-control-copy">Select table from stage</div>',
             unsafe_allow_html=True,
         )
     with table_select_col:
@@ -845,6 +881,8 @@ def render_data_browser(stage_key: str = "pipeline") -> None:
             key=table_key,
             label_visibility="collapsed",
         )
+    with table_spacer:
+        st.empty()
     preview_total = warehouse_table_preview(table_ref, limit=1, offset=0)["total_rows"]
     page_size = 6
     total_pages = max(1, (preview_total + page_size - 1) // page_size)
