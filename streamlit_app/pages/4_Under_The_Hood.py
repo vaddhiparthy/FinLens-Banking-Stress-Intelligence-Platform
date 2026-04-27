@@ -731,7 +731,6 @@ def _render_page_buttons(page_key: str, current_page: int, total_pages: int) -> 
     with left:
         if st.button("Prev", key=f"{page_key}_previous", use_container_width=True):
             st.session_state[page_key] = max(1, current_page - 1)
-            st.rerun()
     with middle:
         st.markdown(
             f'<div class="page-number-display">Page {current_page} of {total_pages}</div>',
@@ -740,7 +739,6 @@ def _render_page_buttons(page_key: str, current_page: int, total_pages: int) -> 
     with right:
         if st.button("Next", key=f"{page_key}_next", use_container_width=True):
             st.session_state[page_key] = min(total_pages, current_page + 1)
-            st.rerun()
 
 
 def _stage_description(label: str, table_count: int) -> str:
@@ -772,7 +770,6 @@ def _render_stage_flow(
                 st.session_state[f"{stage_key}_browser_stage"] = label
                 st.session_state[f"{stage_key}_browser_table"] = stage_options[label][0]
                 st.session_state[f"{stage_key}_browser_page"] = 1
-                st.rerun()
     return selected_stage
 
 
@@ -792,7 +789,6 @@ def _render_table_menu(stage_key: str, tables: list[str], selected_table: str) -
                 ):
                     st.session_state[f"{stage_key}_browser_table"] = table_ref
                     st.session_state[f"{stage_key}_browser_page"] = 1
-                    st.rerun()
     return selected_table
 
 

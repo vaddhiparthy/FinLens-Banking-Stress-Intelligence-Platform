@@ -86,15 +86,6 @@ def _surface_summary() -> pd.DataFrame:
     )
 
 
-def _go_to_business() -> None:
-    st.switch_page("pages/0_Stress_Pulse.py")
-
-
-def _go_to_technical() -> None:
-    st.session_state["technical_section"] = "pipeline"
-    st.switch_page("pages/4_Under_The_Hood.py")
-
-
 st.set_page_config(
     page_title="FinLens | Banking Stress Intelligence",
     layout="wide",
@@ -106,9 +97,22 @@ record_page_view("home", "landing")
 
 st.markdown(
     """
+    <div class="home-center-brand">
+        <span class="topbar-mark edge-mark">FL</span>
+        <span class="home-center-copy">
+            <span class="edge-title">FinLens</span>
+            <span class="edge-subtitle">Banking stress intelligence</span>
+        </span>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
     <div class="home-hero">
         <div class="home-kicker">FinLens</div>
-        <div class="home-title">Banking Stress Intelligence</div>
+        <div class="home-title">FinLens Banking Stress Intelligence</div>
         <div class="home-copy">
             A public-data banking intelligence platform that converts FDIC, FRED, QBP-style
             aggregates, institution metadata, and pipeline telemetry into governed business
@@ -163,25 +167,38 @@ with right:
 
 action_left, action_middle, action_right = st.columns([1.2, 1, 1.2], vertical_alignment="center")
 with action_left:
-    st.button(
+    if st.button(
         "Open Technical Surface",
         key="home_open_technical",
         use_container_width=True,
-        on_click=_go_to_technical,
-    )
+    ):
+        st.session_state["technical_section"] = "pipeline"
+        st.switch_page("pages/4_Under_The_Hood.py")
 with action_middle:
     st.markdown('<div class="home-action-divider">Choose a surface</div>', unsafe_allow_html=True)
 with action_right:
-    st.button(
+    if st.button(
         "Open Business Surface",
         key="home_open_business",
         use_container_width=True,
-        on_click=_go_to_business,
-    )
+    ):
+        st.switch_page("pages/0_Stress_Pulse.py")
 
 section_heading(
     "How The Platform Is Organized",
     "Business pages explain the banking story. Technical pages expose the source contracts, "
     "table inventory, transformation rules, run results, and operational controls behind that "
     "story.",
+)
+
+st.markdown(
+    """
+    <div class="home-credit">
+        <div class="home-credit-kicker">By</div>
+        <div class="home-credit-name">Sri Surya S. Vaddhiparthy</div>
+        <div class="home-credit-meta">M.S. (Data Science)</div>
+        <div class="home-credit-link">surya.vaddhiparthy.com</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )

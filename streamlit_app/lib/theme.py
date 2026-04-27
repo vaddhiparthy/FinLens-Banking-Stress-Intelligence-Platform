@@ -315,7 +315,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .home-hero {{
         max-width: 980px;
-        margin: 1.5rem auto 1.4rem auto;
+        margin: 4.75rem auto 1.4rem auto;
         text-align: center;
         padding: 3.1rem 2rem 2.4rem;
         border-radius: 34px;
@@ -325,6 +325,30 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
             linear-gradient(180deg, rgba(255,250,243,.94), rgba(244,239,230,.78));
         border: 1px solid {palette["border"]};
         box-shadow: 0 26px 52px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255,255,255,.65);
+    }}
+    .home-center-brand {{
+        position: fixed;
+        top: 1rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1390;
+        display: flex;
+        align-items: center;
+        gap: .65rem;
+        padding: .46rem .9rem;
+        border-radius: 999px;
+        background: linear-gradient(180deg, rgba(255,250,243,0.96), rgba(244,239,230,0.94));
+        border: 1px solid {palette["border"]};
+        box-shadow:
+            0 10px 22px rgba(15, 23, 42, 0.08),
+            inset 0 1px 0 rgba(255,255,255,0.5);
+        pointer-events: none;
+    }}
+    .home-center-copy {{
+        display: flex;
+        flex-direction: column;
+        line-height: 1.05;
+        text-align: left;
     }}
     .home-kicker {{
         color: {palette["text_soft"]};
@@ -363,6 +387,36 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         letter-spacing: .14em;
         font-size: .68rem;
         font-weight: 900;
+    }}
+    .home-credit {{
+        max-width: 520px;
+        margin: 2.2rem auto 3.2rem;
+        text-align: center;
+        padding: 1.25rem 1.5rem;
+        border-radius: 24px;
+        background: linear-gradient(180deg, rgba(255,250,243,.82), rgba(244,239,230,.62));
+        border: 1px solid {palette["border"]};
+        box-shadow: 0 14px 28px rgba(15,23,42,.06);
+    }}
+    .home-credit-kicker {{
+        color: {palette["text_soft"]};
+        text-transform: uppercase;
+        letter-spacing: .18em;
+        font-size: .68rem;
+        font-weight: 900;
+        margin-bottom: .28rem;
+    }}
+    .home-credit-name {{
+        color: {palette["text_main"]};
+        font-family: "Fraunces", Georgia, serif;
+        font-size: 1.3rem;
+        line-height: 1.2;
+    }}
+    .home-credit-meta,
+    .home-credit-link {{
+        color: {palette["text_muted"]};
+        font-size: .88rem;
+        line-height: 1.5;
     }}
     .topbar-anchor + div div[data-testid="stVerticalBlockBorderWrapper"] {{
         position: sticky;
