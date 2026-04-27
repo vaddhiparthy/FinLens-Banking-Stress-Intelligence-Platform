@@ -726,27 +726,74 @@ def source_landing_frame() -> pd.DataFrame:
 
 
 def _render_page_buttons(page_key: str, current_page: int, total_pages: int) -> None:
-    window_size = 5
-    start_page = max(1, current_page - window_size // 2)
-    end_page = min(total_pages, start_page + window_size - 1)
-    start_page = max(1, end_page - window_size + 1)
-    page_targets = list(range(start_page, end_page + 1))
-    controls: list[tuple[str, int]] = []
-    if current_page > 1:
-        controls.append(("‹", current_page - 1))
-    controls.extend(
-        [(f"● {page}" if page == current_page else str(page), page) for page in page_targets]
-    )
-    if current_page < total_pages:
-        controls.append(("›", current_page + 1))
-
     st.markdown('<div class="page-control-anchor"></div>', unsafe_allow_html=True)
-    columns = st.columns([1.45, *([0.42] * len(controls)), 1.45], vertical_alignment="center")
-    for column, (label, target_page) in zip(columns[1:-1], controls, strict=False):
+    left, middle, right = st.columns([1, 1.2, 1], vertical_alignment="center")
+    with left:
+        if st.button("Previous", key=f"{page_key}_previous", use_container_width=True):
+            st.session_state[page_key] = max(1, current_page - 1)
+            st.rerun()
+    with middle:
+        st.markdown(
+            f'<div class="page-number-display">Page {current_page} of {total_pages}</div>',
+            unsafe_allow_html=True,
+        )
+    with right:
+        if st.button("Next", key=f"{page_key}_next", use_container_width=True):
+            st.session_state[page_key] = min(total_pages, current_page + 1)
+            st.rerun()
+
+
+def _stage_description(label: str, table_count: int) -> str:
+    descriptions = {
+        "Bronze/raw": "Source-shaped landing tables",
+        "Gold marts": "Dashboard-ready analytical outputs",
+        "All tables": "Complete warehouse browser",
+    }
+    return f"{table_count} tables · {descriptions.get(label, 'Warehouse stage')}"
+
+
+def _render_stage_flow(
+    stage_options: dict[str, list[str]],
+    selected_stage: str,
+    stage_key: str,
+) -> str:
+    st.markdown('<div class="browser-stage-anchor"></div>', unsafe_allow_html=True)
+    labels = list(stage_options)
+    columns = st.columns(len(labels), vertical_alignment="center")
+    for index, (column, label) in enumerate(zip(columns, labels, strict=False), start=1):
+        table_count = len(stage_options[label])
+        marker = "● " if label == selected_stage else ""
         with column:
-            if st.button(label, key=f"{page_key}_{label}_{target_page}", use_container_width=True):
-                st.session_state[page_key] = target_page
+            if st.button(
+                f"{marker}Stage {index}: {label}\n{_stage_description(label, table_count)}",
+                key=f"{stage_key}_stage_{label}",
+                use_container_width=True,
+            ):
+                st.session_state[f"{stage_key}_browser_stage"] = label
+                st.session_state[f"{stage_key}_browser_table"] = stage_options[label][0]
+                st.session_state[f"{stage_key}_browser_page"] = 1
                 st.rerun()
+    return selected_stage
+
+
+def _render_table_menu(stage_key: str, tables: list[str], selected_table: str) -> str:
+    st.markdown('<div class="browser-table-anchor"></div>', unsafe_allow_html=True)
+    for row_start in range(0, len(tables), 4):
+        row_tables = tables[row_start : row_start + 4]
+        columns = st.columns(len(row_tables), vertical_alignment="center")
+        for column, table_ref in zip(columns, row_tables, strict=False):
+            label = table_ref.split(".", maxsplit=1)[-1]
+            marker = "● " if table_ref == selected_table else ""
+            with column:
+                if st.button(
+                    f"{marker}{label}",
+                    key=f"{stage_key}_table_{table_ref}",
+                    use_container_width=True,
+                ):
+                    st.session_state[f"{stage_key}_browser_table"] = table_ref
+                    st.session_state[f"{stage_key}_browser_page"] = 1
+                    st.rerun()
+    return selected_table
 
 
 def render_data_browser(stage_key: str = "pipeline") -> None:
@@ -765,20 +812,17 @@ def render_data_browser(stage_key: str = "pipeline") -> None:
         "All tables": tables,
     }
     stage_options = {label: values for label, values in stage_options.items() if values}
-    controls_left, controls_right = st.columns(2)
-    with controls_left:
-        stage = st.selectbox(
-            "Pipeline stage",
-            list(stage_options),
-            key=f"{stage_key}_browser_stage",
-        )
+    stage_key_name = f"{stage_key}_browser_stage"
+    if st.session_state.get(stage_key_name) not in stage_options:
+        st.session_state[stage_key_name] = next(iter(stage_options))
+    stage = str(st.session_state[stage_key_name])
+    _render_stage_flow(stage_options, stage, stage_key)
     available = stage_options[stage]
-    with controls_right:
-        table_ref = st.selectbox(
-            "Table",
-            available,
-            key=f"{stage_key}_browser_table",
-        )
+    table_key = f"{stage_key}_browser_table"
+    if st.session_state.get(table_key) not in available:
+        st.session_state[table_key] = available[0]
+    table_ref = str(st.session_state[table_key])
+    _render_table_menu(stage_key, available, table_ref)
     preview_total = warehouse_table_preview(table_ref, limit=1, offset=0)["total_rows"]
     page_size = 6
     total_pages = max(1, (preview_total + page_size - 1) // page_size)
@@ -969,6 +1013,7 @@ active_section = get_technical_section()
 section_titles = {
     "pipeline": "Live Pipeline Status",
     "status": "Reconciliation",
+    "classification": "Data Classification",
     "implementation": "Data Quality",
     "administration": "Administration",
     "decisions": "Architecture Decisions",
@@ -980,6 +1025,9 @@ intro_copy = (
     if active_section == "decisions"
     else "Administrative runtime controls, service endpoints, and control-plane sync status."
     if active_section == "administration"
+    else "Source contracts, warehouse entities, and transformation rules that define how raw "
+    "public data becomes usable analytical data."
+    if active_section == "classification"
     else "This is the engineering operations surface: source freshness, reconciliation, quality "
     "posture, and the rule that dashboards read only from the gold layer."
 )
@@ -1034,7 +1082,7 @@ if active_section == "pipeline":
         section_heading(
             "Tool Participation",
             "Airflow schedules the work, dbt models and validates it, Snowflake is the cloud "
-            "warehouse target, and Streamlit/FastAPI serve the portfolio surface.",
+            "warehouse target, and Streamlit/FastAPI serve the presentation surface.",
         )
         styled_table(tool_evidence_frame())
         section_heading(
@@ -1105,12 +1153,56 @@ elif active_section == "status":
     )
     styled_table(dbt_quality_summary_frame())
 
+elif active_section == "classification":
+    section_heading(
+        "Source Classification",
+        "The active source contracts define which public feeds are production inputs, which "
+        "cadence they follow, and how they enter the bronze layer.",
+    )
+    styled_table(source_activation_frame())
+    section_heading(
+        "Source Freshness",
+        "Current source readiness from the connector report. This table is operational because "
+        "freshness failures change whether the business charts should be trusted.",
+    )
+    styled_table(freshness_table())
+    section_heading(
+        "Source Landing Artifacts",
+        "Raw files and source volumes retained from connector runs.",
+    )
+    styled_table(source_landing_frame())
+    section_heading(
+        "Warehouse Classification",
+        "Tables currently available by layer, schema, row count, and column count.",
+    )
+    styled_table(warehouse_inventory_frame())
+    section_heading(
+        "Transform Preview",
+        "A compact before/after view of the central transform pattern: raw source payloads are "
+        "loaded, normalized into typed warehouse tables, then exposed as Gold marts.",
+    )
+    example = pd.DataFrame(
+        [
+            {
+                "Before": '{"Bank Name": "First-Citizens Bank & Trust Company", "Closing Date": "2023-03-10"}',
+                "After": '{"bank_name": "First-Citizens Bank & Trust Company", "closing_date": "2023-03-10", "year": 2023}',
+                "Rule": "Normalize column names, parse dates, preserve source values",
+            }
+        ]
+    )
+    styled_table(example)
+    section_heading(
+        "Transformation Rule Catalog",
+        "Durable rules applied across landing, canonical shaping, and Gold serving.",
+    )
+    styled_table(transform_rules_frame())
+
 elif active_section == "implementation":
     probes = load_state("platform_probe_report", default={})
     section_heading(
-        "Data Quality (Airflow + dbt)",
-        "Operational quality checks are grouped by the platform component expected to produce "
-        "them: Airflow for freshness, dbt for tests, and Snowflake for warehouse observability.",
+        "Core Data Engineering Stack",
+        "Operational checks grouped by the component expected to produce them: Airflow for "
+        "orchestration, dbt for model/test outcomes, and Snowflake/DuckDB for warehouse state.",
     )
     styled_table(tool_evidence_frame())
     left, right = st.columns(2)
@@ -1126,19 +1218,6 @@ elif active_section == "implementation":
             "Model and test results parsed from dbt's generated artifacts.",
         )
         styled_table(dbt_results_frame())
-
-    with st.expander("Source Freshness And Activation", expanded=False):
-        section_heading(
-            "Source Freshness (Airflow Inputs)",
-            "Active source contracts Airflow refreshes when the scheduler runs.",
-        )
-        styled_table(freshness_table())
-        section_heading(
-            "Source Activation Contract",
-            "Active connectors are separated from source contracts present in code but not "
-            "activated in production.",
-        )
-        styled_table(source_activation_frame())
 
     section_heading(
         "Warehouse Activation Checklist (Snowflake + dbt)",
@@ -1169,27 +1248,11 @@ elif active_section == "implementation":
     )
     styled_table(activation)
     section_heading(
-        "Transform Preview",
-        "A compact before/after view of the central transform pattern: raw source payloads are "
-        "loaded, normalized into typed warehouse tables, then exposed as Gold marts.",
+        "Latest Pipeline Run",
+        "Execution ledger written by the pipeline runner, including status, duration, and step "
+        "detail.",
     )
-    example = pd.DataFrame(
-        [
-            {
-                "Before": '{"Bank Name": "First-Citizens Bank & Trust Company", "Closing Date": "2023-03-10"}',
-                "After": '{"bank_name": "First-Citizens Bank & Trust Company", "closing_date": "2023-03-10", "year": 2023}',
-                "Rule": "Normalize column names, parse dates, preserve source values",
-            }
-        ]
-    )
-    styled_table(example)
-    section_heading(
-        "Transformation Rule Catalog",
-        "The rules below are the durable business transformations applied across source landing, "
-        "canonical shaping, and Gold serving. They explain what changes between raw payloads and "
-        "dashboard-ready tables.",
-    )
-    styled_table(transform_rules_frame())
+    styled_table(latest_pipeline_run_frame())
 
 elif active_section == "administration":
     section_heading(

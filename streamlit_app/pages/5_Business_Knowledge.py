@@ -125,6 +125,95 @@ def _insight_frame() -> pd.DataFrame:
     )
 
 
+def _business_questions() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "Business question": "Is the banking system profitable at the aggregate level?",
+                "Where to read it": "Stress Pulse",
+                "Primary signals": "Net income, ROA, NIM, asset yield, funding cost",
+                "What the dashboard contributes": "Places profitability beside funding pressure instead of showing an isolated KPI.",
+            },
+            {
+                "Business question": "Where have failures concentrated historically?",
+                "Where to read it": "Failure Forensics",
+                "Primary signals": "Failure year, state, acquirer, failed-bank inventory",
+                "What the dashboard contributes": "Turns the failure list into filterable geography and institutional drill-down.",
+            },
+            {
+                "Business question": "Which macro signals are part of the current stress context?",
+                "Where to read it": "Macro Transmission",
+                "Primary signals": "Yield curve, unemployment, CPI, GDP, home prices",
+                "What the dashboard contributes": "Separates each indicator onto its own scale and avoids false unit comparisons.",
+            },
+            {
+                "Business question": "Can the numbers be traced back to stable public sources?",
+                "Where to read it": "Technical Surface",
+                "Primary signals": "Source artifacts, warehouse tables, reconciliation, dbt results",
+                "What the dashboard contributes": "Shows how public data becomes a governed analytical layer.",
+            },
+        ]
+    )
+
+
+def _business_transform_rules() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "Business entity": "Bank failure",
+                "Raw source issue": "Names, dates, acquirers, and locations arrive as source-specific fields.",
+                "Cleaned analytical form": "Bank, city, state, failure date, failure year, certificate, acquirer.",
+                "Business benefit": "Users can filter failures by year/state and read a clean inventory.",
+            },
+            {
+                "Business entity": "Industry aggregate",
+                "Raw source issue": "FDIC aggregate values are not formatted for executive consumption.",
+                "Cleaned analytical form": "Net income, ROA, NIM, losses, and quality ratios in readable units.",
+                "Business benefit": "Stress Pulse reads like a banking health snapshot instead of a raw data extract.",
+            },
+            {
+                "Business entity": "Macro indicator",
+                "Raw source issue": "FRED series have different frequencies, units, labels, and date spans.",
+                "Cleaned analytical form": "Curated indicator panel with date, indicator, latest value, and interpretation note.",
+                "Business benefit": "Macro context is readable without pretending every line belongs on one axis.",
+            },
+            {
+                "Business entity": "Analytical trust",
+                "Raw source issue": "Users cannot easily tell whether a chart is live, stale, or manually entered.",
+                "Cleaned analytical form": "Pipeline status, source artifacts, and quality tables tied to the same run state.",
+                "Business benefit": "The dashboard explains not just what it shows, but why it should be trusted.",
+            },
+        ]
+    )
+
+
+def _reading_guide() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "If the viewer asks": "What is the fastest useful read?",
+                "Recommended path": "Stress Pulse → Failure Forensics → Macro Transmission",
+                "Reason": "This moves from system health to historical failures to economic context.",
+            },
+            {
+                "If the viewer asks": "Where did the data come from?",
+                "Recommended path": "Business Knowledge → Technical Surface",
+                "Reason": "The business tab explains the meaning; the technical tab shows the operating controls.",
+            },
+            {
+                "If the viewer asks": "Is this predicting bank failures?",
+                "Recommended path": "Business Knowledge disclaimer and Macro Transmission interpretation notes",
+                "Reason": "The app provides context and transformation, not regulatory ratings or predictions.",
+            },
+            {
+                "If the viewer asks": "What changed from raw data to analytics?",
+                "Recommended path": "Transformation Logic",
+                "Reason": "The transformation tables explain standardization, scaling, cleaning, and metric shaping.",
+            },
+        ]
+    )
+
+
 st.set_page_config(
     page_title="FinLens | Business Knowledge",
     layout="wide",
@@ -155,58 +244,55 @@ chart_note(
     "public facts into context, trends, and drill-downs.",
 )
 
-section_heading("Source Catalog", "The raw public sources and the business value each one adds.")
-styled_table(_source_catalog())
-
-section_heading(
-    "Metric Dictionary",
-    "Key banking and macro terms translated into business language.",
+overview_tab, sources_tab, metrics_tab, transforms_tab, readouts_tab = st.tabs(
+    [
+        "Business Map",
+        "Sources",
+        "Metric Dictionary",
+        "Transformation Logic",
+        "Current Readouts",
+    ]
 )
-styled_table(_metric_catalog())
 
-section_heading(
-    "Current Analytical Readouts",
-    "Computed summaries from the active loaded data. These are intentionally simple, but they "
-    "come from the live warehouse tables rather than static prose.",
-)
-styled_table(_insight_frame())
-
-section_heading(
-    "Transformation Story",
-    "The practical value is not just plotting public data. The value is converting inconsistent "
-    "source language into stable analytical entities: institution, date, state, source, metric, "
-    "and value. That lets the same dashboard refresh repeatedly without rewriting every chart.",
-)
-styled_table(
-    pd.DataFrame(
-        [
-            {
-                "Step": "Raw source",
-                "Example": "FDIC column labels, public CSV/API payloads, source-specific date formats",
-                "Business result": "A factual source archive is preserved.",
-            },
-            {
-                "Step": "Clean entity",
-                "Example": "Bank name, state, cert number, acquirer, failure year",
-                "Business result": "Users can filter, search, and compare banks consistently.",
-            },
-            {
-                "Step": "Analytical metric",
-                "Example": "Net income in billions, ROA, NIM, noncurrent rate",
-                "Business result": "Numbers are readable and comparable on business charts.",
-            },
-            {
-                "Step": "Interpretation",
-                "Example": "Concentration by state, latest failure year, macro context",
-                "Business result": "The dashboard explains what changed and why it matters.",
-            },
-        ]
+with overview_tab:
+    section_heading(
+        "Business Question Map",
+        "The business surface is organized around the questions a banking analyst or executive "
+        "reviewer would ask first.",
     )
-)
+    styled_table(_business_questions())
+    section_heading(
+        "How To Read The Product",
+        "Start with Stress Pulse for the industry baseline, use Failure Forensics for historical "
+        "failure concentration, use Macro Transmission for economic context, and return here when "
+        "a term or source needs translation.",
+    )
+    styled_table(_reading_guide())
 
-section_heading(
-    "How To Read The Product",
-    "Start with Stress Pulse for the industry baseline, use Failure Forensics for the historical "
-    "failure archive, use Macro Transmission for economic context, and use this tab when a term "
-    "or number needs translation.",
-)
+with sources_tab:
+    section_heading("Source Catalog", "The raw public sources and the business value each one adds.")
+    styled_table(_source_catalog())
+
+with metrics_tab:
+    section_heading(
+        "Metric Dictionary",
+        "Key banking and macro terms translated into business language.",
+    )
+    styled_table(_metric_catalog())
+
+with transforms_tab:
+    section_heading(
+        "Transformation Story",
+        "The practical value is not just plotting public data. The value is converting inconsistent "
+        "source language into stable analytical entities: institution, date, state, source, metric, "
+        "and value.",
+    )
+    styled_table(_business_transform_rules())
+
+with readouts_tab:
+    section_heading(
+        "Current Analytical Readouts",
+        "Computed summaries from the active loaded data. These come from the warehouse tables rather "
+        "than static prose.",
+    )
+    styled_table(_insight_frame())

@@ -810,20 +810,51 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         -webkit-text-fill-color: {palette["text_main"]} !important;
     }}
     .page-control-anchor + div {{
-        max-width: 28rem;
-        margin: .25rem auto 1rem auto;
+        max-width: 18rem;
+        margin: .15rem auto .9rem auto;
         align-items: center;
     }}
     .page-control-anchor + div button {{
-        min-height: 2rem !important;
+        min-height: 1.72rem !important;
         border-radius: 999px !important;
-        padding: .15rem .35rem !important;
+        padding: .08rem .28rem !important;
         background: linear-gradient(180deg, {palette["content_bg"]}, {palette["sand"]}) !important;
         border: 1px solid {palette["border"]} !important;
         box-shadow: none !important;
         color: {palette["text_main"]} !important;
         -webkit-text-fill-color: {palette["text_main"]} !important;
-        font-size: .76rem !important;
+        font-size: .68rem !important;
+        font-weight: 800 !important;
+    }}
+    .page-number-display {{
+        text-align: center;
+        font-size: .72rem;
+        font-weight: 800;
+        color: {palette["text_soft"]};
+        border: 1px solid {palette["border"]};
+        border-radius: 999px;
+        padding: .26rem .35rem;
+        background: rgba(255, 250, 243, 0.72);
+        white-space: nowrap;
+    }}
+    .browser-stage-anchor + div button {{
+        min-height: 4.2rem !important;
+        border-radius: 18px !important;
+        text-align: left !important;
+        background: linear-gradient(180deg, {palette["content_bg"]}, {palette["sand"]}) !important;
+        border: 1px solid {palette["border"]} !important;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05) !important;
+        font-size: .78rem !important;
+        font-weight: 800 !important;
+        line-height: 1.25 !important;
+    }}
+    .browser-table-anchor + div button {{
+        min-height: 2.05rem !important;
+        border-radius: 999px !important;
+        background: rgba(255, 250, 243, 0.78) !important;
+        border: 1px solid {palette["border"]} !important;
+        box-shadow: none !important;
+        font-size: .72rem !important;
         font-weight: 800 !important;
     }}
     .chart-note {{
