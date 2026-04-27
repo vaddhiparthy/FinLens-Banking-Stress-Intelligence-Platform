@@ -13,7 +13,7 @@ COPY scripts /app/scripts
 COPY dbt /app/dbt
 COPY airflow/dags /app/airflow/dags
 COPY streamlit_app /app/streamlit_app
-COPY data /app/data
+RUN mkdir -p /app/data /app/.duckdb
 
 RUN pip install --no-cache-dir uv \
     && uv pip install --system .
