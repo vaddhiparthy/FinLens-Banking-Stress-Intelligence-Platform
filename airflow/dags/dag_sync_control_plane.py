@@ -14,5 +14,8 @@ with DAG(
 ) as dag:
     BashOperator(
         task_id="sync_control_plane_to_postgres",
-        bash_command="cd /opt/finlens && python scripts/sync_control_plane_to_postgres.py",
+        bash_command=(
+            "cd /opt/finlens && "
+            "/opt/finlens/.venv/bin/python scripts/sync_control_plane_to_postgres.py"
+        ),
     )

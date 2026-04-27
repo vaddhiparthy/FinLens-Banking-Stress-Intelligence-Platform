@@ -16,6 +16,7 @@ with DAG(
         task_id="ingest_fdic",
         bash_command=(
             "cd /opt/finlens && "
-            "python scripts/run_local_pipeline.py --sources fdic --skip-warehouse"
+            "/opt/finlens/.venv/bin/python scripts/run_local_pipeline.py "
+            "--sources fdic --skip-warehouse"
         ),
     )

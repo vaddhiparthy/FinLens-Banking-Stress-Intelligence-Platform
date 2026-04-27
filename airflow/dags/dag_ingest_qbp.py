@@ -16,6 +16,7 @@ with DAG(
         task_id="ingest_qbp",
         bash_command=(
             "cd /opt/finlens && "
-            "python scripts/run_local_pipeline.py --sources qbp --skip-warehouse"
+            "/opt/finlens/.venv/bin/python scripts/run_local_pipeline.py "
+            "--sources qbp --skip-warehouse"
         ),
     )

@@ -16,6 +16,7 @@ with DAG(
         task_id="ingest_fred",
         bash_command=(
             "cd /opt/finlens && "
-            "python scripts/run_local_pipeline.py --sources fred --skip-warehouse"
+            "/opt/finlens/.venv/bin/python scripts/run_local_pipeline.py "
+            "--sources fred --skip-warehouse"
         ),
     )

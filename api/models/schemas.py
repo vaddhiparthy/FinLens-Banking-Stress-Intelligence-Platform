@@ -6,6 +6,7 @@ class HealthResponse(BaseModel):
     environment: str
     data_mode: str
     stress_pulse_mode: str
+    postgres_sync: dict = Field(default_factory=dict)
     connectors: list[dict] = Field(default_factory=list)
     pipeline: list[dict] = Field(default_factory=list)
 

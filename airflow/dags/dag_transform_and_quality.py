@@ -12,22 +12,11 @@ with DAG(
     catchup=False,
     default_args=default_args,
 ) as dag:
-    dbt_build = BashOperator(
-        task_id="dbt_build",
-        bash_command="cd /opt/finlens/dbt && dbt build --profiles-dir . --target snowflake",
-    )
-
-    ge_checkpoint = BashOperator(
-        task_id="ge_on_load",
-        bash_command="python /opt/finlens/great_expectations/run_checkpoint.py on_load",
-    )
-
-    export_marts = BashOperator(
-        task_id="export_marts",
+    BashOperator(
+        task_id="run_ingestion_transform_quality",
         bash_command=(
             "cd /opt/finlens && "
-            "python scripts/run_local_pipeline.py --sources fdic,fred,qbp,nic"
+            "/opt/finlens/.venv/bin/python scripts/run_local_pipeline.py "
+            "--allow-missing-connectors --run-dbt-build --probe-platform --sync-postgres"
         ),
     )
-
-    dbt_build >> ge_checkpoint >> export_marts

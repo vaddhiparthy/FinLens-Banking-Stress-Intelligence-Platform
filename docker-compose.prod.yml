@@ -100,7 +100,13 @@ services:
       - ./airflow/dags:/opt/airflow/dags
     command: >
       bash -c "airflow db migrate &&
-      airflow users create --username admin --password admin --firstname Fin --lastname Lens --role Admin --email admin@example.com || true"
+      airflow users create --username admin --password admin --firstname Fin --lastname Lens --role Admin --email admin@example.com || true;
+      airflow dags unpause dag_ingest_fdic || true;
+      airflow dags unpause dag_ingest_fred || true;
+      airflow dags unpause dag_ingest_qbp || true;
+      airflow dags unpause dag_ingest_nic || true;
+      airflow dags unpause dag_sync_control_plane || true;
+      airflow dags unpause dag_transform_and_quality || true"
 
   airflow-webserver:
     build:
