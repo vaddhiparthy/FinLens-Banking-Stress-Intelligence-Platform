@@ -15,6 +15,32 @@ services:
     expose:
       - "8501"
 
+  finlens-streamlit-public:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    container_name: finlens-streamlit-public
+    env_file:
+      - .env
+    environment:
+      POSTGRES_SYNC_DSN: postgresql://finlens:finlens@finlens-control-postgres:5432/finlens
+    command:
+      - streamlit
+      - run
+      - streamlit_app/app.py
+      - --server.address=0.0.0.0
+      - --server.port=8501
+      - --server.headless=true
+      - --server.enableCORS=false
+      - --server.enableXsrfProtection=false
+      - --server.baseUrlPath=finlens
+    volumes:
+      - ./data:/app/data
+      - ./.duckdb:/app/.duckdb
+    restart: unless-stopped
+    expose:
+      - "8501"
+
   finlens-api:
     build:
       context: .
@@ -162,6 +188,7 @@ services:
     restart: unless-stopped
     depends_on:
       - finlens-streamlit
+      - finlens-streamlit-public
       - finlens-api
       - uptime-kuma
     ports:

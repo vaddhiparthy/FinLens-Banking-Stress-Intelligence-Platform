@@ -11,8 +11,8 @@ load_dotenv(dotenv_path=Path(".env"), override=False)
 class Settings(BaseSettings):
     project_name: str = "FinLens"
     finlens_environment: str = "local"
-    root_domain: str = "vaddhiparthy.vip"
-    project_domain: str = "finlens.vaddhiparthy.vip"
+    root_domain: str = "vaddhiparthy.com"
+    project_domain: str = "surya.vaddhiparthy.com"
     finlens_data_mode: str = "mock"
     finlens_active_sources: str = "fdic,fred,qbp,nic"
     finlens_artifact_dir: str = "data"

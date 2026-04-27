@@ -305,7 +305,8 @@ with left:
                 active_class = " active" if title == st.session_state.get("wiki_article") else ""
                 href = f"?article={quote(_slug(title))}"
                 tree_html.append(
-                    f'<a class="wiki-tree-link{active_class}" href="{href}">{title}</a>'
+                    f'<a class="wiki-tree-link{active_class}" href="{href}" target="_self">'
+                    f"{title}</a>"
                 )
     tree_html.append("</div>")
     st.markdown("\n".join(tree_html), unsafe_allow_html=True)
