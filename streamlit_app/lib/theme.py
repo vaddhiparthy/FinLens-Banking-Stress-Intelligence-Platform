@@ -1121,10 +1121,32 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         box-shadow: none !important;
         background: transparent !important;
     }}
+    div[data-testid="stRadio"] label:hover {{
+        background: transparent !important;
+        text-decoration: underline;
+        text-decoration-color: {palette["accent"]};
+        text-underline-offset: 3px;
+    }}
+    div[data-testid="stRadio"] label:has(input:checked) {{
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        color: {palette["accent"]} !important;
+        font-weight: 850 !important;
+    }}
     div[data-testid="stRadio"] label p {{
         color: {palette["text_main"]} !important;
         font-size: .78rem !important;
         line-height: 1.25 !important;
+    }}
+    div[data-testid="stRadio"] label:has(input:checked) p {{
+        color: {palette["accent"]} !important;
+        -webkit-text-fill-color: {palette["accent"]} !important;
+        font-weight: 850 !important;
+    }}
+    div[data-testid="stRadio"] label div:first-child {{
+        transform: scale(.7);
+        margin-right: .25rem !important;
     }}
     div[data-testid="stRadio"] div[role="radiogroup"] {{
         gap: .02rem !important;

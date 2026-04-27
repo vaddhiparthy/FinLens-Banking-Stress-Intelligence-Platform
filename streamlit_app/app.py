@@ -118,10 +118,15 @@ components.html(
     </div>
     <style>
       .notice-shell {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
         display: flex;
         justify-content: center;
-        align-items: flex-start;
-        padding: 8px 0 4px;
+        align-items: center;
+        background: rgba(31, 41, 51, .18);
+        backdrop-filter: blur(2px);
+        padding: 16px;
         font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
           "Segoe UI", sans-serif;
       }
@@ -170,7 +175,7 @@ components.html(
       });
     </script>
     """,
-    height=245,
+    height=0,
 )
 
 st.markdown(
