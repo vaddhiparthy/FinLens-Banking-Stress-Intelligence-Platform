@@ -144,7 +144,9 @@ def top_navigation(active_page: str, mode: str) -> None:
                 <span class="edge-subtitle">Stress Intelligence</span>
             </span>
         </div>
-        <div class="edge-credit">Built by Sri Surya S. Vaddhiparthy</div>
+        <a class="edge-credit" href="https://surya.vaddhiparthy.com" target="_blank">
+            Built by Sri Surya S. Vaddhiparthy
+        </a>
         """,
         unsafe_allow_html=True,
     )

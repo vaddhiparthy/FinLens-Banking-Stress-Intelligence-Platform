@@ -302,6 +302,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         right: 1.35rem;
         z-index: 1390;
         pointer-events: none;
+        text-decoration: none;
         font-family: "Fraunces", Georgia, serif;
         font-size: .92rem;
         color: {palette["text_main"]};
@@ -314,6 +315,9 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         box-shadow:
             0 10px 22px rgba(15, 23, 42, 0.08),
             inset 0 1px 0 rgba(255,255,255,0.5);
+    }}
+    a.edge-credit {{
+        pointer-events: auto;
     }}
     .home-hero {{
         max-width: 980px;
@@ -413,6 +417,12 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         font-family: "Fraunces", Georgia, serif;
         font-size: .98rem;
         line-height: 1.2;
+        text-decoration: none;
+        display: inline-block;
+    }}
+    .home-credit-name:hover {{
+        color: {palette["link_hover"]};
+        text-decoration: underline;
     }}
     .home-credit-meta,
     .home-credit-link {{

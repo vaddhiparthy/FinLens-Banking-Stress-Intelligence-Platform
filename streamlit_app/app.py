@@ -169,7 +169,9 @@ st.markdown(
         </div>
         <div class="home-credit-inline">
             <div class="home-credit-kicker">By</div>
-            <div class="home-credit-name">Sri Surya S. Vaddhiparthy</div>
+            <a class="home-credit-name" href="https://surya.vaddhiparthy.com" target="_blank">
+                Sri Surya S. Vaddhiparthy
+            </a>
             <div class="home-credit-meta">M.S. (Data Science)</div>
             <a class="home-credit-link" href="https://surya.vaddhiparthy.com" target="_blank">
                 surya.vaddhiparthy.com
@@ -204,7 +206,7 @@ with card3:
 with card4:
     metric_card("Pipeline flows", f"{len(pipeline_rows)}", "Tracked data movements")
 
-left, right = st.columns([1, 1], vertical_alignment="center")
+left, right = st.columns([1, 1], vertical_alignment="top")
 with left:
     section_heading(
         "Executive Overview",
