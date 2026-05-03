@@ -46,6 +46,12 @@ from streamlit_app.lib.ui_components import (
     tech_bulletin,
 )
 
+LIVE_BADGE = '<span class="finlens-live-badge">Live</span>'
+
+
+def live_label(label: str) -> str:
+    return f"{label} {LIVE_BADGE}"
+
 
 def pipeline_status_frame() -> pd.DataFrame:
     return pd.DataFrame(pipeline_status_rows())
@@ -1065,7 +1071,37 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 ensure_theme_state()
-inject_styles(app_css(get_theme_mode(), sidebar_open=False))
+inject_styles(
+    app_css(get_theme_mode(), sidebar_open=False)
+    + """
+    .finlens-live-badge {
+        display: inline-flex;
+        align-items: center;
+        margin-left: .42rem;
+        padding: .08rem .34rem;
+        border-radius: 999px;
+        border: 1px solid rgba(190, 72, 72, .26);
+        background: rgba(212, 78, 78, .09);
+        color: #b94141;
+        font-size: .56rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+        vertical-align: middle;
+        animation: finlensLivePulse 1.9s ease-in-out infinite;
+    }
+    @keyframes finlensLivePulse {
+        0%, 100% {
+            opacity: .68;
+            box-shadow: 0 0 0 0 rgba(212, 78, 78, .14);
+        }
+        50% {
+            opacity: 1;
+            box-shadow: 0 0 0 4px rgba(212, 78, 78, 0);
+        }
+    }
+    """
+)
 top_navigation("hood", TECHNICAL_PAGE)
 record_page_view("control_room", TECHNICAL_PAGE)
 status_ribbon("Technical systems view")
@@ -1110,17 +1146,17 @@ if active_section == "pipeline":
     card1, card2, card3, card4 = st.columns(4)
     with card1:
         metric_card(
-            "FDIC BankFind",
+            live_label("FDIC BankFind"),
             pipeline_frame.iloc[0]["status"],
             pipeline_frame.iloc[0]["note"],
         )
     with card2:
-        metric_card("FRED", pipeline_frame.iloc[2]["status"], pipeline_frame.iloc[2]["note"])
+        metric_card(live_label("FRED"), pipeline_frame.iloc[2]["status"], pipeline_frame.iloc[2]["note"])
     with card3:
-        metric_card("Gold Marts", pipeline_frame.iloc[5]["status"], pipeline_frame.iloc[5]["note"])
+        metric_card(live_label("Gold Marts"), pipeline_frame.iloc[5]["status"], pipeline_frame.iloc[5]["note"])
     with card4:
         metric_card(
-            "Dashboards",
+            live_label("Dashboards"),
             pipeline_frame.iloc[6]["status"],
             pipeline_frame.iloc[6]["note"],
         )
@@ -1129,9 +1165,9 @@ if active_section == "pipeline":
     with infra1:
         metric_card("AWS S3", stack.iloc[0]["Status"], "Bronze mirror readiness")
     with infra2:
-        metric_card("Airflow", stack.iloc[1]["Status"], "DAG orchestration scaffold")
+        metric_card(live_label("Airflow"), stack.iloc[1]["Status"], "DAG orchestration scaffold")
     with infra3:
-        metric_card("dbt", stack.iloc[2]["Status"], "Silver and gold models")
+        metric_card(live_label("dbt"), stack.iloc[2]["Status"], "Silver and gold models")
     with infra4:
         metric_card("Snowflake", stack.iloc[4]["Status"], "Warehouse contract readiness")
     section_heading(

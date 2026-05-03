@@ -1,20 +1,147 @@
+{
+	log {
+		output file /var/log/caddy/runtime.log {
+			roll_size 20mb
+			roll_keep 4
+			roll_keep_for 720h
+		}
+		format json
+	}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		X-Frame-Options "DENY"
+		Content-Security-Policy-Report-Only "default-src 'self' https: data: blob:; script-src 'self' https: 'unsafe-inline'; style-src 'self' https: 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self' https: data:; connect-src 'self' https:; frame-src 'self' https: https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests;"
+	}
+}
+
+worldofhelios.com, www.worldofhelios.com {
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 50mb
+			roll_keep 8
+			roll_keep_for 720h
+		}
+		format json
+	}
+	import security_headers
+	encode gzip zstd
+	root * /srv/worldofhelios
+
+	route {
+		@helios_admin path /admin*
+		reverse_proxy @helios_admin worldofhelios-admin:18111
+
+		@helios_contact_api path /api/contact
+		reverse_proxy @helios_contact_api worldofhelios-contact:18110
+
+		@helios_config path /config.js
+		reverse_proxy @helios_config worldofhelios-contact:18110
+
+		@pepper_api path /api/*
+		reverse_proxy @pepper_api pepper-portfolio:10000 {
+		header_up Host {host}
+		header_up X-Forwarded-Host {host}
+		header_up X-Pepper-Site worldofhelios
+	}
+
+		try_files {path} /index.html
+		file_server
+	}
+}
+
 finlens-api.vaddhiparthy.vip {
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 50mb
+			roll_keep 8
+			roll_keep_for 720h
+		}
+		format json
+	}
+	import security_headers
 	reverse_proxy finlens-api:8000
 }
 
 uptime.vaddhiparthy.vip {
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 50mb
+			roll_keep 8
+			roll_keep_for 720h
+		}
+		format json
+	}
+	import security_headers
 	reverse_proxy uptime-kuma:3001
 }
 
 pepper.vaddhiparthy.vip {
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 50mb
+			roll_keep 8
+			roll_keep_for 720h
+		}
+		format json
+	}
+	import security_headers
 	reverse_proxy pepper-portfolio:10000
 }
 
+
+vaddhiparthy.com, www.vaddhiparthy.com {
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 50mb
+			roll_keep 8
+			roll_keep_for 720h
+		}
+		format json
+	}
+	import security_headers
+
+	handle {
+		reverse_proxy surya-unified-site:8088
+	}
+}
+
 surya.vaddhiparthy.com {
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 50mb
+			roll_keep 8
+			roll_keep_for 720h
+		}
+		format json
+	}
+	import security_headers
+	redir /privacy-preserving-authentication-audit-data-platform /privacy-preserving-authentication-audit-data-platform/ 308
+
+	handle_path /privacy-preserving-authentication-audit-data-platform* {
+		reverse_proxy pramanaledger-demo:8075
+	}
+
 	redir /finlens /finlens/ 308
 
 	handle /finlens* {
 		reverse_proxy finlens-streamlit-public:8501
+	}
+
+	# vCAS demo (served by separate container; prefix stripped by handle_path)
+	handle_path /vcas-demo* {
+		reverse_proxy vcas-demo:8000
 	}
 
 	handle {
@@ -23,17 +150,55 @@ surya.vaddhiparthy.com {
 }
 
 surya-admin.vaddhiparthy.com {
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 50mb
+			roll_keep 8
+			roll_keep_for 720h
+		}
+		format json
+	}
+	import security_headers
 	respond "Admin editor is not published yet." 403
 }
 
 finlens.vaddhiparthy.vip {
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 50mb
+			roll_keep 8
+			roll_keep_for 720h
+		}
+		format json
+	}
+	import security_headers
 	redir https://surya.vaddhiparthy.com/finlens/ 308
 }
 
 http://135.181.249.237 {
-	reverse_proxy surya-unified-site:8088
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 50mb
+			roll_keep 8
+			roll_keep_for 720h
+		}
+		format json
+	}
+	respond "Not found" 404
 }
 
 :80 {
-	reverse_proxy surya-unified-site:8088
+
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 50mb
+			roll_keep 8
+			roll_keep_for 720h
+		}
+		format json
+	}
+	respond "Not found" 404
 }

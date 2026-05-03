@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -127,17 +128,23 @@ def dbt_artifact_summary() -> dict[str, Any]:
     run_results_path = ROOT_DIR / "dbt" / "target" / "run_results.json"
     manifest_path = ROOT_DIR / "dbt" / "target" / "manifest.json"
     report = load_state("dbt_build_report", default={})
+    report_summary = report.get("artifact_summary", {}) if isinstance(report, dict) else {}
     summary: dict[str, Any] = {
-        "build_status": report.get("status", "Unknown") if isinstance(report, dict) else "Unknown",
-        "target": report.get("target", "—") if isinstance(report, dict) else "—",
-        "captured_at": report.get("captured_at", "—") if isinstance(report, dict) else "—",
-        "models_success": 0,
-        "tests_success": 0,
-        "failures": 0,
-        "total_nodes": 0,
+        "build_status": report_summary.get("build_status")
+        or (report.get("status", "Unknown") if isinstance(report, dict) else "Unknown"),
+        "target": report_summary.get("target")
+        or (report.get("target", "—") if isinstance(report, dict) else "—"),
+        "captured_at": report_summary.get("captured_at")
+        or (report.get("captured_at", "—") if isinstance(report, dict) else "—"),
+        "models_success": int(report_summary.get("models_success") or 0),
+        "tests_success": int(report_summary.get("tests_success") or 0),
+        "failures": int(report_summary.get("failures") or 0),
+        "total_nodes": int(report_summary.get("total_nodes") or 0),
         "artifact_available": run_results_path.exists(),
     }
     if not run_results_path.exists():
+        if report_summary:
+            summary["artifact_available"] = bool(report_summary.get("artifact_available", True))
         return summary
 
     run_results = json.loads(run_results_path.read_text(encoding="utf-8"))
@@ -166,7 +173,34 @@ def dbt_result_rows() -> list[dict[str, Any]]:
     run_results_path = ROOT_DIR / "dbt" / "target" / "run_results.json"
     manifest_path = ROOT_DIR / "dbt" / "target" / "manifest.json"
     if not run_results_path.exists():
-        return []
+        report = load_state("dbt_build_report", default={})
+        stdout = str(report.get("stdout_tail", "")) if isinstance(report, dict) else ""
+        rows: list[dict[str, Any]] = []
+        for line in stdout.splitlines():
+            clean = re.sub(r"\x1b\[[0-9;]*m", "", line).strip()
+            if " OK " not in clean and " PASS " not in clean:
+                continue
+            match = re.search(
+                r"\b(?P<status>OK|PASS)\b\s+(?:created\s+)?(?:sql\s+)?"
+                r"(?P<resource>incremental model|table model|view model|model|snapshot|test)?\s*"
+                r"(?P<name>[A-Za-z0-9_.-]+)",
+                clean,
+            )
+            if not match:
+                continue
+            status = match.group("status").lower()
+            resource_type = match.group("resource") or ("test" if status == "pass" else "model")
+            name = match.group("name")
+            rows.append(
+                {
+                    "Resource type": resource_type,
+                    "Name": name,
+                    "Status": status,
+                    "Execution seconds": "reported",
+                    "Adapter response": "Parsed from latest dbt build report",
+                }
+            )
+        return rows
 
     run_results = json.loads(run_results_path.read_text(encoding="utf-8"))
     manifest = (

@@ -69,12 +69,21 @@ def probe_dbt_project() -> dict[str, Any]:
 
 def probe_airflow_project() -> dict[str, Any]:
     settings = get_settings()
-    dags_dir = ROOT_DIR / "airflow" / "dags"
-    dags = sorted(path for path in dags_dir.glob("dag_*.py") if path.is_file())
+    dag_dirs = [
+        ROOT_DIR / "airflow" / "dags",
+        Path("/opt/airflow/dags"),
+    ]
+    dags: list[Path] = []
+    for dags_dir in dag_dirs:
+        if dags_dir.exists():
+            dags = sorted(path for path in dags_dir.glob("dag_*.py") if path.is_file())
+            if dags:
+                break
     result: dict[str, Any] = {
         "status": "Ready" if dags else "Missing",
         "dag_count": len(dags),
         "dags": [path.stem for path in dags],
+        "dag_path": str(dags[0].parent) if dags else str(dag_dirs[0]),
         "detail": f"{len(dags)} DAG definitions found",
     }
     if not dags:
