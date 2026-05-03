@@ -84,21 +84,6 @@ uptime.vaddhiparthy.vip {
 	reverse_proxy astrax-compute-cloud-kuma:3001
 }
 
-pepper.vaddhiparthy.vip {
-
-	log {
-		output file /var/log/caddy/access.log {
-			roll_size 50mb
-			roll_keep 8
-			roll_keep_for 720h
-		}
-		format json
-	}
-	import security_headers
-	reverse_proxy astrax-compute-cloud-professional-pepper:10000
-}
-
-
 vaddhiparthy.com, www.vaddhiparthy.com {
 
 	log {
