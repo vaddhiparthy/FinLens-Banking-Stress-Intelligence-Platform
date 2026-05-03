@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.streamlit
-    container_name: finlens-streamlit
+    container_name: astrax-compute-cloud-finlens-streamlit
     env_file:
       - .env
     environment:
@@ -19,7 +19,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.streamlit
-    container_name: finlens-streamlit-public
+    container_name: astrax-compute-cloud-finlens-streamlit-public
     env_file:
       - .env
     environment:
@@ -45,7 +45,7 @@ services:
     build:
       context: .
       dockerfile: api/Dockerfile
-    container_name: finlens-api
+    container_name: astrax-compute-cloud-finlens-api
     env_file:
       - .env
     environment:
@@ -59,7 +59,7 @@ services:
 
   uptime-kuma:
     image: louislam/uptime-kuma:1
-    container_name: uptime-kuma
+    container_name: astrax-compute-cloud-kuma
     restart: unless-stopped
     volumes:
       - uptime-kuma-data:/app/data
@@ -68,7 +68,7 @@ services:
 
   finlens-control-postgres:
     image: postgres:16-alpine
-    container_name: finlens-control-postgres
+    container_name: astrax-compute-cloud-finlens-control-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: finlens
@@ -86,7 +86,7 @@ services:
 
   airflow-postgres:
     image: postgres:16-alpine
-    container_name: finlens-airflow-postgres
+    container_name: astrax-compute-cloud-finlens-airflow-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: airflow
@@ -106,7 +106,7 @@ services:
     build:
       context: .
       dockerfile: airflow/Dockerfile
-    container_name: finlens-airflow-init
+    container_name: astrax-compute-cloud-finlens-airflow-init
     depends_on:
       airflow-postgres:
         condition: service_healthy
@@ -138,7 +138,7 @@ services:
     build:
       context: .
       dockerfile: airflow/Dockerfile
-    container_name: finlens-airflow-webserver
+    container_name: astrax-compute-cloud-finlens-airflow-webserver
     restart: unless-stopped
     depends_on:
       airflow-init:
@@ -163,7 +163,7 @@ services:
     build:
       context: .
       dockerfile: airflow/Dockerfile
-    container_name: finlens-airflow-scheduler
+    container_name: astrax-compute-cloud-finlens-airflow-scheduler
     restart: unless-stopped
     depends_on:
       airflow-init:
@@ -186,7 +186,7 @@ services:
     image: python:3.12-slim
     env_file:
       - ./worldofhelios-site/runtime/helios-admin.env
-    container_name: worldofhelios-admin
+    container_name: astrax-compute-cloud-personal-worldofhelios-admin
     restart: unless-stopped
     working_dir: /app
     command: [ python, scripts/helios_admin_server.py]
@@ -201,7 +201,7 @@ services:
     image: python:3.12-slim
     env_file:
       - ./worldofhelios-site/runtime/helios-contact.env
-    container_name: worldofhelios-contact
+    container_name: astrax-compute-cloud-personal-worldofhelios-contact
     restart: unless-stopped
     working_dir: /app
     command: [ python, scripts/contact_relay_server.py]
@@ -216,7 +216,7 @@ services:
 
   caddy:
     image: caddy:2-alpine
-    container_name: finlens-caddy
+    container_name: astrax-compute-cloud-edge
     restart: unless-stopped
     depends_on:
       - finlens-streamlit
