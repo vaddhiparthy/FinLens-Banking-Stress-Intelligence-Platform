@@ -10,3 +10,6 @@ __pycache__/
 *.pyc
 *.bak*
 node_modules/
+
+# local deployment backups
+deploy/Caddyfile.before-*
