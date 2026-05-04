@@ -215,34 +215,7 @@ services:
       - "18110"
 
 
-  caddy:
-    image: caddy:2-alpine
-    container_name: astrax-compute-cloud-edge
-    restart: unless-stopped
-    depends_on:
-      - finlens-streamlit
-      - finlens-streamlit-public
-      - finlens-api
-      - uptime-kuma
-      - worldofhelios-admin
-      - worldofhelios-contact
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /opt/apps/astrax-compute-cloud/edge/Caddyfile:/etc/caddy/Caddyfile:ro
-      - /opt/apps/astrax-compute-cloud/personal/worldofhelios-site:/srv/worldofhelios:ro
-      - caddy-data:/data
-      - caddy-config:/config
-      - /var/log/caddy:/var/log/caddy
-
 volumes:
-  caddy-data:
-    external: true
-    name: astrax-compute-cloud-caddy-data
-  caddy-config:
-    external: true
-    name: astrax-compute-cloud-caddy-config
   uptime-kuma-data:
     external: true
     name: astrax-compute-cloud-kuma-data
