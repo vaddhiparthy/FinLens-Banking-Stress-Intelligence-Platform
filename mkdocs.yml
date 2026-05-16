@@ -9,7 +9,12 @@ theme:
     - content.code.copy
 nav:
   - Overview: docs/index.md
+  - Architecture: docs/architecture.md
+  - Data Flow: docs/data-flow.md
+  - Validation: docs/validation.md
+  - Operations: docs/operations.md
   - Data Model: docs/data-model.md
+  - Deployment Stack: docs/deployment-stack.md
   - Secrets: docs/secrets.md
   - ADRs:
       - ADR Index: docs/adr/README.md

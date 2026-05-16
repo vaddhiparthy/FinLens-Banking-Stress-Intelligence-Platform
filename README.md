@@ -1,94 +1,93 @@
-# FinLens
+# FinLens: Banking Stress Intelligence Platform
 
-FinLens is a resume-grade banking stress intelligence platform. The product is intentionally
-small on the business side and deliberate on the engineering side: stable public data, explicit
-source contracts, a Gold-layer dashboard boundary, and a technical surface that documents the
-platform as an operational data system.
+FinLens is a public-data banking analytics platform built to demonstrate senior data engineering work: source ingestion, raw-to-curated data modeling, orchestration, quality checks, API health surfaces, and an analyst-facing dashboard.
 
-Target public domain:
+Live presentation: <https://surya.vaddhiparthy.com/finlens/>
 
-- `https://surya.vaddhiparthy.com/finlens/`
+## What It Demonstrates
 
-## Active Product
+- Public financial data ingestion from FDIC, FRED/ALFRED, QBP, and NIC metadata sources
+- Layered data design with Bronze, Silver, and Gold contracts
+- dbt-style analytical modeling and dashboard-ready marts
+- Airflow orchestration assets for repeatable pipeline execution
+- Great Expectations checks for source and serving-layer validation
+- FastAPI health and telemetry endpoints for machine-facing operations
+- Streamlit business and technical surfaces for recruiters, analysts, and engineers
+- Infrastructure scaffolding for S3, Snowflake, Terraform, Docker, and production deployment
 
-Business Surface:
+## Architecture
 
-- `Stress Pulse`
-- `Failure Forensics`
-- `Macro Transmission`
-- `Predictive Analytics` (planned)
-- `Wiki`
+```text
+Public Sources
+  -> ingestion clients
+  -> raw landing / bronze artifacts
+  -> normalized silver models
+  -> gold analytical marts
+  -> Streamlit dashboard + FastAPI health/telemetry
+```
 
-Technical Surface:
+The dashboard binds to Gold-layer contracts rather than raw source fields. Raw payloads remain preserved for traceability, while the presentation layer reads curated facts and metrics.
 
-- `Live Pipeline`
-- `Source Contracts`
-- `Engineering Stack`
-- `Data Quality`
-- `Architecture Decisions`
-- `Administration`
-- `Wiki`
+Detailed docs:
 
-Dormant:
+- [Architecture](docs/architecture.md)
+- [Data Flow](docs/data-flow.md)
+- [Validation](docs/validation.md)
+- [Operations](docs/operations.md)
+- [Data Model](docs/data-model.md)
+- [Deployment Stack](docs/deployment-stack.md)
+- [Architecture Decision Records](docs/adr/README.md)
 
-- `Stress Lab`
-- sidebar / hamburger navigation
+## Stack
 
-## Resume Stack
+| Layer | Tools |
+| --- | --- |
+| Language | Python, SQL |
+| Ingestion | FDIC, FRED/ALFRED, QBP, NIC source clients |
+| Orchestration | Airflow |
+| Transformation | dbt-style SQL models, DuckDB, Snowflake scaffolding |
+| Quality | Great Expectations, schema checks, smoke tests |
+| Serving | Streamlit, FastAPI |
+| Infrastructure | Docker, Terraform, S3-oriented landing zones |
+| Operations | Health checks, connector readiness, structured project docs |
 
-The intended stack is:
+## Repository Layout
 
-- `AWS S3` for raw / bronze artifact storage
-- `Airflow` for orchestration
-- `dbt` for silver and gold transformations
-- `Terraform` for cloud resource provisioning
-- `Snowflake` for the warehouse target
-- `FastAPI` for health, telemetry, and machine-facing endpoints
-- `Streamlit` for the business and technical presentation surfaces
-- `Cloudflare` for the public edge and optional Turnstile protection
-- `Postgres` for home control-plane sync
+| Path | Purpose |
+| --- | --- |
+| `ingestion/` | Source clients for approved public datasets |
+| `src/finlens/` | Shared configuration, state, telemetry, storage, and warehouse helpers |
+| `dbt/` | Staging, intermediate, mart, and reference models |
+| `airflow/` | DAGs and orchestration support |
+| `great_expectations/` | Load and serving quality checks |
+| `duckdb/` | Local mart DDL and export utilities |
+| `snowflake/` | Warehouse DDL and load scaffolding |
+| `api/` | FastAPI health, metrics, failure, and telemetry endpoints |
+| `streamlit_app/` | Business dashboard and technical documentation UI |
+| `terraform/` | Cloud infrastructure scaffolding |
+| `docs/` | Architecture, data model, validation, operations, and ADRs |
+| `tests/` | Unit and smoke coverage |
 
-The code is built so missing account values are reported as connector gaps instead of blocking
-the local UI.
+## Local Setup
 
-The `Architecture Decisions` tab in the technical surface is the in-app data architecture handbook.
-It focuses on S3 zones, Airflow DAG design, dbt model contracts, Snowflake warehouse structure,
-Terraform boundaries, quality strategy, and lineage rather than web-development internals.
-
-## Source Policy
-
-Approved active sources:
-
-- `FDIC BankFind`
-- `FDIC QBP`
-- `FRED / ALFRED`
-- `NIC` current parent metadata only
-
-Removed from active scope:
-
-- SEC / EDGAR
-- FR Y-9C
-- SLOOS
-- UBPR
-- Filing Surveillance
-- active Stress Lab modeling
-
-## Architecture Rule
-
-Dashboards bind only to Gold-layer data contracts.
-
-- Bronze preserves raw source payloads.
-- Silver normalizes sources into project-owned canonical structures.
-- Gold exposes dashboard-ready facts and metrics.
-- Streamlit reads Gold, not raw source fields.
-
-## Local Startup
-
-Activate the environment:
+Create or activate a Python environment, then install dependencies from the project metadata.
 
 ```powershell
-. .\scripts\use_finlens_env.ps1
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -U pip
+python -m pip install -e ".[dev]"
 ```
+
+Copy the environment template if you want to configure optional connectors.
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Secrets belong in `.env`, local secret stores, or deployment secret managers. They do not belong in committed code or docs.
+
+## Run Locally
 
 Check connector readiness:
 
@@ -112,53 +111,49 @@ Local URLs:
 
 - Streamlit: `http://127.0.0.1:8501`
 - FastAPI health: `http://127.0.0.1:8010/health`
-- Uptime Kuma health check: `http://127.0.0.1:8010/healthz`
-
-## Production Status
-
-Production endpoint:
-
-- `https://surya.vaddhiparthy.com/finlens/`
-
-Operational endpoints:
-
-- `https://finlens-api.vaddhiparthy.vip/healthz`
-- `https://uptime.vaddhiparthy.vip`
-
-Current live data posture:
-
-- FDIC failed-bank ingestion is active and populated.
-- FRED macro ingestion is active and populated.
-- Bronze-to-Silver and Silver-to-Gold local marts are populated through DuckDB.
-- QBP and NIC populate when compatible source contracts are configured.
-- Stress Pulse uses live aggregate data when QBP is present and otherwise fails closed.
-
-Cloud and platform wiring:
-
-- AWS S3 bucket settings are configured through environment variables.
-- Snowflake warehouse/database settings are configured through environment variables.
-- Postgres control-plane sync uses the `finlens` schema.
-- Cloudflare DNS routes the public app, API, and monitoring hostnames to the Hetzner VPS.
-
-## Repository Layout
-
-- `streamlit_app/` - active presentation layer
-- `api/` - health and telemetry service
-- `src/finlens/` - shared runtime configuration, state, telemetry, warehouse helpers
-- `ingestion/` - active source clients for FDIC, FRED, QBP, and NIC
-- `airflow/` - orchestration assets
-- `dbt/` - transformation models
-- `snowflake/` - warehouse DDL and load scaffolding
-- `terraform/` - infrastructure scaffolding
-- `docs/` - GitHub-style project documentation and ADRs
-- `scripts/` - local startup, smoke, sync, and utility scripts
-- `tests/` - automated validation
+- Uptime-style health check: `http://127.0.0.1:8010/healthz`
 
 ## Validation
 
 ```powershell
-. .\scripts\use_finlens_env.ps1
 python -m ruff check .
 python -m pytest -q
 powershell -ExecutionPolicy Bypass -File .\scripts\smoke_test.ps1
 ```
+
+The smoke test validates imports, core chart generation, and demo stress-lab execution against the active local environment.
+
+## Source Policy
+
+Active source scope:
+
+- FDIC BankFind
+- FDIC QBP
+- FRED / ALFRED
+- NIC current parent metadata
+
+Removed from active scope:
+
+- SEC / EDGAR
+- FR Y-9C
+- SLOOS
+- UBPR
+- Filing surveillance
+- Active Stress Lab modeling
+
+Out-of-scope features are not documented as active product commitments.
+
+## Production Posture
+
+Production presentation:
+
+- <https://surya.vaddhiparthy.com/finlens/>
+
+Operational shape:
+
+- Streamlit serves the business and technical interface.
+- FastAPI exposes health and telemetry endpoints.
+- DuckDB supports local Bronze/Silver/Gold mart materialization.
+- S3, Snowflake, and Terraform scaffolds show the intended cloud operating model.
+
+Missing account-specific connector values are surfaced as readiness gaps instead of being hidden or hardcoded.
