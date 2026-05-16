@@ -141,8 +141,8 @@ st.markdown(
     <div class="home-center-brand">
         <span class="home-center-copy">
             <span class="edge-title">FinLens</span>
-            <span class="edge-subtitle">Banking</span>
-            <span class="edge-subtitle">Stress Intelligence</span>
+            <span class="edge-subtitle">Regulatory-Grade</span>
+            <span class="edge-subtitle">Banking Data Platform</span>
         </span>
     </div>
     """,
@@ -154,11 +154,11 @@ st.markdown(
     <div class="home-hero">
         <div class="home-kicker">FinLens</div>
         <div class="home-title">
-            <span>Banking</span>
-            <span>Stress Intelligence</span>
+            <span>Regulatory-Grade</span>
+            <span>Banking Data Platform</span>
         </div>
         <div class="home-copy">
-            A public-data banking intelligence platform that converts FDIC, FRED, QBP-style
+            A banking stress intelligence platform that converts FDIC, FRED, QBP-style
             aggregates, institution metadata, and pipeline telemetry into governed business
             dashboards and a transparent data-engineering control surface.
         </div>
