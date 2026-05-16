@@ -1072,8 +1072,9 @@ st.set_page_config(
 )
 ensure_theme_state()
 inject_styles(
-    app_css(get_theme_mode(), sidebar_open=False)
-    + """
+    app_css(get_theme_mode(), sidebar_open=False).replace(
+        "</style>",
+        """
     .finlens-live-badge {
         display: inline-flex;
         align-items: center;
@@ -1100,7 +1101,9 @@ inject_styles(
             box-shadow: 0 0 0 4px rgba(212, 78, 78, 0);
         }
     }
-    """
+    </style>
+    """,
+    )
 )
 top_navigation("hood", TECHNICAL_PAGE)
 record_page_view("control_room", TECHNICAL_PAGE)
