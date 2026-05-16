@@ -88,7 +88,7 @@ def _surface_summary() -> pd.DataFrame:
 
 
 st.set_page_config(
-    page_title="FinLens | Banking Stress Intelligence",
+    page_title="FinLens: Regulatory-Grade Banking Data Platform",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
