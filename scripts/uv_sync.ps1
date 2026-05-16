@@ -1,7 +1,8 @@
 $envPath = Join-Path $env:LOCALAPPDATA "FinLens\.venv"
 
 if (-not (Test-Path $envPath)) {
-    uv venv $envPath --seed --python C:\Users\vaddh\AppData\Local\Programs\Python\Python314\python.exe --link-mode=copy
+    $python = (Get-Command python -ErrorAction Stop).Source
+    uv venv $envPath --seed --python $python --link-mode=copy
 }
 
 $env:VIRTUAL_ENV = $envPath

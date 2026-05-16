@@ -1,14 +1,26 @@
 $ErrorActionPreference = "Stop"
 
-$python = "C:\Users\vaddh\AppData\Local\FinLens\.venv\Scripts\python.exe"
 $repoRoot = Split-Path -Parent $PSScriptRoot
+$repoVenvPython = Join-Path $repoRoot ".venv\Scripts\python.exe"
+$externalVenvPython = Join-Path $env:LOCALAPPDATA "FinLens\.venv\Scripts\python.exe"
 
-if (-not (Test-Path $python)) {
-    throw "Expected external virtual environment at $python"
+if (Test-Path $repoVenvPython) {
+    $python = $repoVenvPython
+} elseif (Test-Path $externalVenvPython) {
+    $python = $externalVenvPython
+} else {
+    $python = "python"
 }
 
 Push-Location $repoRoot
 try {
+    $previousPythonPath = $env:PYTHONPATH
+    $env:PYTHONPATH = @(
+        (Join-Path $repoRoot "src"),
+        $repoRoot,
+        $previousPythonPath
+    ) -ne "" -join [System.IO.Path]::PathSeparator
+
     & $python -m ruff check .
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
@@ -50,5 +62,6 @@ print("Smoke imports and figure generation passed.")
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 finally {
+    $env:PYTHONPATH = $previousPythonPath
     Pop-Location
 }

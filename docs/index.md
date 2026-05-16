@@ -60,3 +60,12 @@ Removed from active scope:
 - Gold: dashboard-ready business metrics
 
 Dashboards bind only to Gold.
+
+## Documentation Map
+
+- [Architecture](architecture.md) - platform shape, runtime surfaces, and deployment boundary
+- [Data Flow](data-flow.md) - source intake, Bronze/Silver/Gold contracts, and serving rules
+- [Validation](validation.md) - connector readiness, quality checks, test commands, and failure policy
+- [Operations](operations.md) - local startup, health checks, secrets handling, and public presentation
+- [Data Model](data-model.md) - current analytical model boundaries
+- [Deployment Stack](deployment-stack.md) - production route and infrastructure notes
