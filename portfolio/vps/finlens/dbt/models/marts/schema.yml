@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: fct_bank_failures
+    columns:
+      - name: bank_id
+        tests: [not_null]
+      - name: state
+        tests: [not_null]
+  - name: fct_financial_metrics
+    columns:
+      - name: series_id
+        tests: [not_null]
+  - name: fct_stress_pulse
+    columns:
+      - name: quarter
+        tests: [not_null]

@@ -1,0 +1,11 @@
+[sqlfluff]
+dialect = snowflake
+templater = dbt
+max_line_length = 100
+
+[sqlfluff:templater:dbt]
+project_dir = dbt
+profiles_dir = dbt
+
+[sqlfluff:rules:capitalisation.keywords]
+capitalisation_policy = upper

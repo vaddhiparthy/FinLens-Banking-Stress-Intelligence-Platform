@@ -1,0 +1,19 @@
+name: nightly-smoke
+
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync --all-groups
+      - run: uv run python scripts/run_local_pipeline.py --check-connectors --allow-missing-connectors
+      - run: uv run python -m pytest -q
