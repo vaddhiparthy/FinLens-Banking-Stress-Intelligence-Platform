@@ -14,6 +14,7 @@ services:
     build:
       context: ..
       dockerfile: airflow/Dockerfile
+    pull_policy: never
     depends_on:
       postgres:
         condition: service_healthy
@@ -26,6 +27,7 @@ services:
     build:
       context: ..
       dockerfile: airflow/Dockerfile
+    pull_policy: never
     depends_on:
       airflow-init:
         condition: service_completed_successfully
@@ -46,6 +48,7 @@ services:
     build:
       context: ..
       dockerfile: airflow/Dockerfile
+    pull_policy: never
     depends_on:
       airflow-init:
         condition: service_completed_successfully

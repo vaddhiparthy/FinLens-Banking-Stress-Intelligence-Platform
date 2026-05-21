@@ -2,7 +2,7 @@
 
 FinLens is a public-data banking analytics platform built to demonstrate senior data engineering work: source ingestion, raw-to-curated data modeling, orchestration, quality checks, API health surfaces, and an analyst-facing dashboard.
 
-Live presentation: <https://surya.vaddhiparthy.com/FinLens-Banking-Stress-Intelligence-Platform>
+Live presentation: <https://surya.vaddhiparthy.com/finlens/>
 
 ## What It Demonstrates
 
@@ -147,7 +147,7 @@ Out-of-scope features are not documented as active product commitments.
 
 Production presentation:
 
-- <https://surya.vaddhiparthy.com/FinLens-Banking-Stress-Intelligence-Platform>
+- <https://surya.vaddhiparthy.com/finlens/>
 
 Operational shape:
 
