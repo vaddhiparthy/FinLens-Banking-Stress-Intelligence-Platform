@@ -30,3 +30,4 @@ ml/artifacts/*
 !ml/artifacts/metrics_*.json
 !ml/artifacts/drift_report.json
 audit/
+audit_crawl*.py
