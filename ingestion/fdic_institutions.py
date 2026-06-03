@@ -35,7 +35,7 @@ PAGE_LIMIT = 10_000  # FDIC API max rows per request
 # feature layer derives trends/peer-z-scores; raw amounts let dbt recompute ratios
 # consistently. Missing fields for a given vintage are tolerated downstream.
 FINANCIAL_FIELDS = [
-    "CERT", "REPDTE", "NAMEFULL",
+    "CERT", "REPDTE", "NAMEFULL", "STALP", "BKCLASS",
     # size / balance sheet
     "ASSET", "DEP", "EQ", "LNLSNET", "LNLSGR", "SC", "CHBAL",
     # capital

@@ -17,8 +17,8 @@ import pandas as pd
 
 from finlens.paths import RAW_DATA_DIR
 
-# numeric financial columns coerced to float; identity columns kept as-is
-_ID_COLS = ["CERT", "REPDTE", "NAMEFULL"]
+# numeric financial columns coerced to float; identity/categorical columns kept as-is
+_ID_COLS = ["CERT", "REPDTE", "NAMEFULL", "STALP", "BKCLASS"]
 
 
 def _institution_payloads() -> list[dict]:
@@ -63,7 +63,7 @@ def load_financials_frame(records: list[dict] | None = None) -> pd.DataFrame:
     numeric_cols = [c for c in frame.columns if c not in _ID_COLS + ["cert", "repdte", "quarter"]]
     for col in numeric_cols:
         frame[col] = pd.to_numeric(frame[col], errors="coerce")
-    frame = frame.rename(columns={"NAMEFULL": "bank_name"})
+    frame = frame.rename(columns={"NAMEFULL": "bank_name", "STALP": "state", "BKCLASS": "bank_class"})
     frame = frame.dropna(subset=["cert", "repdte"]).copy()
     # panel key invariant: one row per (cert, quarter). FDIC returns one row per
     # CERT/REPDTE; this guards against accidental double-ingestion.
