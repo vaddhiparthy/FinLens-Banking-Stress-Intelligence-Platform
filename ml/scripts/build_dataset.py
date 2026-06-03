@@ -57,6 +57,23 @@ def main() -> None:
     print("[5/5] materializing ml.training_dataset", flush=True)
     settings = get_ml_settings()
     settings.duckdb_path.parent.mkdir(parents=True, exist_ok=True)
+    # DuckDB identifiers are CASE-INSENSITIVE: raw 'ROA'/feature 'roa' would collide
+    # and silently drop a column. Materialize a clean, collision-free column set:
+    # ids/meta + derived features + labels + a few raw $ amounts for display.
+    id_meta = ["cert", "bank_name", "quarter", "repdte", "obs_qord", "fail_qord"]
+    raw_display = ["ASSET", "DEP", "EQ", "NETINC", "LNLSGR", "P9LNLS"]
+    label_cols = [c for c in feats.columns if c.startswith(("label_", "labelable_"))]
+    keep = [c for c in id_meta + ["state", "bank_class"] if c in feats.columns]
+    keep += [c for c in FEATURE_COLUMNS if c in feats.columns]
+    keep += [c for c in raw_display if c in feats.columns]
+    keep += label_cols
+    # de-dup case-insensitively, preserving order
+    seen, clean_cols = set(), []
+    for c in keep:
+        if c.lower() not in seen:
+            seen.add(c.lower())
+            clean_cols.append(c)
+    feats = feats[clean_cols]
     with duckdb.connect(str(settings.duckdb_path)) as conn:
         conn.execute("create schema if not exists ml")
         conn.register("ds", feats)

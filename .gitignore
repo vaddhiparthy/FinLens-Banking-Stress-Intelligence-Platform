@@ -19,3 +19,7 @@ ml/artifacts/
 ml/mlruns/
 ml/mlflow.db
 *.skops
+
+# stray mlflow/local dirs
+/mlruns/
+.claude/
