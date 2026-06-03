@@ -103,6 +103,35 @@ The three "views" are woven into a single story, not separate pages:
 4. Wire charts + the lab to real data/endpoints.
 5. Reviewer gate (stringent 30-yr portfolio/UI designer) → 100%. Then P7 local deploy + final QA.
 
+## 6b. Resolved design-review blockers (real numbers; the hard 20%)
+1. **SVB verdict — committed, real, honest.** Leave-SVB-out (model never trains on SVB; Signature +
+   First Republic stay in): SVB ranks **~85th–93rd percentile** out-of-sample (2021Q4 92.8th, 2022 ~80-85th),
+   driven by **HTM 47% + uninsured 95%**. Narrative: the model **surfaces SVB's vulnerabilities** (top ~10%)
+   without training on it, but does **not** issue a top-tier imminent-failure flag — rate-run *timing* needs a
+   confidence shock no balance-sheet model predicts. The Fact Check shows: "Failed Mar 10 2023; out-of-sample
+   the model ranked it top ~10% on HTM concentration + uninsured deposits — the exact factors that sank it."
+   This is framed as sophistication, never as a flat ✗ or a fake ✓.
+2. **Default lab state = a confirmed HIT, not SVB.** Default selection: a strong credit-era hit, e.g.
+   **PFF Bank 2008 (99th pct, $X assets, failed)** or **IndyMac 2008 (96th pct, failed)**. SVB is a clearly-
+   labeled secondary "2023 stress case." Never front-load the hardest result.
+3. **Banks index + point-in-time / leakage discipline (specified).** `export_web_data.py` emits a banks index:
+   all failed banks (badged "failed") scored at their **pre-failure observation quarter** (the genuine forward
+   prediction, label window strictly future) + a sample of survivors. Each entry carries a **train/held-out
+   badge** (failed banks in 2019-2026 are out-of-time held-out). No bank is scored on post-failure quarters.
+   The selector states the as-of quarter. This surfaces the point-in-time rigor (`splits.py`) explicitly.
+4. **Slider inference is debounced + cancellable.** Hypothetical `/predict` calls fire on a **200ms trailing
+   debounce** with in-flight request cancellation (drop stale), so dragging 9 sliders ≠ dozens of calls on the
+   single-thread VPS. The latency badge shows the real round-trip; "live" feels instant.
+5. **PR-AUC framing pre-empts the ROC question.** Performance section leads with **PR-AUC because the base rate
+   is 0.055% (66 failures in 118,943 bank-quarters)** — PR-AUC is the correct metric under extreme imbalance;
+   ROC-AUC is shown but labeled comparability-only, and the logit's marginally-higher ROC is stated plainly,
+   not hidden. A "Why PR-AUC, not accuracy/ROC" micro-card makes this the ML-maturity signal.
+6. **Hero hook:** "448,661 bank-quarters. 66 failures to find." (needle-in-haystack framing). Hero metric chips
+   are clickable anchors into the section that proves each. Hypothetical tab has a collapsible "see the API
+   call" (real JSON + model_version + latency) for the engineer audience. By-year perf is annotated narrative
+   (2022 = the rate regime the HTM/uninsured features address; 2021 = zero failures, undefined). WCAG-AA
+   contrast; decision shown as text + color (not color-only).
+
 ## 7. Non-negotiable acceptance (what the reviewer enforces)
 Elegant and clearly senior; ONE cohesive experience; live inference visibly working; the real-bank
 hold-out + fact-check works; hypothetical sliders re-score live; real visualizations (not text tables);
