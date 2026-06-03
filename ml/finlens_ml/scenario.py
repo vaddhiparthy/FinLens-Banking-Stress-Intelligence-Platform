@@ -17,6 +17,42 @@ import pandas as pd
 from finlens_ml.config import get_ml_settings
 from finlens_ml.features import FEATURE_COLUMNS, MONOTONE_CONSTRAINTS
 
+SLIDER_LABELS: dict[str, str] = {
+    "tier1_rwa_ratio": "Tier 1 risk-based capital ratio (%)",
+    "equity_to_assets": "Equity / assets (%)",
+    "roa": "Return on assets (%)",
+    "noncurrent_to_loans": "Noncurrent loans / total loans (%)",
+    "nco_to_loans": "Net charge-offs / loans (%)",
+    "loans_to_deposits": "Loans / deposits (%)",
+    "brokered_to_deposits": "Brokered / total deposits (%)",
+    "nim": "Net interest margin (%)",
+    "efficiency_ratio": "Efficiency ratio (%)",
+}
+
+_ABBR = {
+    "rwa": "RWA", "roa": "ROA", "roe": "ROE", "nim": "NIM", "nco": "NCO",
+    "htm": "HTM", "afs": "AFS", "yoy": "YoY", "ppnr": "PPNR", "tier1": "Tier 1",
+    "dep": "deposits", "ins": "insured",
+}
+
+
+def humanize_feature(name: str) -> str:
+    """snake_case feature -> readable label, with banking acronyms preserved."""
+    if name in SLIDER_LABELS:
+        return SLIDER_LABELS[name]
+    words = []
+    for part in name.split("_"):
+        if part in _ABBR:
+            words.append(_ABBR[part])
+        elif part == "to":
+            words.append("/")
+        elif part == "delta":
+            words.append("change")
+        else:
+            words.append(part.capitalize())
+    return " ".join(words)
+
+
 # slider-friendly subset (the most interpretable CAMELS levers) + sane bounds
 SLIDER_FEATURES: dict[str, tuple[float, float, float]] = {
     # feature: (min, max, default)
@@ -108,6 +144,29 @@ def score_features(features: dict, horizon_q: int = 4) -> dict:
         for r in local_reasons(features, top_k=6)
     ]
     return {**dec, "reasons": reasons}
+
+
+@lru_cache(maxsize=1)
+def baseline_features() -> dict:
+    """Median of every feature across the panel — a realistic, complete 'typical bank'
+    vector. Used to fill the features a what-if user does not set, so the score and SHAP
+    reasons reflect a coherent whole bank rather than a mostly-missing record."""
+    df = _dataset()
+    out: dict[str, float] = {}
+    for c in FEATURE_COLUMNS:
+        if c in df.columns:
+            med = pd.to_numeric(df[c], errors="coerce").median()
+            out[c] = None if pd.isna(med) else float(med)
+        else:
+            out[c] = None
+    return out
+
+
+def score_hypothetical(slider_values: dict, horizon_q: int = 4) -> dict:
+    """Score a what-if bank: the user's sliders applied on top of a median baseline so
+    every feature is populated and the reason codes are economically coherent."""
+    full = {**baseline_features(), **slider_values}
+    return score_features(full, horizon_q)
 
 
 def default_hypothetical() -> dict:

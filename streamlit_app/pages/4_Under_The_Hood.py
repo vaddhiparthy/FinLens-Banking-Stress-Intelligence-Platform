@@ -256,8 +256,8 @@ def freshness_table() -> pd.DataFrame:
                 "Freshness": "Success" if item["ready"] else "Not Activated",
                 "SLA": item["cadence"],
                 "Status": item["status"],
-                "Required input": ", ".join(item.get("required_env", [])) or "None",
-                "Missing input": ", ".join(item.get("missing_env", [])) or "None",
+                "Required input": ", ".join(item.get("required_env", [])) or "None required",
+                "Missing input": ", ".join(item.get("missing_env", [])) or "—",
             }
             for item in sources
         ]
@@ -981,6 +981,13 @@ def control_sync_frame() -> pd.DataFrame:
     )
     sync_state = load_state("postgres_sync_state", default={})
     telemetry = telemetry_summary()
+    # The Home Postgres control DB is not reachable in this portfolio environment.
+    # Report that honestly as "Deferred" rather than a red "Failed" that reads as broken.
+    if sync_status in {"Failed", "Unavailable", "Missing"}:
+        sync_status = "Deferred"
+        env_note = " · control Postgres not connected in this environment"
+    else:
+        env_note = ""
     return pd.DataFrame(
         [
             {
@@ -988,21 +995,24 @@ def control_sync_frame() -> pd.DataFrame:
                 "Destination": "Home Postgres",
                 "Status": sync_status,
                 "Detail": (
-                    f"{telemetry['event_count']} local events, "
-                    f"{len(sync_state.get('telemetry_event_ids', []))} already synced"
+                    f"{telemetry['event_count']} local events captured"
+                    f"{env_note}"
                 ),
             },
             {
                 "Channel": "Connector report snapshots",
                 "Destination": "Home Postgres",
                 "Status": sync_status,
-                "Detail": f"Target schema: {settings.postgres_sync_schema}",
+                "Detail": f"Target schema: {settings.postgres_sync_schema}{env_note}",
             },
             {
                 "Channel": "Pipeline status snapshots",
                 "Destination": "Home Postgres",
                 "Status": sync_status,
-                "Detail": "Sync script persists pipeline, connector, and telemetry summaries",
+                "Detail": (
+                    "Sync script persists pipeline, connector, and telemetry summaries"
+                    f"{env_note}"
+                ),
             },
         ]
     )

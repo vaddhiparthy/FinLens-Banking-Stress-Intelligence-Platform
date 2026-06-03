@@ -185,7 +185,7 @@ def _format_latest(value: object, suffix: str = "") -> str:
 def _format_optional_count(value: object) -> str:
     numeric = pd.to_numeric(value, errors="coerce")
     if pd.isna(numeric):
-        return "Not in feed"
+        return "Not published"
     return f"{int(numeric):,}"
 
 
@@ -422,7 +422,8 @@ with card2:
     metric_card(
         "Industry ROA",
         f"{latest['roa']:.2f}%",
-        "Live aggregate feed" if stress_pulse_mode == "live" else "Aggregate feed pending",
+        "Live aggregate feed" if stress_pulse_mode == "live"
+        else "FDIC QBP quarterly workbook",
     )
 with card3:
     metric_card(

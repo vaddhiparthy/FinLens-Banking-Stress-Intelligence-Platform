@@ -155,6 +155,8 @@ elif section == "quality":  # Model Quality (mirror of Data Quality)
             def _metric_or_na(val: object) -> object:
                 if val is None or isinstance(val, str):
                     return "n/a (no failures)"
+                if isinstance(val, float) and val != val:  # NaN
+                    return "n/a (no failures)"
                 return round(val, 4)
 
             st.dataframe(pd.DataFrame([

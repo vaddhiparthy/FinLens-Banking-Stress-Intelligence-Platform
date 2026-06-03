@@ -151,10 +151,12 @@ with center:
         st.info("No articles match your search.")
     for title in matches:
         article = ARTICLES[title]
+        crumb = article["cluster"]
+        if article["branch"] and article["branch"] != article["cluster"]:
+            crumb = f'{article["cluster"]} / {article["branch"]}'
         st.markdown(
             f'<h2 id="{_slug(title)}" class="wiki-art-title">{title}</h2>'
-            f'<div class="wiki-art-meta">{article["cluster"]} / {article["branch"]} · '
-            f'{article["summary"]}</div>',
+            f'<div class="wiki-art-meta">{crumb} · {article["summary"]}</div>',
             unsafe_allow_html=True,
         )
         st.markdown(article["body"])

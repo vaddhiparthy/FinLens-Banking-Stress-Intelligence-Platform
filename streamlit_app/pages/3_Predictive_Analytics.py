@@ -67,9 +67,7 @@ def _render_score(result: dict, actual: int | None = None) -> None:
                 return f"{v:,.3f}"
             return str(v)
 
-        reasons["Driver"] = (
-            reasons["feature"].astype(str).str.replace("_", " ").str.title()
-        )
+        reasons["Driver"] = reasons["feature"].astype(str).map(scenario.humanize_feature)
         reasons["Reported value"] = reasons["value"].map(_fmt_value)
         reasons = reasons.rename(columns={"direction": "Effect on risk", "impact": "Weight"})
         section_heading(
@@ -154,13 +152,20 @@ with tab_holdout:
             _render_score(scenario.score_features(row["features"]), row["actual_label_4"])
 
 with tab_what_if:
-    st.write("Move the CAMELS levers to build a hypothetical bank and watch the live score.")
+    st.write(
+        "Move the CAMELS levers to build a hypothetical bank and watch the live score. "
+        "Levers you don't touch are set to the typical (median) bank, so the score "
+        "reflects a complete, realistic institution."
+    )
     vals = {}
     cols = st.columns(3)
     for i, (feat, (lo, hi, default)) in enumerate(scenario.SLIDER_FEATURES.items()):
         with cols[i % 3]:
-            vals[feat] = st.slider(feat, float(lo), float(hi), float(default), key=f"wi_{feat}")
-    _render_score(scenario.score_features(vals))
+            vals[feat] = st.slider(
+                scenario.SLIDER_LABELS.get(feat, feat),
+                float(lo), float(hi), float(default), key=f"wi_{feat}",
+            )
+    _render_score(scenario.score_hypothetical(vals))
     st.caption(
         "Monotone constraints are enforced in the model: more capital never increases "
         "predicted risk; higher noncurrent loans never decreases it."
