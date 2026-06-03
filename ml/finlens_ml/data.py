@@ -65,6 +65,9 @@ def load_financials_frame(records: list[dict] | None = None) -> pd.DataFrame:
         frame[col] = pd.to_numeric(frame[col], errors="coerce")
     frame = frame.rename(columns={"NAMEFULL": "bank_name"})
     frame = frame.dropna(subset=["cert", "repdte"]).copy()
+    # panel key invariant: one row per (cert, quarter). FDIC returns one row per
+    # CERT/REPDTE; this guards against accidental double-ingestion.
+    frame = frame.drop_duplicates(subset=["cert", "quarter"], keep="last")
     return frame.sort_values(["cert", "repdte"]).reset_index(drop=True)
 
 

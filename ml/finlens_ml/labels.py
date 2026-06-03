@@ -42,17 +42,34 @@ def fetch_failures(records: list[dict] | None = None) -> pd.DataFrame:
     """Per-CERT first failure quarter (true closures only)."""
     if records is None:
         session = build_session(user_agent="finlens-ml/0.1 (research)")
-        payload = get_json(
-            session,
-            FDIC_FAILURES_URL,
-            params={"fields": ",".join(_FAILURE_FIELDS), "limit": 10000, "format": "json"},
-        )
-        records = [r.get("data", r) for r in payload.get("data", [])]
+        records = []
+        offset, total = 0, None
+        while total is None or len(records) < total:
+            payload = get_json(
+                session,
+                FDIC_FAILURES_URL,
+                params={
+                    "fields": ",".join(_FAILURE_FIELDS),
+                    "limit": 10000,
+                    "offset": offset,
+                    "format": "json",
+                },
+            )
+            total = int(payload.get("meta", {}).get("total", 0))
+            page = [r.get("data", r) for r in payload.get("data", [])]
+            if not page:
+                break
+            records.extend(page)
+            offset += len(page)
     if not records:
         return pd.DataFrame(columns=["cert", "fail_qord", "faildate", "restype"])
     frame = pd.DataFrame(records)
     frame["cert"] = pd.to_numeric(frame.get("CERT"), errors="coerce").astype("Int64")
-    frame["faildate"] = pd.to_datetime(frame.get("FAILDATE"), errors="coerce")
+    # FDIC FAILDATE is M/D/YYYY text; pin the format so an ambiguous date cannot
+    # silently coerce to NaT and drop a true failure.
+    frame["faildate"] = pd.to_datetime(
+        frame.get("FAILDATE"), format="%m/%d/%Y", errors="coerce"
+    )
     frame["restype"] = frame.get("RESTYPE")
     frame = frame[frame["restype"].astype(str).str.upper().eq("FAILURE")]
     frame = frame.dropna(subset=["cert", "faildate"])
