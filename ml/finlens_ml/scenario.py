@@ -36,10 +36,25 @@ _ABBR = {
 }
 
 
+_EXTRA_LABELS: dict[str, str] = {
+    "roe": "Return on equity (%)",
+    "nim_yoy_delta": "Net interest margin (YoY change)",
+    "loans_to_deposits_yoy_delta": "Loans / deposits (YoY change)",
+    "equity_to_assets_yoy_delta": "Equity / assets (YoY change)",
+    "allowance_to_loans": "Loan-loss allowance / loans (%)",
+    "cash_to_assets": "Cash / assets (%)",
+    "noncurrent_to_loans_yoy_delta": "Noncurrent loans / loans (YoY change)",
+    "log_assets": "Bank size (log assets)",
+    "equity_to_assets_peer_z": "Equity / assets vs peers (z-score)",
+}
+
+
 def humanize_feature(name: str) -> str:
     """snake_case feature -> readable label, with banking acronyms preserved."""
     if name in SLIDER_LABELS:
         return SLIDER_LABELS[name]
+    if name in _EXTRA_LABELS:
+        return _EXTRA_LABELS[name]
     words = []
     for part in name.split("_"):
         if part in _ABBR:
