@@ -13,3 +13,9 @@ node_modules/
 
 # local deployment backups
 deploy/Caddyfile.before-*
+
+# ML artifacts (generated; trained offline)
+ml/artifacts/
+ml/mlruns/
+ml/mlflow.db
+*.skops
