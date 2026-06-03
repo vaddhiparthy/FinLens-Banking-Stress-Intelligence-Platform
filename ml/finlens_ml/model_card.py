@@ -6,7 +6,7 @@ and cross-segment performance equity from scoring the real OOT slice and groupin
 asset-size tier / charter class / region via Fairlearn's MetricFrame (used purely as
 a slicing convenience).
 
-Fairness framing (honest): a bank-distress model predicts on INSTITUTIONS, not people.
+Fairness framing: a bank-distress model predicts on INSTITUTIONS, not people.
 There is NO protected class, so demographic parity / disparate impact / four-fifths do
 NOT apply and are deliberately NOT computed. What we report is cross-segment
 performance equity (is the model reliably catching distress across small vs large

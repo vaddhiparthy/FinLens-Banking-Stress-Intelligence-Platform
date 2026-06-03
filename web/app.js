@@ -117,9 +117,9 @@ function renderGovernance() {
   const items = [
     ["Aligned with SR 26-2 principles", "Non-binding Fed/OCC/FDIC model-risk guidance (Apr 2026). A gradient-boosted classifier is in-scope (non-generative AI). This is a portfolio demonstration, not a regulated production model."],
     ["Explainability", "SHAP drivers per prediction + economically-signed monotone constraints (more capital never raises predicted risk). Validator-facing, not consumer adverse-action."],
-    ["Fairness, scoped honestly", "An institution-level model has no protected class, so demographic-parity / disparate-impact do not apply. Assessed instead as performance equity across asset-size tiers, regions, and charter classes."],
+    ["Fairness scoping", "An institution-level model has no protected class, so demographic-parity / disparate-impact do not apply. Assessed instead as performance equity across asset-size tiers, regions, and charter classes."],
     ["The rate-risk limit", "The model catches credit-driven distress out-of-time but misses liquidity/rate-driven runs like SVB when no such failures exist in training — the exact 2023 supervisory blind spot. The HTM and uninsured-deposit features are included and displayed as a bank's real risk factors, but a model trained before the 2023 regime cannot weight them without in-regime examples."],
-    ["No fabrication", "Every figure here is computed from real FDIC data and the trained model. Held-out banks (2019+) are scored by a model trained only on ≤2018 — genuinely out-of-time."],
+    ["Out-of-time evaluation", "Banks that failed in 2019 or later are scored by a model trained only on data through 2018 — a forward test, never on quarters after the failure. Percentiles compare each bank against its own quarter's cohort."],
     ["Reproducible & $0", "Fixed seeds, pinned features, CI metric gate + an import guard that fails the build if the ML code ever touches a paid service. Free public data only."],
   ];
   $("#govGrid").innerHTML = items.map(([h, p]) => `<div class="gov reveal"><h4>${h}</h4><p>${p}</p></div>`).join("");
