@@ -19,32 +19,34 @@ PALETTE = {
     "shadow": "0 10px 30px rgba(15, 23, 42, 0.08)",
 }
 
+# Engineering theme — GitHub Dark Dimmed-derived, flat, hairline borders, one blue accent.
+# sand == content_bg and accent == link so the existing gradients render flat.
 DARK_PALETTE = {
-    "sidebar_bg": "#151412",
-    "page_bg": "#181614",
-    "content_bg": "#221f1b",
-    "border": "#3d342c",
-    "text_main": "#f2eadf",
-    "text_muted": "#c0b4a4",
-    "text_soft": "#b89d84",
-    "link": "#8dc7cf",
-    "link_hover": "#a9d8df",
-    "accent": "#d48b66",
-    "accent_soft": "#413027",
-    "teal": "#79b7af",
-    "teal_soft": "#223432",
-    "rose": "#dc6c8c",
-    "sand": "#2f2923",
-    "shadow": "0 16px 32px rgba(0, 0, 0, 0.34)",
+    "sidebar_bg": "#1b2026",
+    "page_bg": "#1c2128",
+    "content_bg": "#22272e",
+    "border": "#373e47",
+    "text_main": "#cdd9e5",
+    "text_muted": "#768390",
+    "text_soft": "#768390",
+    "link": "#539bf5",
+    "link_hover": "#6cb6ff",
+    "accent": "#539bf5",
+    "accent_soft": "#1f2731",
+    "teal": "#539bf5",
+    "teal_soft": "#1f2731",
+    "rose": "#e5534b",
+    "sand": "#22272e",
+    "shadow": "none",
 }
 
 
 def ensure_theme_state() -> None:
-    st.session_state["theme_dark"] = False
+    st.session_state["theme_dark"] = True
 
 
 def get_theme_mode() -> str:
-    return "light"
+    return "dark"
 
 
 def get_palette(mode: str | None = None) -> dict[str, str]:
@@ -60,14 +62,14 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     sidebar_shadow = palette["shadow"] if sidebar_open else "none"
     return f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
     .stApp {{
         background:
-            radial-gradient(circle at top left, rgba(243, 223, 207, 0.16), transparent 30%),
+            radial-gradient(circle at top left, transparent, transparent 30%),
             linear-gradient(180deg, {palette["page_bg"]} 0%, {palette["sidebar_bg"]} 100%);
         color: {palette["text_main"]};
-        font-family: "Manrope", system-ui, sans-serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
     }}
     html, body,
     [data-testid="stAppViewContainer"],
@@ -266,11 +268,11 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         transition: left 240ms ease;
         padding: .42rem .88rem;
         border-radius: 999px;
-        background: linear-gradient(180deg, rgba(255,250,243,0.96), rgba(244,239,230,0.94));
+        background: linear-gradient(180deg, #22272e, #22272e);
         border: 1px solid {palette["border"]};
         box-shadow:
             0 10px 22px rgba(15, 23, 42, 0.08),
-            inset 0 1px 0 rgba(255,255,255,0.5);
+            inset 0 1px 0 rgba(255,255,255,0.03);
     }}
     .edge-mark {{
         width: 1.95rem;
@@ -284,14 +286,14 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         text-align: center;
     }}
     .edge-title {{
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: .62rem;
         color: {palette["text_main"]};
-        text-shadow: 0 1px 0 rgba(255,255,255,0.24);
+        text-shadow: 0 1px 0 rgba(255,255,255,0.03);
     }}
     .edge-subtitle {{
         color: {palette["text_main"]};
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: .9rem;
         font-weight: 700;
         margin-top: .06rem;
@@ -303,18 +305,18 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         z-index: 1390;
         pointer-events: none;
         text-decoration: none;
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: .92rem;
         color: {palette["text_main"]};
         text-align: right;
-        text-shadow: 0 1px 0 rgba(255,255,255,0.24);
+        text-shadow: 0 1px 0 rgba(255,255,255,0.03);
         padding: .58rem .9rem;
         border-radius: 999px;
-        background: linear-gradient(180deg, rgba(255,250,243,0.96), rgba(244,239,230,0.94));
+        background: linear-gradient(180deg, #22272e, #22272e);
         border: 1px solid {palette["border"]};
         box-shadow:
             0 10px 22px rgba(15, 23, 42, 0.08),
-            inset 0 1px 0 rgba(255,255,255,0.5);
+            inset 0 1px 0 rgba(255,255,255,0.03);
     }}
     a.edge-credit {{
         pointer-events: auto;
@@ -328,9 +330,9 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         background:
             radial-gradient(circle at 22% 0%, rgba(191,109,71,.18), transparent 32%),
             radial-gradient(circle at 80% 15%, rgba(15,118,110,.14), transparent 34%),
-            linear-gradient(180deg, rgba(255,250,243,.94), rgba(244,239,230,.78));
+            linear-gradient(180deg, #22272e, #22272e);
         border: 1px solid {palette["border"]};
-        box-shadow: 0 26px 52px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255,255,255,.65);
+        box-shadow: 0 26px 52px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255,255,255,0.03);
     }}
     .home-center-brand {{
         position: fixed;
@@ -342,11 +344,11 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         align-items: center;
         padding: .42rem .88rem;
         border-radius: 999px;
-        background: linear-gradient(180deg, rgba(255,250,243,0.96), rgba(244,239,230,0.94));
+        background: linear-gradient(180deg, #22272e, #22272e);
         border: 1px solid {palette["border"]};
         box-shadow:
             0 10px 22px rgba(15, 23, 42, 0.08),
-            inset 0 1px 0 rgba(255,255,255,0.5);
+            inset 0 1px 0 rgba(255,255,255,0.03);
         pointer-events: none;
     }}
     .home-center-copy {{
@@ -365,7 +367,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .home-title {{
         color: {palette["text_main"]};
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: clamp(3.2rem, 7vw, 6.8rem);
         line-height: .92;
         letter-spacing: -.045em;
@@ -414,7 +416,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .home-credit-name {{
         color: {palette["text_main"]};
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: .98rem;
         line-height: 1.2;
         text-decoration: none;
@@ -443,11 +445,11 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
             linear-gradient(180deg, {palette["content_bg"]}, {palette["sidebar_bg"]});
         backdrop-filter: blur(14px);
         border: 1px solid {palette["border"]};
-        outline: 1px solid rgba(255, 255, 255, 0.32);
+        outline: 1px solid rgba(255,255,255,0.03);
         border-radius: 24px;
         box-shadow:
             0 22px 34px rgba(15, 23, 42, 0.10),
-            inset 0 1px 0 rgba(255, 255, 255, 0.26),
+            inset 0 1px 0 rgba(255,255,255,0.03),
             inset 0 -10px 24px rgba(191, 109, 71, 0.05);
         margin-top: 1.1rem;
         margin-bottom: .8rem;
@@ -489,7 +491,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
     }}
     .topbar-title {{
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: 1.15rem;
         line-height: 1.1;
         color: {palette["text_main"]};
@@ -511,7 +513,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         gap:.35rem;
     }}
     .sidebar-title {{
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: 1.1rem;
         color: {palette["text_main"]};
         margin-bottom: .2rem;
@@ -569,7 +571,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .topbar-author-name {{
         color: {palette["text_main"]};
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: .92rem;
         line-height: 1.15;
         margin-top: .12rem;
@@ -615,7 +617,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         margin-bottom: .32rem;
     }}
     .insight-title {{
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         color: {palette["text_main"]};
         font-size: 1rem;
         margin-bottom: .2rem;
@@ -630,19 +632,19 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .topbar-anchor + div div[data-testid="stSegmentedControl"] {{
         background:
-            linear-gradient(180deg, {palette["accent_soft"]}, rgba(255,250,243,0.85));
+            linear-gradient(180deg, {palette["accent_soft"]}, #22272e);
         border: 1px solid {palette["accent"]};
         border-radius: 18px;
         padding: .22rem;
         box-shadow:
             0 10px 18px rgba(15, 23, 42, 0.08),
-            inset 0 1px 0 rgba(255,255,255,0.22);
+            inset 0 1px 0 rgba(255,255,255,0.03);
     }}
     .surface-switch-card {{
         border: 1px solid {palette["border"]};
         border-radius: 10px;
         padding: .28rem .5rem;
-        background: rgba(255,250,243,.72);
+        background: #22272e;
         margin-bottom: .22rem;
     }}
     .surface-switch-label {{
@@ -655,7 +657,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .surface-switch-value {{
         color: {palette["text_main"]};
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: .88rem;
         line-height: 1.15;
     }}
@@ -742,10 +744,10 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .surface-switch-anchor + div {{
         border: 1px solid {palette["accent"]};
-        background: linear-gradient(180deg, {palette["accent_soft"]}, rgba(255,250,243,.88));
+        background: linear-gradient(180deg, {palette["accent_soft"]}, #22272e);
         border-radius: 16px;
         padding: .18rem;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.55);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
     }}
     .surface-switch-anchor + div button {{
         min-height: 2.25rem !important;
@@ -864,7 +866,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         font-weight: 700;
     }}
     .hero-title {{
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: 2.55rem;
         line-height: 1.02;
         font-weight: 700;
@@ -917,7 +919,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .metric-value {{
         color: {palette["text_main"]};
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: 1.04rem;
         font-weight: 700;
         line-height: 1.1;
@@ -930,7 +932,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .section-label {{
         color: {palette["text_main"]};
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: 1.15rem;
         font-weight: 600;
         margin: .85rem 0 .35rem 0;
@@ -981,7 +983,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         word-break: break-word;
     }}
     .finlens-table tbody tr:nth-child(even) td {{
-        background: rgba(244, 239, 230, 0.42);
+        background: #22272e;
     }}
     .finlens-table tr:last-child td {{
         border-bottom: 0;
@@ -1038,7 +1040,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         border: 1px solid {palette["border"]};
         border-radius: 6px;
         padding: .16rem .18rem;
-        background: rgba(255, 250, 243, 0.54);
+        background: #22272e;
         white-space: nowrap;
     }}
     .browser-control-copy {{
@@ -1073,7 +1075,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         z-index: 40;
         border: 1px solid rgba(106, 90, 72, .18);
         border-radius: 16px;
-        background: rgba(255, 250, 243, .32);
+        background: #22272e;
         box-shadow: 0 10px 24px rgba(31,41,51,.05);
         padding: .54rem .7rem;
         width: fit-content;
@@ -1081,7 +1083,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         margin-bottom: .55rem;
     }}
     .wiki-brand-kicker {{
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: .72rem;
         font-weight: 700;
         color: {palette["text_soft"]};
@@ -1089,7 +1091,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         text-transform: uppercase;
     }}
     .wiki-brand-title {{
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         color: {palette["text_main"]};
         font-size: 1.18rem;
         font-weight: 800;
@@ -1115,7 +1117,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .wiki-cluster {{
         color: {palette["text_main"]};
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: .98rem;
         font-weight: 800;
         margin: .6rem 0 .18rem;
@@ -1167,7 +1169,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     .browser-table-anchor + div button {{
         min-height: 2.05rem !important;
         border-radius: 999px !important;
-        background: rgba(255, 250, 243, 0.78) !important;
+        background: #22272e !important;
         border: 1px solid {palette["border"]} !important;
         box-shadow: none !important;
         font-size: .72rem !important;
@@ -1175,7 +1177,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .chart-note {{
         border-left: 3px solid {palette["accent"]};
-        background: linear-gradient(180deg, rgba(255,250,243,0.82), rgba(244,239,230,0.72));
+        background: linear-gradient(180deg, #22272e, #22272e);
         border-radius: 12px;
         padding: .72rem .82rem;
         margin: .48rem 0 .9rem 0;
@@ -1217,7 +1219,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         margin-bottom: .38rem;
     }}
     .page-title {{
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: 2rem;
         line-height: 1.05;
         color: {palette["text_main"]};
@@ -1309,7 +1311,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         margin-bottom: .38rem;
     }}
     .welcome-title {{
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: 1.18rem;
         color: {palette["text_main"]};
         margin-bottom: .3rem;
@@ -1328,7 +1330,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         margin-bottom: .9rem;
     }}
     .tech-bulletin-title {{
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         color: {palette["text_main"]};
         font-size: 1.08rem;
         margin-bottom: .28rem;
@@ -1364,7 +1366,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         margin-bottom: .34rem;
     }}
     .flow-name {{
-        font-family: "Fraunces", Georgia, serif;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
         font-size: 1rem;
         color: {palette["text_main"]};
         margin-bottom: .28rem;
