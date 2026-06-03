@@ -164,3 +164,14 @@ def predict_batch(req: BatchRequest) -> dict:
         for p in probs
     ]
     return {"model_version": app.state.version, "horizon_quarters": 4, "predictions": out}
+
+
+# ---- static frontend (the bespoke web experience) served by the SAME app ----
+# Mounted LAST so the API routes above take precedence over the catch-all static mount.
+from pathlib import Path as _Path  # noqa: E402
+
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+
+_WEB = _Path(__file__).resolve().parents[2] / "web"
+if _WEB.exists():
+    app.mount("/", StaticFiles(directory=str(_WEB), html=True), name="web")
