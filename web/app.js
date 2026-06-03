@@ -6,7 +6,7 @@ const $ = (s, r = document) => r.querySelector(s);
 const J = (p) => fetch(p).then((r) => (r.ok ? r.json() : Promise.reject(r.status)));
 const fmt = (n, d = 2) => (n == null || Number.isNaN(n) ? "—" : Number(n).toFixed(d));
 const esc = (s) => String(s ?? "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
-const ACCENT = "#2dd4bf", ACC2 = "#38bdf8", WARN = "#f5a524", DANGER = "#f87171", OK = "#34d399", LINE = "#1f2937", TXT = "#93a1b8";
+const ACCENT = "#539bf5", ACC2 = "#6cb6ff", WARN = "#c69026", DANGER = "#e5534b", OK = "#57ab5a", LINE = "#373e47", TXT = "#768390";
 const axis = { axisLine: { lineStyle: { color: LINE } }, axisLabel: { color: TXT }, splitLine: { lineStyle: { color: LINE } } };
 const grid = { left: 52, right: 22, top: 28, bottom: 40 };
 
