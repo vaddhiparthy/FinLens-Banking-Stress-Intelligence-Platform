@@ -3,154 +3,36 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>FinLens — Bank Distress Early-Warning · Surya Vaddhiparthy</title>
-<meta name="description" content="A production-grade ML system that ranks US bank financial-distress risk from public FDIC data. Live inference, out-of-time validated." />
+<title>FinLens — Banking Stress Intelligence · Surya Vaddhiparthy</title>
+<meta name="description" content="Banking stress-intelligence platform: data engineering, machine learning, and an architect's desk — bank financial-distress early-warning on public FDIC data, with live inference." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/styles.css" />
 <script defer src="/vendor/echarts.min.js"></script>
 <script defer src="/app.js"></script>
 </head>
 <body>
-<header class="nav" id="nav">
-  <div class="nav-inner">
-    <a class="brand" href="#top"><span class="brand-mark">◢</span> FinLens</a>
-    <nav class="nav-links">
-      <a href="#overview">Overview</a>
-      <a href="#lab">Live Lab</a>
-      <a href="#how">How it works</a>
-      <a href="#performance">Performance</a>
-      <a href="#governance">Governance</a>
-    </nav>
-    <div class="api-badge" id="apiBadge" title="Live model API status">
-      <span class="dot"></span><span id="apiText">checking…</span>
-    </div>
+<header class="topbar">
+  <a class="brand" href="#/"><span class="brand-mark">◢</span> FinLens</a>
+  <nav class="surface-switch" id="surfaceSwitch">
+    <a data-surface="business" href="#/business">Business</a>
+    <a data-surface="de" href="#/de">Data Engineering</a>
+    <a data-surface="ml" href="#/ml">Machine Learning</a>
+    <span class="sep"></span>
+    <a data-surface="wiki" href="#/wiki">Wiki</a>
+    <a data-surface="desk" href="#/desk">Architecture</a>
+  </nav>
+  <div class="topbar-right">
+    <div class="api-badge" id="apiBadge" title="Live model API"><span class="dot"></span><span id="apiText">…</span></div>
   </div>
 </header>
 
-<main id="top">
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero-grid">
-      <div>
-        <div class="eyebrow">Banking · Machine Learning Engineering</div>
-        <h1>448,661 bank-quarters.<br /><span class="accent">66 failures to find.</span></h1>
-        <p class="lede">A production-grade early-warning model that ranks every US FDIC-insured
-          institution by financial-distress risk from public Call Report data — trained, calibrated,
-          out-of-time validated, and served live for real-time inference.</p>
-        <div class="hero-cta">
-          <a class="btn btn-primary" href="#lab">Try the live model →</a>
-          <a class="btn btn-ghost" href="#how">How it works</a>
-        </div>
-        <div class="byline">Built by <a href="https://surya.vaddhiparthy.com" target="_blank" rel="noopener">Sri Surya S. Vaddhiparthy</a> · Senior Data Engineer → Machine Learning Engineer</div>
-      </div>
-      <div class="hero-stats" id="heroStats"><!-- filled by app.js --></div>
-    </div>
-  </section>
-
-  <!-- OVERVIEW / PROBLEM -->
-  <section id="overview" class="section">
-    <div class="section-head">
-      <h2>The problem</h2>
-      <p>US bank failures are rare and clustered — the 2008–2012 credit wave, then the 2023
-        rate-driven runs. The job of an early-warning model is to rank the few at-risk banks out of
-        thousands, quarters ahead, without seeing the future.</p>
-    </div>
-    <div class="card chart-card"><div id="timelineChart" class="chart"></div></div>
-  </section>
-
-  <!-- LIVE LAB -->
-  <section id="lab" class="section">
-    <div class="section-head">
-      <h2>Live stress-test lab</h2>
-      <p>Real-time inference against the deployed model. Test a real institution and fact-check the
-        prediction against what actually happened, or build a hypothetical bank and watch it score.</p>
-    </div>
-    <div class="tabs" role="tablist">
-      <button class="tab active" data-tab="real" role="tab">Test a real bank</button>
-      <button class="tab" data-tab="hypo" role="tab">Build a hypothetical bank</button>
-    </div>
-
-    <div class="tabpane" id="pane-real">
-      <div class="lab-controls">
-        <label for="bankSelect">Institution</label>
-        <select id="bankSelect"></select>
-        <span class="hint" id="bankHint"></span>
-      </div>
-      <div class="lab-split">
-        <div class="lab-main card">
-          <div class="gauge-row">
-            <div id="gauge" class="gauge"></div>
-            <div class="gauge-meta">
-              <div class="decision" id="realDecision">—</div>
-              <div class="subtle" id="realScoreLine"></div>
-              <div class="subtle" id="realBasis"></div>
-            </div>
-          </div>
-          <h3 class="drivers-title">Top risk drivers (SHAP)</h3>
-          <div id="driversChart" class="chart chart-sm"></div>
-        </div>
-        <aside class="lab-aside card" id="factCheck">
-          <div class="fc-kicker">Fact check</div>
-          <div id="fcBody"></div>
-        </aside>
-      </div>
-    </div>
-
-    <div class="tabpane hidden" id="pane-hypo">
-      <div class="lab-split">
-        <div class="lab-main card">
-          <div class="sliders" id="sliders"></div>
-        </div>
-        <aside class="lab-aside card">
-          <div class="gauge-row">
-            <div id="gaugeH" class="gauge"></div>
-            <div class="gauge-meta">
-              <div class="decision" id="hypoDecision">—</div>
-              <div class="subtle" id="hypoScoreLine"></div>
-            </div>
-          </div>
-          <h3 class="drivers-title">Why</h3>
-          <div id="driversChartH" class="chart chart-sm"></div>
-          <details class="api-peek"><summary>See the live API call</summary>
-            <pre id="apiPeek">—</pre></details>
-        </aside>
-      </div>
-    </div>
-  </section>
-
-  <!-- HOW IT WORKS -->
-  <section id="how" class="section">
-    <div class="section-head"><h2>How it works</h2>
-      <p>One pipeline, data engineering through ML serving — every layer inspectable.</p></div>
-    <div class="pipeline" id="pipeline"></div>
-  </section>
-
-  <!-- PERFORMANCE -->
-  <section id="performance" class="section">
-    <div class="section-head"><h2>Performance</h2>
-      <p id="perfNote"></p></div>
-    <div class="perf-grid">
-      <div class="card chart-card"><div class="chart-label">Precision–Recall (the rare-event metric)</div><div id="prChart" class="chart"></div></div>
-      <div class="card chart-card"><div class="chart-label">Discrimination by year</div><div id="yearChart" class="chart"></div></div>
-    </div>
-    <div class="card whycard">
-      <h3>Why PR-AUC, not accuracy</h3>
-      <p id="whyText"></p>
-    </div>
-  </section>
-
-  <!-- GOVERNANCE -->
-  <section id="governance" class="section">
-    <div class="section-head"><h2>Governance &amp; limits</h2></div>
-    <div class="gov-grid" id="govGrid"></div>
-  </section>
-</main>
+<main id="view"><!-- rendered by app.js --></main>
 
 <footer class="footer">
-  <div>FinLens · bank financial-distress early-warning</div>
-  <div class="chips" id="stackChips"></div>
-  <div>Public FDIC + FRED data · $0 · built by Sri Surya S. Vaddhiparthy</div>
+  <span>FinLens · banking stress intelligence · public FDIC + FRED data · $0</span>
+  <span class="chips" id="stackChips"></span>
+  <span>Built by <a href="https://surya.vaddhiparthy.com" target="_blank" rel="noopener">Sri Surya S. Vaddhiparthy</a> · Senior Data Engineer → MLE</span>
 </footer>
 </body>
 </html>

@@ -66,8 +66,10 @@ def _registry_load(settings, horizon_q: int) -> LoadedModel | None:
     try:
         import mlflow
 
+        from finlens_ml.registry import champion_uri
+
         mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
-        uri = f"models:/{settings.registered_model_name}@{settings.champion_alias}"
+        uri = champion_uri()
         model = mlflow.sklearn.load_model(uri)
         return LoadedModel(
             predict_proba=lambda df: model.predict_proba(df[FEATURE_COLUMNS].astype(float))[:, 1],

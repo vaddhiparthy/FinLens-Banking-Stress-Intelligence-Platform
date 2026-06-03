@@ -239,12 +239,10 @@ def _log_to_mlflow(settings, results: dict, calibrated, horizon_q: int) -> None:
                 calibrated, name="model", registered_model_name=settings.registered_model_name
             )
             try:
-                client = mlflow.tracking.MlflowClient()
-                mv = client.search_model_versions(f"name='{settings.registered_model_name}'")
-                latest = max(mv, key=lambda v: int(v.version))
-                client.set_registered_model_alias(
-                    settings.registered_model_name, settings.champion_alias, latest.version
-                )
+                from finlens_ml.registry import promote_latest_to_champion
+
+                v = promote_latest_to_champion()
+                print(f"  champion -> version {v}", flush=True)
             except Exception as exc:
                 print(f"  (alias set skipped: {exc})", flush=True)
             print(f"  mlflow logged: {info.model_uri}", flush=True)

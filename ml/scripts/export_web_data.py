@@ -193,13 +193,104 @@ def export_banks(conn) -> list:
     return out
 
 
+def export_architecture_graph() -> dict:
+    """Single source of truth for the Architect's Desk DAG + component detail pages.
+    Each node's artifact_path is verified to exist (CI-checkable, un-fabricable)."""
+    N = lambda i, label, layer, status, prod, zero, art: {  # noqa: E731
+        "id": i, "label": label, "layer": layer, "status": status,
+        "route": f"#/desk/c/{i}", "prod_ref": prod, "zero_dollar": zero, "artifact_path": art,
+    }
+    nodes = [
+        N("fdic_src", "FDIC BankFind", "de", "LIVE", "regulatory feed", "free FDIC API (no key)", "ingestion/fdic_institutions.py"),
+        N("fred_src", "FRED / ALFRED", "de", "LIVE", "market data vendor", "free FRED API (vintage)", "ingestion/fred.py"),
+        N("ingest", "Ingestion", "de", "LIVE", "Kafka + S3 landing", "HTTP pull -> local raw JSON", "ingestion/fdic_institutions.py"),
+        N("bronze", "Bronze (raw)", "de", "LOCAL", "S3 data lake", "DuckDB raw tables", "duckdb/ddl/001_create_marts.sql"),
+        N("silver", "Silver (staging)", "de", "LOCAL", "Spark + dbt", "dbt staging models", "dbt/models/staging/stg_fdic_qbp.sql"),
+        N("intermediate", "Intermediate", "de", "LOCAL", "dbt", "dbt intermediate", "dbt/models/intermediate/int_failures_with_macro_context.sql"),
+        N("gold", "Gold marts", "de", "LOCAL", "warehouse marts", "dbt marts (DuckDB)", "dbt/models/marts/fct_stress_pulse.sql"),
+        N("quality", "Data quality", "de", "LOCAL", "GX / Soda", "Great Expectations + dbt tests", "great_expectations/run_checkpoint.py"),
+        N("business_surfaces", "Business surfaces", "shared", "LOCAL", "BI dashboards", "web console (Business)", "web/index.html"),
+        N("feature_panel", "Feature panel (PIT)", "ml", "LOCAL", "Feature store", "DuckDB point-in-time panel", "ml/finlens_ml/data.py"),
+        N("features", "Feature engineering", "ml", "LOCAL", "Spark/dbt features", "CAMELS + rate-risk features", "ml/finlens_ml/features.py"),
+        N("train", "Training", "ml", "LOCAL", "Kubeflow/SageMaker", "LightGBM hazard + calibration", "ml/finlens_ml/train.py"),
+        N("registry", "Model registry", "ml", "LOCAL", "SageMaker registry", "MLflow aliases (champion)", "ml/finlens_ml/registry.py"),
+        N("serving", "Serving", "ml", "LOCAL", "SageMaker endpoint", "FastAPI (calibrated + SHAP)", "ml/finlens_ml/serve.py"),
+        N("audit", "Inference audit log", "ml", "LOCAL", "model-monitoring store", "JSONL req/resp + reason codes", "ml/finlens_ml/audit.py"),
+        N("monitoring", "Monitoring (drift)", "ml", "LOCAL", "Arize/Fiddler", "Evidently data+prediction drift", "ml/finlens_ml/monitor.py"),
+        N("ml_surfaces", "ML surfaces / Live Lab", "shared", "LOCAL", "model UI", "web console (ML + Lab)", "web/app.js"),
+    ]
+    edges = [
+        ("fdic_src", "ingest"), ("fred_src", "ingest"), ("ingest", "bronze"),
+        ("bronze", "silver"), ("silver", "intermediate"), ("intermediate", "gold"),
+        ("gold", "quality"), ("gold", "business_surfaces"), ("gold", "feature_panel"),
+        ("feature_panel", "features"), ("features", "train"), ("train", "registry"),
+        ("registry", "serving"), ("serving", "audit"), ("serving", "monitoring"),
+        ("serving", "ml_surfaces"), ("monitoring", "train"),
+    ]
+    # verify every artifact_path exists (un-fabricable); record missing for the parity gate
+    missing = [n["artifact_path"] for n in nodes if not (REPO / n["artifact_path"]).exists()]
+    return {"nodes": nodes, "edges": edges, "missing_artifacts": missing}
+
+
+def export_wiki() -> dict:
+    from streamlit_app.lib.wiki_content import ARTICLES
+
+    arts = [{"title": t, **a} for t, a in ARTICLES.items()]
+    clusters: dict[str, list] = {}
+    for a in arts:
+        clusters.setdefault(a["cluster"], []).append(a["title"])
+    return {"articles": arts, "clusters": clusters}
+
+
+def export_business(conn) -> dict:
+    df = conn.execute(
+        "select fail_qord, state, bank_name from ml.training_dataset where fail_qord is not null"
+    ).df()
+    fails = df.drop_duplicates("bank_name") if "bank_name" in df else df
+    by_year = (
+        fails.assign(year=(fails["fail_qord"] // 4).astype(int))
+        .groupby("year").size().reset_index(name="failures")
+    )
+    by_state = (
+        fails.dropna(subset=["state"]).groupby("state").size()
+        .reset_index(name="failures").sort_values("failures", ascending=False).head(15)
+    )
+    # real system-level trends from the per-bank panel (medians/means per quarter)
+    panel = conn.execute(
+        "select quarter, obs_qord, roa, equity_to_assets, noncurrent_to_loans, "
+        "uninsured_deposit_share from ml.training_dataset"
+    ).df()
+    agg = (
+        panel.groupby(["obs_qord", "quarter"])
+        .agg(med_roa=("roa", "median"), med_capital=("equity_to_assets", "median"),
+             med_noncurrent=("noncurrent_to_loans", "median"),
+             med_uninsured=("uninsured_deposit_share", "median"), n=("roa", "size"))
+        .reset_index().sort_values("obs_qord")
+    )
+    trends = [
+        {"quarter": r.quarter, "med_roa": round(float(r.med_roa), 3) if pd.notna(r.med_roa) else None,
+         "med_capital": round(float(r.med_capital), 3) if pd.notna(r.med_capital) else None,
+         "med_noncurrent": round(float(r.med_noncurrent), 3) if pd.notna(r.med_noncurrent) else None,
+         "med_uninsured": round(float(r.med_uninsured), 3) if pd.notna(r.med_uninsured) else None,
+         "n": int(r.n)} for r in agg.itertuples()
+    ]
+    return {
+        "failures_by_year": [{"year": int(r.year), "failures": int(r.failures)} for r in by_year.itertuples()],
+        "failures_by_state": [{"state": r.state, "failures": int(r.failures)} for r in by_state.itertuples()],
+        "system_trends": trends,
+    }
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
+    _dump(OUT / "architecture_graph.json", export_architecture_graph())
+    _dump(OUT / "wiki.json", export_wiki())
     metrics = json.loads((get_ml_settings().artifact_dir / "metrics_h4.json").read_text())
     conn = _conn()
     _dump(OUT / "meta.json", export_meta(metrics))
     _dump(OUT / "performance.json", export_performance(metrics, conn))
     _dump(OUT / "timeline.json", export_timeline(conn))
+    _dump(OUT / "business.json", export_business(conn))
     _dump(OUT / "banks.json", export_banks(conn))
     _dump(OUT / "features.json", {
         "features": FEATURE_COLUMNS,
