@@ -22,7 +22,13 @@ for sub in ("", "src", "ml"):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from streamlit_app.lib.page_shell import AI_PAGE, page_intro, status_ribbon, top_navigation
+from streamlit_app.lib.page_shell import (
+    AI_PAGE,
+    get_ai_section,
+    page_intro,
+    status_ribbon,
+    top_navigation,
+)
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
 from streamlit_app.lib.ui_components import inject_styles, section_heading
@@ -48,22 +54,35 @@ def _drift() -> dict | None:
     return json.loads(p.read_text()) if p.exists() else None
 
 
-status_ribbon("Machine Learning Engineering surface — every layer visible")
-page_intro(
-    "AI Engineering",
-    "Bank-Distress Model — Under The Hood",
-    "The ML pillar, structured to mirror the Data Engineering surface: pipeline, "
-    "feature contracts, stack, model quality, decisions, administration, and wiki. "
-    "All figures are computed from the real trained model and data.",
-)
-
 m = _metrics()
-tabs = st.tabs(
-    ["AI Pipeline", "Feature Contracts", "AI Stack", "Model Quality",
-     "Model Decisions", "Administration", "AI Wiki"]
-)
+section = get_ai_section()
 
-with tabs[0]:  # AI Pipeline (mirror of Live Pipeline)
+_AI_INTRO = {
+    "pipeline": ("Bank-Distress Model — Pipeline",
+                 "How the discrete-time hazard model is trained and scored on the FDIC "
+                 "bank-quarter panel, end to end."),
+    "contracts": ("Bank-Distress Model — Feature Contracts",
+                  "The model's input contract: every feature and the economic monotone "
+                  "direction enforced against distress risk."),
+    "stack": ("Bank-Distress Model — ML Stack",
+              "The open-source, $0 production stack behind training, calibration, "
+              "serving, and monitoring."),
+    "quality": ("Bank-Distress Model — Model Quality",
+                "Real out-of-time performance, calibration, by-year cohorts, and drift — "
+                "no fabricated numbers."),
+    "decisions": ("Bank-Distress Model — Model Decisions",
+                  "The key modeling choices and the governance posture behind them."),
+    "administration": ("Bank-Distress Model — Administration",
+                       "Registry, promotion, retraining, rollback, and the $0 guard."),
+    "wiki": ("Bank-Distress Model — AI Wiki",
+             "Quick reference for the modeling concepts used across this surface."),
+}
+_title, _copy = _AI_INTRO.get(section, _AI_INTRO["pipeline"])
+
+status_ribbon("Machine Learning Engineering surface — every layer visible")
+page_intro("AI Engineering", _title, _copy)
+
+if section == "pipeline":  # AI Pipeline (mirror of Live Pipeline)
     section_heading("Training & scoring pipeline", "Discrete-time hazard model on the FDIC bank-quarter panel.")
     st.markdown(
         "- **Ingest** per-CERT FDIC Call Report financials (free API) → DuckDB panel\n"
@@ -79,7 +98,7 @@ with tabs[0]:  # AI Pipeline (mirror of Live Pipeline)
             f"calibration={fm.get('calibration_method')}, trained on {fm.get('n_train'):,} rows."
         )
 
-with tabs[1]:  # Feature Contracts (mirror of Source Contracts)
+elif section == "contracts":  # Feature Contracts (mirror of Source Contracts)
     from finlens_ml.features import MONOTONE_CONSTRAINTS
 
     section_heading("Feature contract (31 features)", "Each feature's economic monotone direction vs. distress risk is enforced in the model.")
@@ -90,7 +109,7 @@ with tabs[1]:  # Feature Contracts (mirror of Source Contracts)
     st.dataframe(fc, hide_index=True, use_container_width=True, height=420)
     st.caption("Point-in-time: features lag the reporting cycle; labels are strictly forward-looking.")
 
-with tabs[2]:  # AI Stack (mirror of Engineering Stack)
+elif section == "stack":  # AI Stack (mirror of Engineering Stack)
     section_heading("ML stack", "2026 production-grade, all open-source, $0.")
     st.table(pd.DataFrame([
         {"layer": "Model", "tool": "LightGBM (gradient-boosted hazard, monotone)"},
@@ -103,7 +122,7 @@ with tabs[2]:  # AI Stack (mirror of Engineering Stack)
         {"layer": "Store", "tool": "DuckDB point-in-time panel"},
     ]))
 
-with tabs[3]:  # Model Quality (mirror of Data Quality)
+elif section == "quality":  # Model Quality (mirror of Data Quality)
     section_heading("Out-of-time performance", "Real metrics — PR-AUC is the rare-event headline; ROC is comparability-only.")
     if not m:
         st.info("Train the model to populate metrics.")
@@ -149,7 +168,7 @@ with tabs[3]:  # Model Quality (mirror of Data Quality)
                 f"{d.get('prediction_drift_score')}."
             )
 
-with tabs[4]:  # Model Decisions (mirror of Architecture Decisions)
+elif section == "decisions":  # Model Decisions (mirror of Architecture Decisions)
     section_heading("Key model decisions", "")
     mc = PROJECT_ROOT / "docs" / "ml" / "MODEL_CARD.md"
     st.markdown(
@@ -164,7 +183,7 @@ with tabs[4]:  # Model Decisions (mirror of Architecture Decisions)
         with st.expander("Full model card"):
             st.markdown(mc.read_text(encoding="utf-8"))
 
-with tabs[5]:  # Administration (mirror of Administration)
+elif section == "administration":  # Administration (mirror of Administration)
     section_heading("Model administration", "Registry, promotion, retraining, rollback.")
     st.markdown(
         "- **Registry**: MLflow champion/challenger via aliases (not deprecated stages)\n"
@@ -174,7 +193,7 @@ with tabs[5]:  # Administration (mirror of Administration)
         "- **$0 guard**: CI fails if ML code imports any billable service"
     )
 
-with tabs[6]:  # AI Wiki (mirror of Wiki) — in-page, no reload
+elif section == "wiki":  # AI Wiki (mirror of Wiki)
     section_heading("AI concepts", "Quick reference for the modeling choices.")
     for term, body in {
         "Discrete-time hazard": "Predict P(fail within H quarters) on a bank-quarter panel; "

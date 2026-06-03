@@ -8,12 +8,12 @@ PALETTE = {
     "text_main": "#1f2933",
     "text_muted": "#6a6b74",
     "text_soft": "#7f6b58",
-    "link": "#0f5f70",
-    "link_hover": "#0b4855",
-    "accent": "#bf6d47",
-    "accent_soft": "#f3dfcf",
-    "teal": "#0f766e",
-    "teal_soft": "#dbeceb",
+    "link": "#0969da",
+    "link_hover": "#0a5cc2",
+    "accent": "#0969da",
+    "accent_soft": "#ddf4ff",
+    "teal": "#0969da",
+    "teal_soft": "#ddf4ff",
     "rose": "#be123c",
     "sand": "#f4efe6",
     "shadow": "0 10px 30px rgba(15, 23, 42, 0.08)",
@@ -42,11 +42,11 @@ DARK_PALETTE = {
 
 
 def ensure_theme_state() -> None:
-    st.session_state["theme_dark"] = True
+    st.session_state.setdefault("theme_dark", True)
 
 
 def get_theme_mode() -> str:
-    return "dark"
+    return "dark" if st.session_state.get("theme_dark", True) else "light"
 
 
 def get_palette(mode: str | None = None) -> dict[str, str]:
@@ -274,7 +274,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         transition: left 240ms ease;
         padding: .42rem .88rem;
         border-radius: 999px;
-        background: linear-gradient(180deg, #22272e, #22272e);
+        background: linear-gradient(180deg, {palette["content_bg"]}, {palette["content_bg"]});
         border: 1px solid {palette["border"]};
         box-shadow:
             0 10px 22px rgba(15, 23, 42, 0.08),
@@ -318,7 +318,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         text-shadow: 0 1px 0 rgba(255,255,255,0.03);
         padding: .58rem .9rem;
         border-radius: 999px;
-        background: linear-gradient(180deg, #22272e, #22272e);
+        background: linear-gradient(180deg, {palette["content_bg"]}, {palette["content_bg"]});
         border: 1px solid {palette["border"]};
         box-shadow:
             0 10px 22px rgba(15, 23, 42, 0.08),
@@ -336,7 +336,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         background:
             radial-gradient(circle at 22% 0%, rgba(191,109,71,.18), transparent 32%),
             radial-gradient(circle at 80% 15%, rgba(15,118,110,.14), transparent 34%),
-            linear-gradient(180deg, #22272e, #22272e);
+            linear-gradient(180deg, {palette["content_bg"]}, {palette["content_bg"]});
         border: 1px solid {palette["border"]};
         box-shadow: 0 26px 52px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255,255,255,0.03);
     }}
@@ -350,7 +350,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         align-items: center;
         padding: .42rem .88rem;
         border-radius: 999px;
-        background: linear-gradient(180deg, #22272e, #22272e);
+        background: linear-gradient(180deg, {palette["content_bg"]}, {palette["content_bg"]});
         border: 1px solid {palette["border"]};
         box-shadow:
             0 10px 22px rgba(15, 23, 42, 0.08),
@@ -477,6 +477,58 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     div[data-testid="stButton"] > button[kind="secondary"] {{
         background: linear-gradient(180deg, {palette["content_bg"]}, {palette["sand"]});
     }}
+    [data-testid="stButtonGroup"] {{
+        gap: .25rem;
+    }}
+    [data-testid="stButtonGroup"] button[kind="segmented_control"] {{
+        background: {palette["content_bg"]} !important;
+        border: 1px solid {palette["border"]} !important;
+        color: {palette["text_muted"]} !important;
+        min-height: 2.3rem;
+        font-weight: 800;
+    }}
+    [data-testid="stButtonGroup"] button[kind="segmented_control"]:hover {{
+        background: {palette["sand"]} !important;
+        color: {palette["text_main"]} !important;
+        border-color: {palette["border"]} !important;
+    }}
+    [data-testid="stButtonGroup"] button[kind="segmented_controlActive"] {{
+        background: {palette["accent_soft"]} !important;
+        border: 1px solid {palette["accent"]} !important;
+        color: {palette["text_main"]} !important;
+        box-shadow: inset 0 -2px 0 {palette["accent"]} !important;
+        min-height: 2.3rem;
+        font-weight: 800;
+    }}
+    [data-testid="stButtonGroup"] button[kind="segmented_controlActive"] * {{
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+    }}
+    .topbar-crumb {{
+        display: flex;
+        align-items: baseline;
+        gap: .5rem;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        white-space: nowrap;
+        overflow: hidden;
+    }}
+    .crumb-surface {{
+        color: {palette["text_soft"]};
+        font-size: .8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+    }}
+    .crumb-sep {{
+        color: {palette["text_soft"]};
+        opacity: .6;
+        font-size: .9rem;
+    }}
+    .crumb-section {{
+        color: {palette["text_main"]};
+        font-size: 1.02rem;
+        font-weight: 700;
+    }}
     .topbar-brand {{
         display: flex;
         align-items: center;
@@ -600,6 +652,55 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         -webkit-text-fill-color: {palette["text_main"]} !important;
         opacity: 1 !important;
     }}
+    .sidebar-surface-tag {{
+        margin-top: .7rem;
+        display: inline-block;
+        color: {palette["accent"]};
+        background: {palette["accent_soft"]};
+        border: 1px solid {palette["accent"]};
+        border-radius: 999px;
+        padding: .12rem .55rem;
+        font-size: .68rem;
+        font-weight: 800;
+        letter-spacing: .04em;
+    }}
+    .sidebar-surface-blurb {{
+        color: {palette["text_muted"]};
+        font-size: .72rem;
+        line-height: 1.4;
+        margin-top: .4rem;
+    }}
+    .sidebar-foot {{
+        color: {palette["text_soft"]};
+        font-size: .66rem;
+        line-height: 1.45;
+        margin-top: 1rem;
+        padding-top: .6rem;
+        border-top: 1px solid {palette["border"]};
+    }}
+    .sidebar-credit {{
+        display: block;
+        margin-top: .35rem;
+        color: {palette["link"]} !important;
+        font-size: .7rem;
+        font-weight: 700;
+        text-decoration: none;
+    }}
+    .sidebar-credit:hover {{
+        color: {palette["link_hover"]} !important;
+        text-decoration: underline;
+    }}
+    .theme-toggle-anchor + div [data-testid="stToggle"] {{
+        display: flex;
+        justify-content: flex-end;
+    }}
+    .theme-toggle-anchor + div [data-testid="stToggle"] label p {{
+        color: {palette["text_soft"]};
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+    }}
     .topbar-action-label {{
         color: {palette["text_soft"]};
         text-transform: uppercase;
@@ -678,7 +779,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .topbar-anchor + div div[data-testid="stSegmentedControl"] {{
         background:
-            linear-gradient(180deg, {palette["accent_soft"]}, #22272e);
+            linear-gradient(180deg, {palette["accent_soft"]}, {palette["content_bg"]});
         border: 1px solid {palette["accent"]};
         border-radius: 18px;
         padding: .22rem;
@@ -690,7 +791,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         border: 1px solid {palette["border"]};
         border-radius: 10px;
         padding: .28rem .5rem;
-        background: #22272e;
+        background: {palette["content_bg"]};
         margin-bottom: .22rem;
     }}
     .surface-switch-label {{
@@ -790,7 +891,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .surface-switch-anchor + div {{
         border: 1px solid {palette["accent"]};
-        background: linear-gradient(180deg, {palette["accent_soft"]}, #22272e);
+        background: linear-gradient(180deg, {palette["accent_soft"]}, {palette["content_bg"]});
         border-radius: 16px;
         padding: .18rem;
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
@@ -1023,13 +1124,13 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         color: {palette["text_main"]};
         background: {palette["content_bg"]};
         padding: .72rem .78rem;
-        border-bottom: 1px solid rgba(228, 215, 198, 0.62);
+        border-bottom: 1px solid {palette["border"]};
         vertical-align: top;
         max-width: 26rem;
         word-break: break-word;
     }}
     .finlens-table tbody tr:nth-child(even) td {{
-        background: #22272e;
+        background: {palette["content_bg"]};
     }}
     .finlens-table tr:last-child td {{
         border-bottom: 0;
@@ -1086,7 +1187,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         border: 1px solid {palette["border"]};
         border-radius: 6px;
         padding: .16rem .18rem;
-        background: #22272e;
+        background: {palette["content_bg"]};
         white-space: nowrap;
     }}
     .browser-control-copy {{
@@ -1121,7 +1222,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         z-index: 40;
         border: 1px solid rgba(106, 90, 72, .18);
         border-radius: 16px;
-        background: #22272e;
+        background: {palette["content_bg"]};
         box-shadow: 0 10px 24px rgba(31,41,51,.05);
         padding: .54rem .7rem;
         width: fit-content;
@@ -1215,7 +1316,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     .browser-table-anchor + div button {{
         min-height: 2.05rem !important;
         border-radius: 999px !important;
-        background: #22272e !important;
+        background: {palette["content_bg"]} !important;
         border: 1px solid {palette["border"]} !important;
         box-shadow: none !important;
         font-size: .72rem !important;
@@ -1223,7 +1324,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .chart-note {{
         border-left: 3px solid {palette["accent"]};
-        background: linear-gradient(180deg, #22272e, #22272e);
+        background: linear-gradient(180deg, {palette["content_bg"]}, {palette["content_bg"]});
         border-radius: 12px;
         padding: .72rem .82rem;
         margin: .48rem 0 .9rem 0;
@@ -1286,7 +1387,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         padding: .45rem .55rem;
     }}
     div[data-testid="stInfo"] {{
-        background: linear-gradient(180deg, #fffdf9, #f8f2e8);
+        background: {palette["content_bg"]};
         border: 1px solid {palette["border"]};
         color: {palette["text_main"]};
     }}
