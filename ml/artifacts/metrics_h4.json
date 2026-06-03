@@ -1,0 +1,139 @@
+{
+  "horizon_q": 4,
+  "eval_window_quarters": 28,
+  "n_train": 275822,
+  "n_test": 118943,
+  "test_positives": 66,
+  "scale_pos_weight": 25.0,
+  "calibration_method": "isotonic",
+  "best_iteration": 7,
+  "oot_test": {
+    "calibrated_lgbm": {
+      "n": 118943,
+      "n_positive": 66,
+      "base_rate": 0.0005548876352538611,
+      "pr_auc": 0.21830773878169646,
+      "roc_auc": 0.8156172881519248,
+      "brier": 0.0004688529944147039,
+      "recall_at_k": 0.42424242424242425,
+      "precision_at_k": 0.14,
+      "k": 200
+    },
+    "raw_lgbm": {
+      "n": 118943,
+      "n_positive": 66,
+      "base_rate": 0.0005548876352538611,
+      "pr_auc": 0.24201409125225962,
+      "roc_auc": 0.8731679242690626,
+      "brier": 0.0005306159605737058,
+      "recall_at_k": 0.45454545454545453,
+      "precision_at_k": 0.15,
+      "k": 200
+    },
+    "logit_benchmark": {
+      "n": 118943,
+      "n_positive": 66,
+      "base_rate": 0.0005548876352538611,
+      "pr_auc": 0.10778237683987639,
+      "roc_auc": 0.892795609212578,
+      "brier": 0.008146577083105967,
+      "recall_at_k": 0.3787878787878788,
+      "precision_at_k": 0.125,
+      "k": 200
+    }
+  },
+  "by_year_calibrated": {
+    "2019": {
+      "n": 20455,
+      "n_positive": 19,
+      "base_rate": 0.0009288682473722807,
+      "pr_auc": 0.47422111187060795,
+      "roc_auc": 0.9949946430962904,
+      "brier": 0.0005886642692248771,
+      "recall_at_k": 0.6842105263157895,
+      "precision_at_k": 0.52,
+      "k": 25
+    },
+    "2020": {
+      "n": 19901,
+      "n_positive": 7,
+      "base_rate": 0.00035174111853675694,
+      "pr_auc": 0.7428571428571429,
+      "roc_auc": 0.9998779244280401,
+      "brier": 0.00018511822586158623,
+      "recall_at_k": 1.0,
+      "precision_at_k": 0.28,
+      "k": 25
+    },
+    "2021": {
+      "n": 19226,
+      "n_positive": 0,
+      "base_rate": 0.0,
+      "pr_auc": NaN,
+      "roc_auc": NaN,
+      "brier": 3.357435060752556e-05,
+      "recall_at_k": NaN,
+      "precision_at_k": 0.0,
+      "k": 25
+    },
+    "2022": {
+      "n": 18762,
+      "n_positive": 14,
+      "base_rate": 0.0007461891056390577,
+      "pr_auc": 0.0007422506113244536,
+      "roc_auc": 0.4907190100277362,
+      "brier": 0.0007731497954205369,
+      "recall_at_k": 0.0,
+      "precision_at_k": 0.0,
+      "k": 25
+    },
+    "2023": {
+      "n": 18377,
+      "n_positive": 9,
+      "base_rate": 0.0004897426130489198,
+      "pr_auc": 0.04362930376699377,
+      "roc_auc": 0.7871267663569493,
+      "brier": 0.0004953228282187875,
+      "recall_at_k": 0.1111111111111111,
+      "precision_at_k": 0.04,
+      "k": 25
+    },
+    "2024": {
+      "n": 17868,
+      "n_positive": 9,
+      "base_rate": 0.0005036937541974479,
+      "pr_auc": 0.001019915179262971,
+      "roc_auc": 0.660659735831918,
+      "brier": 0.0006297325640538233,
+      "recall_at_k": 0.0,
+      "precision_at_k": 0.0,
+      "k": 25
+    },
+    "2025": {
+      "n": 4354,
+      "n_positive": 8,
+      "base_rate": 0.0018373909049150207,
+      "pr_auc": 0.6344958896426005,
+      "roc_auc": 0.9302519558214449,
+      "brier": 0.0010417249149405308,
+      "recall_at_k": 0.875,
+      "precision_at_k": 0.28,
+      "k": 25
+    }
+  },
+  "oot_calibration": {
+    "ece": 0.00015371896196863266,
+    "brier_overall": 0.0004688529944147039,
+    "brier_top_decile": 0.0026711208135397,
+    "top_decile_obs": 0.0035311921977467632,
+    "top_decile_pred": 0.004729626525763698
+  },
+  "final_model": {
+    "n_train": 416095,
+    "n_estimators": 7,
+    "tree_count_source": "eval-model out-of-time early stopping (average_precision)",
+    "calibration_method": "isotonic",
+    "scale_pos_weight": 25.0,
+    "note": "served model; trained on all data via the identical _fit_calibrated pipeline, using the OOT-validated tree count from the eval model whose metrics are reported above"
+  }
+}

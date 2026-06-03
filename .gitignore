@@ -23,3 +23,9 @@ ml/mlflow.db
 # stray mlflow/local dirs
 /mlruns/
 .claude/
+
+# keep small real metric JSON for CI gate + visibility (binaries stay ignored)
+!ml/artifacts/
+ml/artifacts/*
+!ml/artifacts/metrics_*.json
+!ml/artifacts/drift_report.json

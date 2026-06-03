@@ -14,6 +14,7 @@ code (no consumer applicant exists). No billable imports ($0 invariant).
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import lru_cache
 
 import numpy as np
 import pandas as pd
@@ -32,25 +33,27 @@ class ReasonCode:
     direction: str  # "increases risk" / "decreases risk"
 
 
-def _load_booster():
+@lru_cache(maxsize=2)
+def _load_booster(horizon_q: int = 4):
     import lightgbm as lgb
 
-    path = get_ml_settings().artifact_dir / "booster_h4.txt"
+    path = get_ml_settings().artifact_dir / f"booster_h{horizon_q}.txt"
     if not path.exists():
         raise FileNotFoundError(f"booster not found at {path}; run train.py first")
     return lgb.Booster(model_file=str(path))
 
 
-def _explainer(booster):
+@lru_cache(maxsize=2)
+def _explainer(horizon_q: int = 4):
+    """Cached TreeExplainer so per-request serving doesn't rebuild it each call."""
     import shap
 
-    return shap.TreeExplainer(booster, feature_perturbation="tree_path_dependent")
+    return shap.TreeExplainer(_load_booster(horizon_q), feature_perturbation="tree_path_dependent")
 
 
 def global_importance(sample: pd.DataFrame | None = None, n: int = 2000) -> pd.DataFrame:
     """Mean |SHAP| per feature over a bounded sample -> global ranking."""
-    booster = _load_booster()
-    expl = _explainer(booster)
+    expl = _explainer()
     if sample is None:
         sample = _load_sample(n)
     X = sample[FEATURE_COLUMNS].astype(float).head(_MAX_EXPLAIN_ROWS)
@@ -67,8 +70,7 @@ def global_importance(sample: pd.DataFrame | None = None, n: int = 2000) -> pd.D
 
 def local_reasons(features: dict, top_k: int = 6) -> list[ReasonCode]:
     """Per-bank reason codes: the top SHAP contributors for one record."""
-    booster = _load_booster()
-    expl = _explainer(booster)
+    expl = _explainer()
     row = {c: float(features.get(c)) if features.get(c) is not None else np.nan
            for c in FEATURE_COLUMNS}
     X = pd.DataFrame([row], columns=FEATURE_COLUMNS).astype(float)

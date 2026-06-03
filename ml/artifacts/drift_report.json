@@ -1,0 +1,29 @@
+{
+  "n_features_analyzed": 32,
+  "n_drifted_columns": 13,
+  "share_of_drifted_columns": 0.40625,
+  "prediction_drift_score": 0.1101959657997392,
+  "prediction_drift_included": true,
+  "top_drifted_features": [
+    {
+      "feature": "log_assets",
+      "drift": 0.4334
+    },
+    {
+      "feature": "nco_to_loans",
+      "drift": 0.2494
+    },
+    {
+      "feature": "nco_to_loans_peer_z",
+      "drift": 0.2032
+    },
+    {
+      "feature": "asset_growth_yoy",
+      "drift": 0.1718
+    },
+    {
+      "feature": "cash_to_assets",
+      "drift": 0.1658
+    }
+  ]
+}
