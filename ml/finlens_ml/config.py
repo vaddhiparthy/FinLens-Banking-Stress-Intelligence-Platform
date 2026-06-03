@@ -57,7 +57,7 @@ class MLSettings:
     # --- storage (local only) ---
     duckdb_path: Path
     artifact_dir: Path  # local model + report artifacts
-    mlflow_tracking_uri: str  # local file store by default; postgres URI on VPS
+    mlflow_tracking_uri: str  # sqlite by default (registry/aliases work); Postgres URI on VPS
 
     # --- modeling ---
     train_start_quarter: str  # earliest REPDTE quarter to include, e.g. "2008Q1"

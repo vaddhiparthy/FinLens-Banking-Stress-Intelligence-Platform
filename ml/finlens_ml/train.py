@@ -286,7 +286,18 @@ def main() -> None:
     print(f"raw LGBM        : PR-AUC={raw['pr_auc']:.4f} ROC-AUC={raw['roc_auc']:.4f}")
     print(
         f"logit benchmark : PR-AUC={log['pr_auc']:.4f} ROC-AUC={log['roc_auc']:.4f} "
-        f"(LGBM must beat this)"
+        f"(LGBM must beat this; PR-AUC is the rare-event headline, ROC comparability-only)"
+    )
+    cr = r.get("oot_calibration", {})
+    print(
+        f"calibration     : ECE={cr.get('ece', float('nan')):.2e} "
+        f"top-decile pred={cr.get('top_decile_pred', float('nan')):.4f} "
+        f"vs obs={cr.get('top_decile_obs', float('nan')):.4f}"
+    )
+    fm = r.get("final_model", {})
+    print(
+        f"served model    : n_estimators={fm.get('n_estimators')} "
+        f"(source: {fm.get('tree_count_source')}); calibration={fm.get('calibration_method')}"
     )
     print("by-year (calibrated):")
     for yr, m in r["by_year_calibrated"].items():
