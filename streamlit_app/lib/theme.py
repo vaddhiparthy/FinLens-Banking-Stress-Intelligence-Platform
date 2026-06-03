@@ -8,12 +8,12 @@ PALETTE = {
     "text_main": "#1f2933",
     "text_muted": "#6a6b74",
     "text_soft": "#7f6b58",
-    "link": "#0969da",
-    "link_hover": "#0a5cc2",
-    "accent": "#0969da",
-    "accent_soft": "#ddf4ff",
-    "teal": "#0969da",
-    "teal_soft": "#ddf4ff",
+    "link": "#0f5f70",
+    "link_hover": "#0b4855",
+    "accent": "#bf6d47",
+    "accent_soft": "#f3dfcf",
+    "teal": "#0f766e",
+    "teal_soft": "#dbeceb",
     "rose": "#be123c",
     "sand": "#f4efe6",
     "shadow": "0 10px 30px rgba(15, 23, 42, 0.08)",
@@ -42,11 +42,11 @@ DARK_PALETTE = {
 
 
 def ensure_theme_state() -> None:
-    st.session_state.setdefault("theme_dark", True)
+    st.session_state.setdefault("theme_dark", False)
 
 
 def get_theme_mode() -> str:
-    return "dark" if st.session_state.get("theme_dark", True) else "light"
+    return "dark" if st.session_state.get("theme_dark", False) else "light"
 
 
 def get_palette(mode: str | None = None) -> dict[str, str]:
@@ -613,77 +613,83 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     .sidebar-bottom-spacer {{
         height: 1.25rem;
     }}
+    section[data-testid="stSidebar"] div[data-testid="stButton"] {{
+        margin: 0 !important;
+    }}
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button {{
         width: 100%;
         text-align: left;
         justify-content: flex-start;
-        min-height: 2.3rem;
-        border-radius: 8px;
-        border: 1px solid transparent;
-        background: transparent;
-        box-shadow: none;
-        color: {palette["text_muted"]};
-        font-size: .82rem;
-        font-weight: 650;
-        padding: .3rem .65rem;
-        margin-bottom: .12rem;
+        min-height: 0 !important;
+        height: auto;
+        border: none !important;
+        border-left: 2px solid transparent !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: {palette["text_muted"]} !important;
+        font-size: .84rem !important;
+        font-weight: 500 !important;
+        line-height: 1.2 !important;
+        padding: .26rem .15rem .26rem .7rem !important;
+        margin: 0 !important;
     }}
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button p {{
         text-align: left;
         width: 100%;
+        margin: 0 !important;
     }}
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {{
-        background: {palette["sand"]};
-        border-color: {palette["border"]};
-        color: {palette["text_main"]};
+        background: transparent !important;
+        border-left-color: {palette["border"]} !important;
+        color: {palette["text_main"]} !important;
     }}
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button:disabled {{
-        background: {palette["accent_soft"]} !important;
-        border-color: transparent !important;
+        background: transparent !important;
         border-left: 2px solid {palette["accent"]} !important;
-        border-radius: 4px 8px 8px 4px !important;
-        color: {palette["text_main"]} !important;
-        -webkit-text-fill-color: {palette["text_main"]} !important;
+        color: {palette["accent"]} !important;
+        -webkit-text-fill-color: {palette["accent"]} !important;
         opacity: 1 !important;
-        font-weight: 800;
+        font-weight: 700 !important;
     }}
     section[data-testid="stSidebar"] div[data-testid="stButton"] > button:disabled * {{
-        color: {palette["text_main"]} !important;
-        -webkit-text-fill-color: {palette["text_main"]} !important;
+        color: {palette["accent"]} !important;
+        -webkit-text-fill-color: {palette["accent"]} !important;
         opacity: 1 !important;
     }}
-    .sidebar-surface-tag {{
-        margin-top: .7rem;
-        display: inline-block;
-        color: {palette["accent"]};
-        background: {palette["accent_soft"]};
-        border: 1px solid {palette["accent"]};
-        border-radius: 999px;
-        padding: .12rem .55rem;
-        font-size: .68rem;
+    .rail-brand {{
+        display: flex;
+        align-items: baseline;
+        gap: .5rem;
+        padding: .1rem 0 .55rem .15rem;
+        margin-bottom: .55rem;
+        border-bottom: 1px solid {palette["border"]};
+    }}
+    .rail-brand-name {{
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-size: 1.12rem;
         font-weight: 800;
-        letter-spacing: .04em;
+        color: {palette["text_main"]};
+        letter-spacing: -.01em;
     }}
-    .sidebar-surface-blurb {{
-        color: {palette["text_muted"]};
-        font-size: .72rem;
-        line-height: 1.4;
-        margin-top: .4rem;
+    .rail-brand-surface {{
+        font-size: .64rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .1em;
+        color: {palette["accent"]};
     }}
-    .sidebar-foot {{
-        color: {palette["text_soft"]};
-        font-size: .66rem;
-        line-height: 1.45;
-        margin-top: 1rem;
+    .rail-foot {{
+        margin-top: 1.1rem;
         padding-top: .6rem;
         border-top: 1px solid {palette["border"]};
     }}
     .sidebar-credit {{
         display: block;
-        margin-top: .35rem;
-        color: {palette["link"]} !important;
-        font-size: .7rem;
-        font-weight: 700;
+        margin-top: .3rem;
+        color: {palette["text_soft"]} !important;
+        font-size: .68rem;
+        font-weight: 600;
         text-decoration: none;
     }}
     .sidebar-credit:hover {{
@@ -1301,6 +1307,85 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     .wiki-tree-link.active {{
         color: {palette["accent"]} !important;
         font-weight: 850;
+    }}
+    .wiki-head {{
+        margin: .2rem 0 .9rem 0;
+    }}
+    .wiki-head-title {{
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-size: 1.9rem;
+        font-weight: 800;
+        color: {palette["text_main"]};
+        line-height: 1.05;
+    }}
+    .wiki-head-sub {{
+        color: {palette["text_muted"]};
+        font-size: .92rem;
+        line-height: 1.55;
+        margin-top: .3rem;
+        max-width: 48rem;
+    }}
+    .wiki-toc {{
+        position: sticky;
+        top: 1rem;
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+        padding-right: .4rem;
+    }}
+    .wiki-toc-title {{
+        color: {palette["text_soft"]};
+        text-transform: uppercase;
+        letter-spacing: .12em;
+        font-size: .66rem;
+        font-weight: 800;
+        margin-bottom: .5rem;
+    }}
+    .wiki-toc-cluster {{
+        color: {palette["text_main"]};
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-size: .82rem;
+        font-weight: 800;
+        margin: .7rem 0 .15rem;
+    }}
+    .wiki-toc-branch {{
+        color: {palette["text_soft"]};
+        font-size: .68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        margin: .35rem 0 .12rem .1rem;
+    }}
+    .wiki-toc-link {{
+        display: block;
+        color: {palette["text_muted"]} !important;
+        text-decoration: none !important;
+        font-size: .82rem;
+        line-height: 1.35;
+        padding: .12rem 0 .12rem .6rem;
+        border-left: 2px solid transparent;
+    }}
+    .wiki-toc-link:hover {{
+        color: {palette["text_main"]} !important;
+        border-left-color: {palette["border"]};
+    }}
+    .wiki-art-title {{
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: {palette["text_main"]};
+        margin: .2rem 0 .1rem;
+        scroll-margin-top: 1rem;
+    }}
+    .wiki-art-meta {{
+        color: {palette["text_soft"]};
+        font-size: .78rem;
+        font-weight: 600;
+        margin-bottom: .7rem;
+    }}
+    .wiki-art-divider {{
+        height: 1px;
+        background: {palette["border"]};
+        margin: 1.6rem 0 1.4rem;
     }}
     .browser-stage-anchor + div button {{
         min-height: 4.2rem !important;

@@ -127,35 +127,25 @@ _SURFACE_META = {
 def render_sidebar(active_page: str, mode: str) -> None:
     if not SIDEBAR_ENABLED:
         return
-    surface_label, surface_blurb = _SURFACE_META.get(mode, _SURFACE_META[BUSINESS_PAGE])
+    surface_label, _ = _SURFACE_META.get(mode, _SURFACE_META[BUSINESS_PAGE])
     with st.sidebar:
         st.markdown(
             f"""
-            <div class="sidebar-brand-block">
-                <div class="topbar-brand">
-                    <div class="topbar-mark">FL</div>
-                    <div>
-                        <div class="sidebar-title">FinLens</div>
-                        <div class="sidebar-brand-copy">Banking stress intelligence</div>
-                    </div>
-                </div>
-                <div class="sidebar-surface-tag">{surface_label}</div>
-                <div class="sidebar-surface-blurb">{surface_blurb}</div>
+            <div class="rail-brand">
+                <span class="rail-brand-name">FinLens</span>
+                <span class="rail-brand-surface">{surface_label}</span>
             </div>
             """,
             unsafe_allow_html=True,
         )
         _render_sidebar_sections(active_page, mode)
-        st.markdown('<div class="sidebar-section-label">Session</div>', unsafe_allow_html=True)
+        st.markdown('<div class="rail-foot">', unsafe_allow_html=True)
         _render_sidebar_clock()
         st.markdown(
-            '<div class="sidebar-foot">Public data · $0 infrastructure · '
-            'no fabricated values</div>'
             '<a class="sidebar-credit" href="https://surya.vaddhiparthy.com" '
-            'target="_blank">Built by Sri Surya S. Vaddhiparthy</a>',
+            'target="_blank">Built by Sri Surya S. Vaddhiparthy</a></div>',
             unsafe_allow_html=True,
         )
-        st.markdown('<div class="sidebar-bottom-spacer"></div>', unsafe_allow_html=True)
 
 
 def _render_sidebar_sections(active_page: str, mode: str) -> None:
