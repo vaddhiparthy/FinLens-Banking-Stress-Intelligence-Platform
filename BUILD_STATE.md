@@ -25,10 +25,10 @@ Business Surface:
 - `Stress Pulse`
 - `Failure Forensics`
 - `Macro Transmission`
-- `Predictive Analytics` (planned surface, not active scoring)
+- `Predictive Analytics` (live, model-backed: insert a bank, hold out a real failure, what-if)
 - `Wiki`
 
-Technical Surface:
+Data Engineering Surface:
 
 - `Live Pipeline`
 - `Source Contracts`
@@ -37,6 +37,16 @@ Technical Surface:
 - `Architecture Decisions`
 - `Administration`
 - `Wiki`
+
+AI Engineering Surface (`pages/7_AI_Engineering.py`):
+
+- `AI Pipeline`
+- `Feature Contracts`
+- `AI Stack`
+- `Model Quality` (real out-of-time metrics, calibration, drift)
+- `Model Decisions`
+- `Administration`
+- `AI Wiki`
 
 The Architecture Decisions tab now acts as the internal data architecture handbook. It emphasizes
 S3 bronze storage, Airflow orchestration, dbt modeling, Snowflake warehouse design, Terraform

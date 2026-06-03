@@ -148,7 +148,7 @@ def _business_questions() -> pd.DataFrame:
             },
             {
                 "Business question": "Can the numbers be traced back to stable public sources?",
-                "Where to read it": "Technical Surface",
+                "Where to read it": "Data Engineering Surface",
                 "Primary signals": "Source artifacts, warehouse tables, reconciliation, dbt results",
                 "What the dashboard contributes": "Shows how public data becomes a governed analytical layer.",
             },
@@ -197,7 +197,7 @@ def _reading_guide() -> pd.DataFrame:
             },
             {
                 "If the viewer asks": "Where did the data come from?",
-                "Recommended path": "Business Knowledge → Technical Surface",
+                "Recommended path": "Business Knowledge → Data Engineering Surface",
                 "Reason": "The business tab explains the meaning; the technical tab shows the operating controls.",
             },
             {

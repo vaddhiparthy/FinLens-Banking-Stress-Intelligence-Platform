@@ -155,7 +155,7 @@ with left:
     st.markdown('<div class="wiki-nav-title">Navigation</div>', unsafe_allow_html=True)
     st.page_link("app.py", label="Main Landing Page", icon=":material/home:")
     st.page_link("pages/0_Stress_Pulse.py", label="Business Surface", icon=":material/space_dashboard:")
-    st.page_link("pages/4_Under_The_Hood.py", label="Technical Surface", icon=":material/account_tree:")
+    st.page_link("pages/4_Under_The_Hood.py", label="Data Engineering Surface", icon=":material/account_tree:")
     st.markdown('<div class="wiki-nav-title wiki-nav-spaced">Contents</div>', unsafe_allow_html=True)
     # In-script buttons => Streamlit reruns in place (no full browser reload / URL
     # navigation). This is the fix for the laggy per-click page reloads.
