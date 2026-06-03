@@ -56,10 +56,12 @@ def get_palette(mode: str | None = None) -> dict[str, str]:
 
 def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     palette = get_palette(mode)
+    # The left rail was retired: sections now live as top tabs and the surface
+    # switch is a dropdown, so content is always full width and the sidebar hidden.
     sidebar_width = "14rem"
-    content_offset = "15rem" if sidebar_open else "0"
-    sidebar_translate = "0" if sidebar_open else "-14.5rem"
-    sidebar_shadow = palette["shadow"] if sidebar_open else "none"
+    content_offset = "0"
+    sidebar_translate = "-14.5rem"
+    sidebar_shadow = "none"
     return f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
@@ -220,6 +222,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         display: none !important;
     }}
     section[data-testid="stSidebar"] {{
+        display: none !important;
         position: fixed !important;
         left: 0;
         top: 0;
@@ -528,6 +531,67 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         color: {palette["text_main"]};
         font-size: 1.02rem;
         font-weight: 700;
+    }}
+    /* Surface dropdown trigger (the small switch button) */
+    .surface-pop-anchor + div [data-testid="stPopover"] > div > button,
+    .surface-pop-anchor + div button {{
+        border-radius: 999px !important;
+        border: 1px solid {palette["border"]} !important;
+        background: {palette["content_bg"]} !important;
+        color: {palette["text_main"]} !important;
+        min-height: 2.3rem !important;
+        font-weight: 800 !important;
+        font-size: .86rem !important;
+        box-shadow: none !important;
+        padding: .2rem .9rem !important;
+    }}
+    .surface-pop-anchor + div button:hover {{
+        border-color: {palette["accent"]} !important;
+        color: {palette["accent"]} !important;
+    }}
+    .pop-title {{
+        color: {palette["text_soft"]};
+        text-transform: uppercase;
+        letter-spacing: .12em;
+        font-size: .64rem;
+        font-weight: 800;
+        margin-bottom: .35rem;
+    }}
+    /* Section top-tabs (targeted via Streamlit's per-key container class) */
+    div[class*="st-key-tab_"] {{
+        border-bottom: 1px solid {palette["border"]};
+    }}
+    div[class*="st-key-tab_"] button {{
+        border: none !important;
+        border-bottom: 2px solid transparent !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: {palette["text_muted"]} !important;
+        font-size: .82rem !important;
+        font-weight: 700 !important;
+        min-height: 2.5rem !important;
+        white-space: nowrap;
+        padding: .2rem .3rem !important;
+        margin-bottom: -1px !important;
+    }}
+    div[class*="st-key-tab_"] button:hover {{
+        background: transparent !important;
+        color: {palette["text_main"]} !important;
+        border-bottom-color: {palette["border"]} !important;
+    }}
+    div[class*="st-key-tab_"] button:disabled {{
+        background: transparent !important;
+        color: {palette["accent"]} !important;
+        -webkit-text-fill-color: {palette["accent"]} !important;
+        border-bottom: 2px solid {palette["accent"]} !important;
+        opacity: 1 !important;
+        font-weight: 800 !important;
+    }}
+    div[class*="st-key-tab_"] button:disabled * {{
+        color: {palette["accent"]} !important;
+        -webkit-text-fill-color: {palette["accent"]} !important;
+        opacity: 1 !important;
     }}
     .topbar-brand {{
         display: flex;

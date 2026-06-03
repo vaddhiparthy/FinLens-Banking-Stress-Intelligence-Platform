@@ -205,58 +205,89 @@ def page_intro(eyebrow: str, title: str, copy: str) -> None:
     )
 
 
+_SURFACES = [
+    (BUSINESS_PAGE, "Business", "pages/0_Stress_Pulse.py"),
+    (TECHNICAL_PAGE, "Data Engineering", "pages/4_Under_The_Hood.py"),
+    (AI_PAGE, "AI Engineering", "pages/7_AI_Engineering.py"),
+]
+
+
+def _navigate_section(mode: str, key: str) -> None:
+    if key == "home":
+        st.switch_page(_page_path("home"))
+        return
+    if mode == AI_PAGE:
+        st.session_state["ai_section"] = key
+        st.rerun()
+    elif mode == TECHNICAL_PAGE:
+        if key == "wiki":
+            st.switch_page(_page_path("wiki"))
+        else:
+            st.session_state["technical_section"] = key
+            st.switch_page("pages/4_Under_The_Hood.py")
+    else:  # business — each section is its own page
+        st.switch_page(_page_path(key))
+
+
+def _render_section_tabs(active_page: str, mode: str) -> None:
+    if mode == AI_PAGE:
+        items = [("home", "Home"), *_ai_sections()]
+        current = get_ai_section()
+
+        def is_active(k: str) -> bool:
+            return k == current
+    elif mode == TECHNICAL_PAGE:
+        items = [("home", "Home"), *_technical_sections()]
+        current = get_technical_section()
+
+        def is_active(k: str) -> bool:
+            return k != "home" and k == current
+    else:
+        items = [("home", "Home"), *_business_sections()]
+
+        def is_active(k: str) -> bool:
+            return k == active_page
+
+    st.markdown('<div class="sectiontabs-anchor"></div>', unsafe_allow_html=True)
+    cols = st.columns(len(items))
+    for col, (key, label) in zip(cols, items, strict=False):
+        with col:
+            if st.button(
+                label,
+                key=f"tab_{mode}_{key}_{active_page}",
+                use_container_width=True,
+                disabled=is_active(key),
+            ):
+                _navigate_section(mode, key)
+
+
 def top_navigation(active_page: str, mode: str) -> None:
     _set_surface_mode(mode)
-    render_sidebar(active_page, mode)
+    current_label = _SURFACE_META.get(mode, _SURFACE_META[BUSINESS_PAGE])[0]
 
     st.markdown('<div class="topbar-anchor"></div>', unsafe_allow_html=True)
-    _surfaces = [
-        (BUSINESS_PAGE, "Business", "pages/0_Stress_Pulse.py"),
-        (TECHNICAL_PAGE, "Data Engineering", "pages/4_Under_The_Hood.py"),
-        (AI_PAGE, "AI", "pages/7_AI_Engineering.py"),
-    ]
-    label_to = {slabel: (smode, spath) for smode, slabel, spath in _surfaces}
-    current_label = next(slabel for smode, slabel, _ in _surfaces if smode == mode)
-
-    with st.container(border=True):
-        col_brand, col_surface, col_toggle = st.columns(
-            [1.5, 3.4, 1.0], vertical_alignment="center"
+    bar_left, bar_right = st.columns([4.0, 1.0], vertical_alignment="center")
+    with bar_left:
+        st.markdown('<div class="surface-pop-anchor"></div>', unsafe_allow_html=True)
+        with st.popover(current_label, icon=":material/swap_horiz:"):
+            st.markdown('<div class="pop-title">Switch surface</div>', unsafe_allow_html=True)
+            for smode, slabel, spath in _SURFACES:
+                if st.button(
+                    slabel,
+                    key=f"pop_{smode}_{active_page}",
+                    use_container_width=True,
+                    disabled=(mode == smode),
+                ):
+                    _set_surface_mode(smode)
+                    st.switch_page(spath)
+    with bar_right:
+        st.markdown('<div class="theme-toggle-anchor"></div>', unsafe_allow_html=True)
+        dark = st.toggle(
+            "Dark", value=st.session_state.get("theme_dark", False),
+            key=f"theme_toggle_{active_page}",
         )
-        with col_brand:
-            surface_full = _SURFACE_META.get(mode, _SURFACE_META[BUSINESS_PAGE])[0]
-            section_label = _current_section_label(active_page, mode)
-            crumb = (
-                f'<span class="crumb-sep">/</span>'
-                f'<span class="crumb-section">{section_label}</span>'
-                if section_label else ""
-            )
-            st.markdown(
-                f"""
-                <div class="topbar-crumb">
-                    <span class="crumb-surface">{surface_full}</span>{crumb}
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with col_surface:
-            st.markdown('<div class="surface-seg-anchor"></div>', unsafe_allow_html=True)
-            selected = st.segmented_control(
-                "Surface",
-                [slabel for _, slabel, _ in _surfaces],
-                default=current_label,
-                key=f"surface_seg_{active_page}",
-                label_visibility="collapsed",
-            )
-            if selected and selected != current_label:
-                smode, spath = label_to[selected]
-                _set_surface_mode(smode)
-                st.switch_page(spath)
-        with col_toggle:
-            st.markdown('<div class="theme-toggle-anchor"></div>', unsafe_allow_html=True)
-            dark = st.toggle(
-                "Dark", value=st.session_state.get("theme_dark", True),
-                key=f"theme_toggle_{active_page}",
-            )
-            if dark != st.session_state.get("theme_dark", True):
-                st.session_state["theme_dark"] = dark
-                st.rerun()
+        if dark != st.session_state.get("theme_dark", False):
+            st.session_state["theme_dark"] = dark
+            st.rerun()
+
+    _render_section_tabs(active_page, mode)
