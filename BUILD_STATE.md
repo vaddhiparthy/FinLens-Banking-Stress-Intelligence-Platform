@@ -75,8 +75,9 @@ Removed from active scope:
 
 ## Dormant Features
 
-- `Stress Lab` via `STRESS_LAB_ENABLED = False`
 - sidebar / hamburger via `SIDEBAR_ENABLED = False`
+- (the fabricated `Stress Lab` demo was removed; replaced by the real model-backed
+  Predictive Analytics tab and the AI Engineering surface)
 
 ## Verification Baseline
 

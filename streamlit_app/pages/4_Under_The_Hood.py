@@ -564,7 +564,7 @@ def tool_evidence_frame() -> pd.DataFrame:
             },
             {
                 "Platform component": "Pipeline run ledger",
-                "Operating role": "Durable execution summary for the technical surface",
+                "Operating role": "Durable execution summary for the data engineering surface",
                 "Current state": latest_run_label,
                 "Next operational signal": "Run scripts/run_local_pipeline.py --probe-platform",
             },
@@ -962,7 +962,7 @@ def service_endpoints_frame() -> pd.DataFrame:
             {
                 "Endpoint": "Streamlit app",
                 "Served by": "Streamlit",
-                "Purpose": "Business and technical presentation surface",
+                "Purpose": "Business, data engineering, and AI presentation surfaces",
                 "Path": public,
             },
         ]
@@ -1020,7 +1020,7 @@ def architecture_components_frame() -> pd.DataFrame:
                 "Layer": "Presentation",
                 "Primary component": "Streamlit",
                 "Runtime": "App container / local runtime",
-                "Current posture": "Business and technical surfaces are active",
+                "Current posture": "Business, Data Engineering, and AI surfaces are active",
             },
             {
                 "Layer": "Service endpoints",
@@ -1066,7 +1066,7 @@ def architecture_components_frame() -> pd.DataFrame:
 
 
 st.set_page_config(
-    page_title="FinLens | Technical Surface",
+    page_title="FinLens | Data Engineering",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -1107,7 +1107,7 @@ inject_styles(
 )
 top_navigation("hood", TECHNICAL_PAGE)
 record_page_view("control_room", TECHNICAL_PAGE)
-status_ribbon("Technical systems view")
+status_ribbon("Data Engineering surface")
 active_section = get_technical_section()
 section_titles = {
     "pipeline": "Live Pipeline",
@@ -1137,7 +1137,7 @@ intro_copy = (
     "silver-to-gold, and dashboard serving status."
 )
 page_intro(
-    "Technical Surface",
+    "Data Engineering",
     intro_title,
     intro_copy,
 )

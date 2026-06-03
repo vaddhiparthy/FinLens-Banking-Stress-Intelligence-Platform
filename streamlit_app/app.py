@@ -76,11 +76,20 @@ def _surface_summary() -> pd.DataFrame:
                 ),
             },
             {
-                "Surface": "Technical",
+                "Surface": "Data Engineering",
                 "Primary audience": "Data engineering and architecture reviewers",
                 "What they see": (
                     "Pipeline status, data classification, reconciliation, run results, "
                     "and administration"
+                ),
+            },
+            {
+                "Surface": "AI Engineering",
+                "Primary audience": "ML engineering and model-risk reviewers",
+                "What they see": (
+                    "The bank-distress model end to end: pipeline, feature contract, stack, "
+                    "out-of-time metrics, SHAP, drift, decisions, governance, and a live "
+                    "predictive scenario tab"
                 ),
             },
         ]
@@ -163,9 +172,10 @@ st.markdown(
             dashboards and a transparent data-engineering control surface.
         </div>
         <div class="home-subcopy">
-            The product is organized as two complementary lenses: a business surface for
-            interpreting banking stress and a technical surface for inspecting how the data
-            is sourced, transformed, validated, and served.
+            The product is organized as three complementary surfaces: a business surface for
+            interpreting banking stress, a data engineering surface for inspecting how the data
+            is sourced, transformed, validated, and served, and an AI engineering surface for the
+            calibrated bank-distress model end to end.
         </div>
         <div class="home-credit-inline">
             <div class="home-credit-kicker">By</div>
@@ -224,28 +234,22 @@ with right:
     )
     styled_table(_data_summary())
 
-action_left, action_middle, action_right = st.columns([1.2, 1, 1.2], vertical_alignment="center")
-with action_left:
-    if st.button(
-        "Open Technical Surface",
-        key="home_open_technical",
-        use_container_width=True,
-    ):
+st.markdown('<div class="home-action-divider">Choose a surface</div>', unsafe_allow_html=True)
+act_business, act_de, act_ai = st.columns(3, vertical_alignment="center")
+with act_business:
+    if st.button("Open Business Surface", key="home_open_business", use_container_width=True):
+        st.switch_page("pages/0_Stress_Pulse.py")
+with act_de:
+    if st.button("Open Data Engineering Surface", key="home_open_de", use_container_width=True):
         st.session_state["technical_section"] = "pipeline"
         st.switch_page("pages/4_Under_The_Hood.py")
-with action_middle:
-    st.markdown('<div class="home-action-divider">Choose a surface</div>', unsafe_allow_html=True)
-with action_right:
-    if st.button(
-        "Open Business Surface",
-        key="home_open_business",
-        use_container_width=True,
-    ):
-        st.switch_page("pages/0_Stress_Pulse.py")
+with act_ai:
+    if st.button("Open AI Surface", key="home_open_ai", use_container_width=True):
+        st.switch_page("pages/7_AI_Engineering.py")
 
 section_heading(
     "How The Platform Is Organized",
-    "Business pages explain the banking story. Technical pages expose the source contracts, "
-    "table inventory, transformation rules, run results, and operational controls behind that "
-    "story.",
+    "Business pages explain the banking story. Data Engineering pages expose the source "
+    "contracts, table inventory, transformation rules, run results, and operational controls. "
+    "AI Engineering pages expose the bank-distress model end to end with a live predictive tab.",
 )
