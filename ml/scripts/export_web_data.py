@@ -291,6 +291,14 @@ def main() -> None:
     _dump(OUT / "performance.json", export_performance(metrics, conn))
     _dump(OUT / "timeline.json", export_timeline(conn))
     _dump(OUT / "business.json", export_business(conn))
+    # real Data Browser sample (gold panel rows)
+    browser = conn.execute(
+        "select cert, bank_name, state, quarter, ASSET, roa, equity_to_assets, "
+        "noncurrent_to_loans, uninsured_deposit_share, label_4 from ml.training_dataset "
+        "where quarter >= '2023Q1' order by ASSET desc nulls last limit 60"
+    ).df()
+    _dump(OUT / "browser.json", {"columns": list(browser.columns),
+                                 "rows": browser.where(browser.notna(), None).values.tolist()})
     _dump(OUT / "banks.json", export_banks(conn))
     _dump(OUT / "features.json", {
         "features": FEATURE_COLUMNS,

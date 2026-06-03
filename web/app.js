@@ -50,8 +50,8 @@ function route() {
 }
 
 const BUSINESS = [["pulse", "Stress Pulse"], ["failures", "Failure Forensics"], ["macro", "Macro Transmission"], ["knowledge", "Knowledge"]];
-const DE = [["pipeline", "Live Pipeline"], ["contracts", "Source Contracts"], ["medallion", "Medallion Layers"], ["quality", "Data Quality"], ["lineage", "Lineage"], ["stack", "Stack"], ["adrs", "Architecture Decisions"]];
-const ML = [["overview", "Overview"], ["performance", "Performance"], ["calibration", "Calibration"], ["explain", "Explainability"], ["drift", "Drift"], ["governance", "Governance"], ["lab", "Live Stress Lab"]];
+const DE = [["pipeline", "Live Pipeline"], ["contracts", "Source Contracts"], ["medallion", "Medallion Layers"], ["transforms", "Transforms"], ["quality", "Data Quality"], ["lineage", "Lineage"], ["browser", "Data Browser"], ["code", "Code"], ["stack", "Stack"], ["adrs", "Architecture Decisions"]];
+const ML = [["overview", "Overview"], ["contracts", "Feature Contracts"], ["performance", "Performance"], ["calibration", "Calibration"], ["explain", "Explainability"], ["drift", "Drift"], ["governance", "Governance"], ["admin", "Administration"], ["lab", "Live Stress Lab"]];
 
 function renderSurface(v, key, sections, section, fn) {
   section = sections.some((s) => s[0] === section) ? section : sections[0][0];
@@ -128,17 +128,30 @@ function renderDE(p, sec) {
     p.innerHTML = head("Data Engineering · Medallion", "Bronze / Silver / Gold", "Layered warehouse with dbt transforms; DuckDB locally, Snowflake DDL as the cloud target.", deepLink) +
       `<div class="grid g4">${[["Bronze", "Source fidelity (raw artifacts)"], ["Silver", "Canonical staging (dbt)"], ["Intermediate", "Reusable business logic (dbt)"], ["Gold", "Dashboard-ready marts (dbt)"]].map((l) => `<div class="card reveal"><div class="section-title">${l[0]}</div><p class="subtle">${l[1]}</p></div>`).join("")}</div>`;
   } else if (sec === "quality") {
-    p.innerHTML = head("Data Engineering · Data Quality", "Data Quality", "dbt tests + Great Expectations checkpoints run in the pipeline (on-load and on-serve). Results are produced by the Airflow run, not hand-entered.", deepLink) +
-      `<div class="card"><table class="tbl"><thead><tr><th>Gate</th><th>Tool</th><th>When</th></tr></thead><tbody>
-      ${[["schema / not-null / uniqueness", "dbt tests", "every build"], ["distribution & freshness", "Great Expectations", "on-load / on-serve"], ["model metric gate (PR-AUC>logit, ROC<0.98)", "metric_gate.py", "CI + retrain DAG"], ["$0 import guard", "CI", "every PR"]].map((r) => `<tr><td>${r[0]}</td><td class="mono">${r[1]}</td><td>${r[2]}</td></tr>`).join("")}</tbody></table><p class="subtle" style="margin-top:12px">Live pass/fail counts populate from <span class="mono">dbt target/run_results.json</span> after a pipeline run.</p></div>`;
+    p.innerHTML = head("Data Engineering · Data Quality", "Data Quality Gates", "The quality gates defined in the pipeline (dbt tests, Great Expectations checkpoints, the CI model-metric gate, and the $0 import guard). These are real code paths in the repo; pass/fail counts are produced when the Airflow/CI run executes.", deepLink) +
+      `<div class="card"><table class="tbl"><thead><tr><th>Gate</th><th>Tool</th><th>When</th><th>Defined in</th></tr></thead><tbody>
+      ${[["schema / not-null / uniqueness", "dbt tests", "every build", "dbt/models/**/schema.yml"], ["distribution & freshness", "Great Expectations", "on-load / on-serve", "great_expectations/checkpoints/"], ["model metric gate (PR-AUC>logit, ROC<0.98, ECE)", "metric_gate.py", "CI + retrain DAG", "ml/scripts/metric_gate.py"], ["$0 import guard", "AST test", "every PR", "ml/tests/test_no_billable_imports.py"]].map((r) => `<tr><td>${r[0]}</td><td class="mono">${r[1]}</td><td>${r[2]}</td><td class="mono">${r[3]}</td></tr>`).join("")}</tbody></table></div>`;
   } else if (sec === "lineage") {
-    p.innerHTML = head("Data Engineering · Lineage", "Lineage", "Source-to-mart lineage from the dbt manifest graph. The end-to-end map (incl. ML) lives on the Architect's Desk.", deepLink) +
+    p.innerHTML = head("Data Engineering · Lineage", "Pipeline Lineage", "Source-to-mart data flow (architecture model). The full end-to-end map including the ML path lives on the Architect's Desk.", deepLink) +
       `<div class="card"><div class="dag-wrap" id="lineageDag"></div></div>`;
-    drawDag($("#lineageDag"), "de");
+    drawDag($("#lineageDag"), "de_lineage");
   } else if (sec === "stack") {
     p.innerHTML = head("Data Engineering · Stack", "Engineering Stack", "Production-grade patterns, free/OSS counterparts at $0.", deepLink) +
       `<div class="card"><table class="tbl"><thead><tr><th>Concern</th><th>Production tool</th><th>$0 counterpart</th></tr></thead><tbody>
       ${[["Ingestion", "Kafka + S3", "HTTP pull → local raw"], ["Transform", "Spark + dbt", "dbt on DuckDB"], ["Warehouse", "Snowflake", "DuckDB / Postgres"], ["Orchestration", "Airflow (managed)", "Airflow (self-host)"], ["Quality", "Soda / GX", "Great Expectations + dbt"], ["IaC", "Terraform", "Terraform (defined)"]].map((r) => `<tr><td>${r[0]}</td><td>${r[1]}</td><td class="mono">${r[2]}</td></tr>`).join("")}</tbody></table></div>`;
+  } else if (sec === "transforms") {
+    p.innerHTML = head("Data Engineering · Transforms", "Transformation Models (dbt)", "The dbt models that shape raw sources into gold marts, by layer.", deepLink) +
+      `<div class="card"><table class="tbl"><thead><tr><th>Model</th><th>Layer</th><th>Does</th></tr></thead><tbody>
+      ${[["stg_fdic_qbp / stg_fdic_failed_banks", "staging", "type + normalize raw FDIC"], ["stg_fred_observations", "staging", "normalize macro series"], ["int_failures_with_macro_context", "intermediate", "join failures + macro"], ["fct_stress_pulse", "mart", "system stress metrics"], ["fct_bank_failures", "mart", "failure forensics"], ["fct_financial_metrics", "mart", "macro indicators"], ["dim_date / dim_state", "reference", "conformed dimensions"]].map((r) => `<tr><td class="mono">${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join("")}</tbody></table></div>`;
+  } else if (sec === "browser") {
+    p.innerHTML = head("Data Engineering · Data Browser", "Data Browser", "Live rows from the gold bank-quarter panel (largest institutions, 2023+).", deepLink) + `<div class="card" id="browser"><div class="empty">loading…</div></div>`;
+    J("/data/browser.json").then((bz) => {
+      $("#browser").innerHTML = `<table class="tbl"><thead><tr>${bz.columns.map((c) => `<th>${c}</th>`).join("")}</tr></thead><tbody>${bz.rows.slice(0, 40).map((r) => `<tr>${r.map((v) => `<td>${typeof v === "number" ? (Number.isInteger(v) ? v.toLocaleString() : v.toFixed(2)) : esc(v)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+    }).catch(() => { $("#browser").innerHTML = `<div class="empty">browser data not exported — run export_web_data.py</div>`; });
+  } else if (sec === "code") {
+    p.innerHTML = head("Data Engineering · Code", "Code Excerpts", "The real source paths behind each stage (open the repo to read the full code).", deepLink) +
+      `<div class="card"><table class="tbl"><thead><tr><th>Stage</th><th>File</th></tr></thead><tbody>
+      ${[["Ingestion", "ingestion/fdic_institutions.py"], ["Panel build", "ml/finlens_ml/data.py"], ["Features", "ml/finlens_ml/features.py"], ["dbt marts", "dbt/models/marts/"], ["Airflow DAG", "airflow/dags/dag_ml_retrain.py"], ["Serving", "ml/finlens_ml/serve.py"], ["Audit log", "ml/finlens_ml/audit.py"]].map((r) => `<tr><td>${r[0]}</td><td class="mono">${r[1]}</td></tr>`).join("")}</tbody></table></div>`;
   } else { // adrs
     p.innerHTML = head("Data Engineering · Architecture Decisions", "Architecture Decisions", "Key design choices, recorded as ADRs in the repo.", deepLink) +
       `<div class="grid g2">${[["Cloud object storage boundary", "Raw artifacts land before transform; S3 mirror optional and OFF for $0."], ["Kimball star schema", "Gold marts modelled dimensionally for analytics + serving."], ["SCD strategy", "Snapshots for slowly-changing dimensions."], ["Quality split (load vs serve)", "GX checkpoints at both ingestion and serving boundaries."]].map((c) => `<div class="card reveal"><div class="section-title">${c[0]}</div><p class="muted">${c[1]}</p></div>`).join("")}</div>`;
@@ -153,9 +166,18 @@ function renderML(p, sec) {
     p.innerHTML = head("Machine Learning · Overview", "Distress Model Overview", "A calibrated, monotone-constrained LightGBM discrete-time hazard model. Served champion resolved from the MLflow registry.", deepLink) +
       `<div class="grid g4">${[[`${o.pr_auc}`, "PR-AUC (out-of-time)", true], [`${(o.recall_at_k * 100).toFixed(0)}%`, `recall @ top ${o.k}`, true], [`${D.meta.n_features}`, "features", false], [`${D.meta.trees}`, "trees (served)", false]].map((s) => `<div class="stat reveal"><div class="v ${s[2] ? "good" : ""}">${s[0]}</div><div class="l">${s[1]}</div></div>`).join("")}</div>
       <div class="card" style="margin-top:16px"><div class="section-title">What it predicts</div><p class="muted">Probability that an institution enters financial distress / failure within ${D.meta.horizon_q} quarters, from public Call Report financials. Ranks banks for off-site supervisory triage — not investment, deposit, or supervisory advice.</p></div>`;
+  } else if (sec === "contracts") {
+    const mono = D.feats.monotone, dir = (v) => v > 0 ? "↑ raises risk" : v < 0 ? "↓ lowers risk" : "unconstrained";
+    const rows = D.feats.features.map((f) => `<tr><td class="mono">${f}</td><td>${dir(mono[f])}</td></tr>`).join("");
+    p.innerHTML = head("Machine Learning · Feature Contracts", `Feature Contract (${D.feats.features.length} features)`, "Every model feature and its economically-signed monotone direction vs. distress risk — enforced as a constraint in the model. Point-in-time: features lag the reporting cycle; labels are strictly forward-looking.", deepLink) +
+      `<div class="card"><table class="tbl"><thead><tr><th>Feature</th><th>Monotone direction</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  } else if (sec === "admin") {
+    const o2 = D.meta;
+    p.innerHTML = head("Machine Learning · Administration", "Model Administration", "Registry, promotion, retraining, and rollback — the operational controls.", deepLink) +
+      `<div class="grid g2">${[["Registry", `MLflow champion alias; serving resolves models:/finlens_bank_distress@champion (file fallback). Served: ${o2.trees} trees, ${o2.calibration} calibration.`], ["Promotion", "Manual to champion after the CI metric gate passes (PR-AUC>logit, ROC<0.98, ECE bound)."], ["Retraining", "Airflow dag_ml_retrain (quarterly + drift-triggered): build → train+register → gate → export."], ["Rollback", "Repoint the champion alias to the prior version — an instant, auditable serve-time rollback."], ["Audit", "Every served request logged (id, inputs, version, probability, reason codes) for outcomes analysis + prediction drift."], ["Cost", "$0 — CI import guard fails the build if ML code imports a billable service."]].map((c) => `<div class="card reveal"><div class="section-title">${c[0]}</div><p class="muted">${c[1]}</p></div>`).join("")}</div>`;
   } else if (sec === "performance") {
     p.innerHTML = head("Machine Learning · Performance", "Out-of-Time Performance", `PR-AUC is the headline at a ${o.base_rate_pct}% base rate; ROC-AUC is comparability-only.`, deepLink) +
-      `<div class="grid g2"><div class="card"><div class="chart-label">Precision–Recall (model vs logit benchmark)</div><div id="pr" class="chart"></div></div><div class="card"><div class="chart-label">ROC-AUC by year</div><div id="yr" class="chart"></div></div></div>`;
+      `<div class="grid g2"><div class="card"><div class="chart-label">Precision–Recall curve (logit benchmark PR-AUC ${o.logit_pr_auc})</div><div id="pr" class="chart"></div></div><div class="card"><div class="chart-label">ROC-AUC by year</div><div id="yr" class="chart"></div></div></div>`;
     chart($("#pr")).setOption({ grid, tooltip: { trigger: "axis" }, legend: { textStyle: { color: TXT }, top: 0 }, xAxis: { type: "value", name: "recall", min: 0, max: 1, ...axis }, yAxis: { type: "value", name: "precision", min: 0, max: 1, ...axis }, series: [{ name: `model ${o.pr_auc}`, type: "line", smooth: true, showSymbol: false, data: D.perf.pr_curve, lineStyle: { color: ACCENT, width: 2.5 }, areaStyle: { color: "rgba(45,212,191,.12)" } }] });
     const yrs = D.perf.by_year.filter((y) => y.roc_auc != null);
     barChart("#yr", yrs.map((y) => y.year), yrs.map((y) => ({ value: y.roc_auc, itemStyle: { color: y.roc_auc >= 0.8 ? ACCENT : WARN } })));
@@ -268,12 +290,18 @@ function drawDag(node, slice) {
     quality: [5, 3.4], business_surfaces: [6, 0.5], feature_panel: [6, 2.4], features: [7, 2.4], train: [8, 2.4], registry: [9, 2.4], serving: [10, 2.4], audit: [11, 1.6], monitoring: [11, 3.2], ml_surfaces: [12, 2.4],
   };
   let nodes = D.graph.nodes, edges = D.graph.edges;
-  if (slice === "de") { nodes = nodes.filter((n) => n.layer === "de" || n.layer === "shared"); }
-  else if (slice === "ml") { nodes = nodes.filter((n) => n.layer === "ml" || n.layer === "shared"); }
+  if (slice === "de") nodes = nodes.filter((n) => n.layer === "de" || n.layer === "shared");
+  else if (slice === "de_lineage") nodes = nodes.filter((n) => n.layer === "de");
+  else if (slice === "ml") nodes = nodes.filter((n) => n.layer === "ml" || n.layer === "shared");
   const ids = new Set(nodes.map((n) => n.id));
   edges = edges.filter((e) => ids.has(e[0]) && ids.has(e[1]));
   const col = (n) => n.layer === "ml" ? ACC2 : n.layer === "de" ? ACCENT : WARN;
-  const data = nodes.map((n) => ({ name: n.id, value: n.label, x: (pos[n.id]?.[0] ?? 6) * 100, y: (pos[n.id]?.[1] ?? 2) * 90, itemStyle: { color: col(n) }, label: { formatter: n.label } }));
+  // compact x: rank the distinct x-levels present in this slice so nodes spread without overlap
+  const xs = [...new Set(nodes.map((n) => pos[n.id]?.[0] ?? 6))].sort((a, b) => a - b);
+  const xrank = Object.fromEntries(xs.map((x, i) => [x, i]));
+  const data = nodes.map((n) => ({ name: n.id, value: n.label,
+    x: xrank[pos[n.id]?.[0] ?? 6] * 165, y: (pos[n.id]?.[1] ?? 2) * 88,
+    itemStyle: { color: col(n) }, label: { formatter: n.label } }));
   const links = edges.map((e) => ({ source: e[0], target: e[1] }));
   const c = chart(node);
   c.setOption({

@@ -130,5 +130,7 @@ table.tbl td{padding:8px 10px;border-bottom:1px solid var(--line)}
 @media(max-width:980px){
   .surface{grid-template-columns:1fr}.rail{position:static;max-height:none;display:flex;flex-wrap:wrap;gap:4px}
   .g2,.g3,.g4,.lab-split,.vert-cards,.comp-meta{grid-template-columns:1fr}
-  .surface-switch{display:none}
+  .topbar{flex-wrap:wrap;height:auto;padding:8px 12px;gap:8px}
+  .surface-switch{order:3;flex-basis:100%;overflow-x:auto;justify-content:flex-start}
+  .surface-switch a{padding:6px 9px;font-size:.8rem}
 }
