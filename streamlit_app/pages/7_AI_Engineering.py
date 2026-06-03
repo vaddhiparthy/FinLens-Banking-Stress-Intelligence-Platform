@@ -33,7 +33,7 @@ st.set_page_config(
     page_title="FinLens | AI Engineering", layout="wide", initial_sidebar_state="collapsed"
 )
 ensure_theme_state()
-inject_styles(app_css(get_theme_mode(), sidebar_open=False))
+inject_styles(app_css(get_theme_mode(), sidebar_open=True))
 top_navigation("ai", AI_PAGE)
 record_page_view("ai_engineering", AI_PAGE)
 

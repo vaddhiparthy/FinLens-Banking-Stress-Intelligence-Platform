@@ -105,7 +105,7 @@ def _warehouse_layer_table() -> pd.DataFrame:
 
 st.set_page_config(page_title="FinLens | Wiki", layout="wide", initial_sidebar_state="collapsed")
 ensure_theme_state()
-inject_styles(app_css(get_theme_mode(), sidebar_open=False))
+inject_styles(app_css(get_theme_mode(), sidebar_open=True))
 record_page_view("wiki", "shared")
 
 st.markdown(

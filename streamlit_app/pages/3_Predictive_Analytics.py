@@ -30,7 +30,7 @@ st.set_page_config(
     page_title="FinLens | Predictive Analytics", layout="wide", initial_sidebar_state="collapsed"
 )
 ensure_theme_state()
-inject_styles(app_css(get_theme_mode(), sidebar_open=False))
+inject_styles(app_css(get_theme_mode(), sidebar_open=True))
 top_navigation("predictive", BUSINESS_PAGE)
 record_page_view("predictive_analytics", BUSINESS_PAGE)
 

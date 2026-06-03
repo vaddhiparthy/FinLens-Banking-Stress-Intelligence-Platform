@@ -9,8 +9,10 @@ import streamlit as st
 PROJECT_ROOT = next(
     parent for parent in Path(__file__).resolve().parents if (parent / "pyproject.toml").exists()
 )
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+for sub in ("", "src", "ml"):
+    p = str(PROJECT_ROOT / sub) if sub else str(PROJECT_ROOT)
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 from finlens.pipeline_status import pipeline_status_rows
 from streamlit_app.lib.data import load_failures, load_metrics, load_stress_pulse

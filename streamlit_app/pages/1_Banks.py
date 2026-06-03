@@ -178,7 +178,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 ensure_theme_state()
-inject_styles(app_css(get_theme_mode(), sidebar_open=False))
+inject_styles(app_css(get_theme_mode(), sidebar_open=True))
 top_navigation("banks", BUSINESS_PAGE)
 record_page_view("failure_forensics", BUSINESS_PAGE)
 status_ribbon("Failure analytics view")

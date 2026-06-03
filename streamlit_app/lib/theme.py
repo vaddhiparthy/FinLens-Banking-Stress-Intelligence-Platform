@@ -210,6 +210,12 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     [aria-label="Open sidebar"],
     [data-testid="stBaseButton-headerNoPadding"],
     [data-testid="stBaseButton-header"],
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebarHeader"] button,
+    [data-testid="stSidebarHeader"] [data-testid="stSidebarCollapseButton"],
+    button[data-testid="stSidebarCollapseButton"],
+    section[data-testid="stSidebar"] button[aria-label*="idebar"],
+    section[data-testid="stSidebar"] [data-testid="stSidebarHeader"],
     section[data-testid="stSidebar"] > div > button {{
         display: none !important;
     }}
@@ -543,7 +549,8 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         line-height: 1.55;
         margin-bottom: .85rem;
     }}
-    .sidebar-group-label {{
+    .sidebar-group-label,
+    .sidebar-section-label {{
         color: {palette["text_soft"]};
         text-transform: uppercase;
         letter-spacing: .12em;
@@ -553,6 +560,45 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     }}
     .sidebar-bottom-spacer {{
         height: 1.25rem;
+    }}
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button {{
+        width: 100%;
+        text-align: left;
+        justify-content: flex-start;
+        min-height: 2.3rem;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        background: transparent;
+        box-shadow: none;
+        color: {palette["text_muted"]};
+        font-size: .82rem;
+        font-weight: 650;
+        padding: .3rem .65rem;
+        margin-bottom: .12rem;
+    }}
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button p {{
+        text-align: left;
+        width: 100%;
+    }}
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button:hover {{
+        background: {palette["sand"]};
+        border-color: {palette["border"]};
+        color: {palette["text_main"]};
+    }}
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button:disabled {{
+        background: {palette["accent_soft"]} !important;
+        border-color: transparent !important;
+        border-left: 2px solid {palette["accent"]} !important;
+        border-radius: 4px 8px 8px 4px !important;
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+        opacity: 1 !important;
+        font-weight: 800;
+    }}
+    section[data-testid="stSidebar"] div[data-testid="stButton"] > button:disabled * {{
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+        opacity: 1 !important;
     }}
     .topbar-action-label {{
         color: {palette["text_soft"]};

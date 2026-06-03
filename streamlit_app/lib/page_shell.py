@@ -5,7 +5,7 @@ import streamlit as st
 
 BUSINESS_PAGE = "business"
 TECHNICAL_PAGE = "technical"
-SIDEBAR_ENABLED = False
+SIDEBAR_ENABLED = True
 AI_PAGE = "ai"  # third surface: Machine Learning / AI engineering
 
 
@@ -106,9 +106,42 @@ def render_sidebar(active_page: str, mode: str) -> None:
             """,
             unsafe_allow_html=True,
         )
+        _render_sidebar_sections(active_page, mode)
         _render_sidebar_clock()
 
         st.markdown('<div class="sidebar-bottom-spacer"></div>', unsafe_allow_html=True)
+
+
+def _render_sidebar_sections(active_page: str, mode: str) -> None:
+    """Section navigation rendered as side-tabs in the left rail (the surface switch
+    lives in the top bar; sections live here)."""
+    st.markdown('<div class="sidebar-section-label">Sections</div>', unsafe_allow_html=True)
+    if mode == AI_PAGE:
+        st.caption("AI sections are tabs on this page.")
+        return
+    if mode == BUSINESS_PAGE:
+        sections = [("home", "Home"), *_business_sections()]
+        for key, label in sections:
+            if st.button(
+                label, key=f"side_b_{key}_{active_page}", use_container_width=True,
+                disabled=active_page == key,
+            ):
+                st.switch_page(_page_path(key))
+        return
+    # technical / data engineering
+    sections = [("home", "Home"), *_technical_sections()]
+    current = get_technical_section()
+    for key, label in sections:
+        if key in ("home", "wiki"):
+            if st.button(label, key=f"side_t_{key}_{active_page}", use_container_width=True):
+                st.switch_page(_page_path(key))
+            continue
+        if st.button(
+            label, key=f"side_t_{key}_{active_page}", use_container_width=True,
+            disabled=current == key,
+        ):
+            st.session_state["technical_section"] = key
+            st.switch_page("pages/4_Under_The_Hood.py")
 
 def status_ribbon(text: str) -> None:
     st.markdown(f'<div class="status-ribbon">{text}</div>', unsafe_allow_html=True)
@@ -183,51 +216,9 @@ def top_navigation(active_page: str, mode: str) -> None:
                         _set_surface_mode(smode)
                         st.switch_page(spath)
         with top_right:
-            st.markdown('<div class="section-menu-anchor"></div>', unsafe_allow_html=True)
-            if mode == AI_PAGE:
-                st.caption(
-                    "AI Engineering sections are tabs on this page (Pipeline · Feature "
-                    "Contracts · Stack · Model Quality · Decisions · Administration · Wiki)."
-                )
-            elif mode == BUSINESS_PAGE:
-                sections = [("home", "Home"), *_business_sections()]
-                page_columns = st.columns(len(sections), vertical_alignment="center")
-                for column, (key, label) in zip(page_columns, sections, strict=False):
-                    with column:
-                        if st.button(
-                            label,
-                            key=f"top_business_{key}_{active_page}",
-                            disabled=active_page == key,
-                            use_container_width=True,
-                        ):
-                            st.switch_page(_page_path(key))
-            else:
-                sections = [("home", "Home"), *_technical_sections()]
-                section_columns = st.columns(len(sections), vertical_alignment="center")
-                current_section = get_technical_section()
-                for column, (key, label) in zip(section_columns, sections, strict=False):
-                    with column:
-                        if key == "home":
-                            if st.button(
-                                label,
-                                key=f"top_section_{key}_{active_page}",
-                                use_container_width=True,
-                            ):
-                                st.switch_page(_page_path(key))
-                            continue
-                        if key == "wiki":
-                            if st.button(
-                                label,
-                                key=f"top_section_{key}_{active_page}",
-                                use_container_width=True,
-                            ):
-                                st.switch_page(_page_path(key))
-                            continue
-                        if st.button(
-                            label,
-                            key=f"top_section_{key}_{active_page}",
-                            disabled=current_section == key,
-                            use_container_width=True,
-                        ):
-                            st.session_state["technical_section"] = key
-                            st.switch_page("pages/4_Under_The_Hood.py")
+            st.markdown(
+                '<div class="section-menu-anchor"></div>'
+                '<div class="topbar-hint">Switch surfaces above · choose a section in the '
+                'left rail</div>',
+                unsafe_allow_html=True,
+            )

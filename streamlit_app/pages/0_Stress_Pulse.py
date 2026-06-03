@@ -388,7 +388,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 ensure_theme_state()
-inject_styles(app_css(get_theme_mode(), sidebar_open=False))
+inject_styles(app_css(get_theme_mode(), sidebar_open=True))
 
 frame = load_stress_pulse()
 stress_pulse_mode = stress_pulse_source_mode()
