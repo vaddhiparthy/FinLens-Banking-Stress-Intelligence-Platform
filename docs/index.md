@@ -8,10 +8,10 @@ engineering backbone.
 - `Stress Pulse`
 - `Failure Forensics`
 - `Macro Transmission`
-- `Predictive Analytics` (planned)
+- `Predictive Analytics` (live, model-backed)
 - `Wiki`
 
-## Technical Surface
+## Data Engineering Surface
 
 - `Live Pipeline`
 - `Source Contracts`
@@ -20,6 +20,16 @@ engineering backbone.
 - `Architecture Decisions`
 - `Administration`
 - `Wiki`
+
+## AI Engineering Surface
+
+- `AI Pipeline`
+- `Feature Contracts`
+- `AI Stack`
+- `Model Quality` (real out-of-time metrics, calibration, drift)
+- `Model Decisions`
+- `Administration`
+- `AI Wiki`
 
 The Streamlit Architecture Decisions tab is the in-app knowledge surface. These markdown docs are
 the repository-facing companion for code review, onboarding, and implementation history.

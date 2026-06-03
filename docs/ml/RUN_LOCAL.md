@@ -20,7 +20,8 @@ uv sync --extra ml --group dev        # or: pip install -e ".[ml,dev]"
 ```powershell
 .venv\Scripts\python.exe ml\finlens_ml\train.py --horizon 4
 # -> ml/artifacts/: booster_h4.txt, calibrated_h4.skops, metrics_h4.json
-# OOT (2019-2026, 66 real failures): calibrated PR-AUC 0.218 vs logit 0.108, ROC 0.875
+# OOT (2019-2026, 66 real failures): calibrated PR-AUC 0.218 vs logit 0.108,
+# ROC 0.816 (calibrated; ROC is comparability-only, PR-AUC is the rare-event headline)
 ```
 
 ## 3. Governance docs + drift (optional)

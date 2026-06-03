@@ -54,7 +54,9 @@ def _skops_load(path: Path):
             f"refusing to load model artifact {path.name}: unexpected serialized types "
             f"{unexpected} not in the trusted allow-list (possible tampering)"
         )
-    return sio.load(path, trusted=list(untrusted))
+    # trust only the explicit allow-list (the guard above already proved untrusted
+    # is a subset of it) — makes the boundary self-evident.
+    return sio.load(path, trusted=list(TRUSTED_SKOPS_TYPES))
 
 
 @lru_cache(maxsize=4)
