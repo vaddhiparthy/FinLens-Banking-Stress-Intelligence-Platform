@@ -64,7 +64,8 @@ rare-event model, not a defect.
 | nim                         |    0.00772053 |
 
 Capital (tier-1) and earnings (ROA) dominate, consistent with the bank-failure
-literature. Local per-bank SHAP reason codes are available via the serving API.
+literature. Computed as mean |SHAP| over a fixed reservoir sample (n=1500, seed 42)
+of OOT-era rows. Local per-bank SHAP reason codes are available via the serving API.
 
 ## Cross-segment performance equity (NOT protected-class fairness)
 A bank-distress model predicts on institutions, not consumers — there is **no protected
@@ -113,6 +114,8 @@ and are deliberately not computed. We instead verify the model performs across s
 
 ## Governance
 Aligned with the **principles** of SR 26-2 (Fed/OCC/FDIC, Apr 17 2026; supersedes
-SR 11-7 + SR 21-8) — non-binding guidance; a GBM is in-scope (non-generative,
-non-agentic AI). This is a portfolio demonstration, not a regulated production model.
-See the validation report for the SR 11-7 three-pillar treatment.
+SR 11-7 + SR 21-8; primary source:
+https://www.federalreserve.gov/supervisionreg/srletters/SR2602.htm) — **non-binding**
+guidance; a GBM is in-scope (non-generative, non-agentic AI). This is a portfolio
+demonstration, not a regulated production model. The substantive validation rests on
+the SR 11-7 three pillars regardless (see the validation report).

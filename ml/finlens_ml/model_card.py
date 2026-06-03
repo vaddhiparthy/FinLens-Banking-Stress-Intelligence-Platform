@@ -65,7 +65,7 @@ def _oot_scored(horizon_q: int = 4) -> pd.DataFrame:
 
 def _segment_table(test: pd.DataFrame, by: str, k: int = 50) -> pd.DataFrame:
     rows = []
-    for seg, g in test.groupby(by, dropna=False):
+    for seg, g in test.groupby(by, dropna=False, observed=False):
         m = evaluate(g["y"].to_numpy(), g["score"].to_numpy(), k=min(k, len(g)))
         rows.append({
             "segment": str(seg), "n": m.n, "positives": m.n_positive,
@@ -174,7 +174,8 @@ rare-event model, not a defect.
 {_md_table(gi.rename(columns={'mean_abs_shap': 'mean_|SHAP|'}))}
 
 Capital (tier-1) and earnings (ROA) dominate, consistent with the bank-failure
-literature. Local per-bank SHAP reason codes are available via the serving API.
+literature. Computed as mean |SHAP| over a fixed reservoir sample (n=1500, seed 42)
+of OOT-era rows. Local per-bank SHAP reason codes are available via the serving API.
 
 ## Cross-segment performance equity (NOT protected-class fairness)
 A bank-distress model predicts on institutions, not consumers — there is **no protected
@@ -203,9 +204,11 @@ and are deliberately not computed. We instead verify the model performs across s
 
 ## Governance
 Aligned with the **principles** of SR 26-2 (Fed/OCC/FDIC, Apr 17 2026; supersedes
-SR 11-7 + SR 21-8) — non-binding guidance; a GBM is in-scope (non-generative,
-non-agentic AI). This is a portfolio demonstration, not a regulated production model.
-See the validation report for the SR 11-7 three-pillar treatment.
+SR 11-7 + SR 21-8; primary source:
+https://www.federalreserve.gov/supervisionreg/srletters/SR2602.htm) — **non-binding**
+guidance; a GBM is in-scope (non-generative, non-agentic AI). This is a portfolio
+demonstration, not a regulated production model. The substantive validation rests on
+the SR 11-7 three pillars regardless (see the validation report).
 """
     out = Path(settings.repo_root) / "docs" / "ml" / "MODEL_CARD.md"
     out.write_text(card, encoding="utf-8")
