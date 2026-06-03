@@ -16,15 +16,16 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 METRICS = REPO / "ml" / "artifacts" / "metrics_h4.json"
 
-PR_AUC_FLOOR_OVER_LOGIT = 0.0   # LGBM PR-AUC must be >= logit PR-AUC
+PR_AUC_FLOOR_OVER_LOGIT = 0.03  # LGBM must beat logit PR-AUC by a real margin
 ROC_LEAKAGE_CEILING = 0.98      # OOT ROC above this is suspicious (leakage)
 ECE_CEILING = 0.05              # calibration sanity
 
 
 def main() -> int:
     if not METRICS.exists():
-        print(f"GATE SKIP: {METRICS} not present (train offline to enable the gate).")
-        return 0
+        # the metrics file is committed; absence means it was deleted -> hard fail.
+        print(f"GATE FAILED: {METRICS} not present (it is tracked and required).")
+        return 1
     m = json.loads(METRICS.read_text())
     t = m["oot_test"]
     lgbm_pr = t["calibrated_lgbm"]["pr_auc"]

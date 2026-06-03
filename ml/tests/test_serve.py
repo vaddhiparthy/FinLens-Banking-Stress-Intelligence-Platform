@@ -68,3 +68,9 @@ def test_schema_rejects_non_finite() -> None:
     with _client() as c:
         r = c.post("/predict", json={"features": {"roa": 1e20}})
         assert r.status_code == 422
+
+
+def test_batch_rejects_unknown_and_non_finite() -> None:
+    with _client() as c:
+        assert c.post("/predict/batch", json={"records": [{"nope": 1.0}]}).status_code == 422
+        assert c.post("/predict/batch", json={"records": [{"roa": 1e20}]}).status_code == 422

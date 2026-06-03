@@ -37,9 +37,12 @@ ml = [
   "shap>=0.46",
   "skops>=0.11",
   "fairlearn>=0.12",
-  # evidently pins plotly<6 (conflicts with the app's plotly>=6); the monitoring
-  # job uses evidently's programmatic Report API only and is run isolated so the
-  # app/serving env keeps plotly>=6. See ml/finlens_ml/monitor.py.
+]
+# evidently pins plotly<6, which is mutually exclusive with the app's plotly>=6 in a
+# single resolved environment. It therefore lives in its OWN extra and is installed
+# isolated (the monitoring job uses only evidently's programmatic Report API, no
+# plotly rendering). Keeping it out of `ml` lets `uv sync --extra ml` resolve cleanly.
+monitor = [
   "evidently>=0.7",
 ]
 

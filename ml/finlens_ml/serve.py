@@ -28,6 +28,18 @@ from finlens_ml.features import FEATURE_COLUMNS  # noqa: E402
 _FEATURE_SET = set(FEATURE_COLUMNS)
 
 
+def _validate_feature_map(v: dict[str, float | None]) -> dict[str, float | None]:
+    """Shared validation contract for single and batch: reject unknown keys and
+    non-finite/absurd values; null is allowed (missing feature -> NaN)."""
+    unknown = set(v) - _FEATURE_SET
+    if unknown:
+        raise ValueError(f"unknown feature(s): {sorted(unknown)}")
+    for key, val in v.items():
+        if val is not None and (val != val or abs(val) > 1e12):  # NaN/inf or absurd
+            raise ValueError(f"feature '{key}' must be a finite number or null")
+    return v
+
+
 def _model_version(horizon_q: int = 4) -> str:
     path = get_ml_settings().artifact_dir / f"calibrated_h{horizon_q}.skops"
     if not path.exists():
@@ -45,17 +57,18 @@ class BankFeatures(BaseModel):
     @field_validator("features")
     @classmethod
     def _check(cls, v: dict[str, float | None]) -> dict[str, float | None]:
-        unknown = set(v) - _FEATURE_SET
-        if unknown:
-            raise ValueError(f"unknown feature(s): {sorted(unknown)}")
-        for key, val in v.items():
-            if val is not None and (val != val or abs(val) > 1e12):  # NaN or absurd
-                raise ValueError(f"feature '{key}' must be a finite number or null")
-        return v
+        return _validate_feature_map(v)
 
 
 class BatchRequest(BaseModel):
     records: list[dict[str, float | None]] = Field(min_length=1, max_length=5000)
+
+    @field_validator("records")
+    @classmethod
+    def _check_records(cls, v: list[dict[str, float | None]]) -> list[dict[str, float | None]]:
+        for rec in v:
+            _validate_feature_map(rec)  # same contract as the single endpoint
+        return v
 
 
 class ReasonOut(BaseModel):

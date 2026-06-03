@@ -30,6 +30,27 @@ def test_drift_report_runs_and_summarizes() -> None:
     assert 0 <= summary["n_drifted_columns"] <= summary["n_features_analyzed"]
 
 
+def test_summarize_parses_drift_result() -> None:
+    """Pure extraction logic (no evidently needed) — runs in CI without the monitor
+    extra, proving _summarize reads the 0.7.x result shape correctly."""
+    from finlens_ml.monitor import _summarize
+
+    fake = {
+        "metrics": [
+            {"metric_name": "DriftedColumnsCount(drift_share=0.5)",
+             "value": {"count": 3.0, "share": 0.5}},
+            {"metric_name": "ValueDrift(column=roa,...)", "config": {"column": "roa"}, "value": 0.4},
+            {"metric_name": "ValueDrift(column=distress_score,...)",
+             "config": {"column": "distress_score"}, "value": 0.11},
+        ]
+    }
+    s = _summarize(fake, ["roa", "distress_score"])
+    assert s["n_drifted_columns"] == 3
+    assert s["share_of_drifted_columns"] == 0.5
+    assert s["prediction_drift_score"] == 0.11
+    assert s["top_drifted_features"][0]["feature"] == "roa"
+
+
 def test_metric_gate_passes_on_committed_metrics() -> None:
     """The committed real metrics must satisfy the CI gate (LGBM beats logit, ROC<0.98)."""
     import json
