@@ -86,9 +86,12 @@ def get_ml_settings() -> MLSettings:
     root = _repo_root()
     default_duckdb = root / ".duckdb" / "finlens.duckdb"
     default_artifacts = root / "ml" / "artifacts"
+    # sqlite backend by default so the MLflow MODEL REGISTRY (aliases) works locally;
+    # a file store cannot host the registry. On the VPS, override with a Postgres URI
+    # via FINLENS_ML_MLFLOW_URI. Single source of truth read by train/registry/serving.
     default_mlflow = os.environ.get(
         "FINLENS_ML_MLFLOW_URI",
-        (root / "ml" / "mlruns").as_uri(),
+        f"sqlite:///{(root / 'ml' / 'mlflow.db').as_posix()}",
     )
     return MLSettings(
         repo_root=root,

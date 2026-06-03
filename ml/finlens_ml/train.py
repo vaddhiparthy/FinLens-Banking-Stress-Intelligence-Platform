@@ -31,7 +31,7 @@ for p in (REPO, REPO / "src", REPO / "ml"):
         sys.path.insert(0, str(p))
 
 from finlens_ml.config import get_ml_settings  # noqa: E402
-from finlens_ml.evaluate import evaluate, evaluate_by_cohort  # noqa: E402
+from finlens_ml.evaluate import calibration_report, evaluate, evaluate_by_cohort  # noqa: E402
 from finlens_ml.features import FEATURE_COLUMNS, MONOTONE_CONSTRAINTS  # noqa: E402
 from finlens_ml.splits import final_holdout_split  # noqa: E402
 
@@ -46,9 +46,39 @@ def load_dataset() -> pd.DataFrame:
         return conn.execute("select * from ml.training_dataset").df()
 
 
-def _fit_calibrated(X_tr: pd.DataFrame, y_tr: np.ndarray, seed: int):
+def _make_lgbm(spw: float, seed: int, n_estimators: int):
+    import lightgbm as lgb
+
+    return lgb.LGBMClassifier(
+        objective="binary",
+        n_estimators=n_estimators,
+        learning_rate=0.03,
+        num_leaves=31,
+        min_child_samples=100,
+        subsample=0.8,
+        subsample_freq=1,
+        colsample_bytree=0.8,
+        reg_lambda=1.0,
+        monotone_constraints=[MONOTONE_CONSTRAINTS[c] for c in FEATURE_COLUMNS],
+        scale_pos_weight=spw,
+        n_jobs=4,
+        random_state=seed,
+        verbose=-1,
+    )
+
+
+def _fit_calibrated(X_tr: pd.DataFrame, y_tr: np.ndarray, seed: int, fixed_rounds: int | None = None):
     """Fit LightGBM (monotone + class-weighted) and calibrate on a stratified
-    in-training holdout. Returns (raw_model, calibrated_model, method, spw)."""
+    in-training holdout.
+
+    fixed_rounds=None  -> EVAL mode: early-stop on average_precision to DISCOVER the
+                          tree count (AUC saturates at ~1 tree on few positives; AP
+                          lets the model grow).
+    fixed_rounds=int   -> FINAL/served mode: train exactly that many trees on all data
+                          (no future to early-stop on), so the served model matches
+                          the validated complexity instead of collapsing to 1 tree.
+    Returns (model, calibrated, method, spw, best_iteration).
+    """
     import lightgbm as lgb
     from sklearn.calibration import CalibratedClassifierCV
     from sklearn.model_selection import train_test_split
@@ -56,35 +86,30 @@ def _fit_calibrated(X_tr: pd.DataFrame, y_tr: np.ndarray, seed: int):
     X_fit, X_cal, y_fit, y_cal = train_test_split(
         X_tr, y_tr, test_size=0.20, stratify=y_tr, random_state=seed
     )
-    X_core, X_val, y_core, y_val = train_test_split(
-        X_fit, y_fit, test_size=0.10, stratify=y_fit, random_state=seed
-    )
-    mc = [MONOTONE_CONSTRAINTS[c] for c in FEATURE_COLUMNS]
-    spw = float((y_core == 0).sum() / max(1, (y_core == 1).sum()))
-    model = lgb.LGBMClassifier(
-        objective="binary",
-        n_estimators=3000,
-        learning_rate=0.02,
-        num_leaves=31,
-        min_child_samples=200,
-        subsample=0.8,
-        subsample_freq=1,
-        colsample_bytree=0.8,
-        reg_lambda=1.0,
-        monotone_constraints=mc,
-        scale_pos_weight=spw,
-        n_jobs=4,
-        random_state=seed,
-        verbose=-1,
-    )
-    model.fit(
-        X_core, y_core,
-        eval_set=[(X_val, y_val)],
-        eval_metric="auc",
-        callbacks=[lgb.early_stopping(100, verbose=False), lgb.log_evaluation(0)],
-    )
-    n_cal_pos = int(y_cal.sum())
-    method = "isotonic" if n_cal_pos >= 50 else "sigmoid"
+    # moderate the class weight: raw neg/pos (~190) is so extreme the model saturates
+    # instantly; a capped weight keeps positives emphasized, calibration fixes probs.
+    raw_spw = float((y_fit == 0).sum() / max(1, (y_fit == 1).sum()))
+    spw = float(min(raw_spw, 25.0))
+
+    if fixed_rounds is None:
+        X_core, X_val, y_core, y_val = train_test_split(
+            X_fit, y_fit, test_size=0.15, stratify=y_fit, random_state=seed
+        )
+        spw = float(min(float((y_core == 0).sum() / max(1, (y_core == 1).sum())), 25.0))
+        model = _make_lgbm(spw, seed, n_estimators=3000)
+        model.fit(
+            X_core, y_core,
+            eval_set=[(X_val, y_val)],
+            eval_metric="average_precision",
+            callbacks=[lgb.early_stopping(200, verbose=False), lgb.log_evaluation(0)],
+        )
+        best_it = int(getattr(model, "best_iteration_", 0) or model.n_estimators)
+    else:
+        best_it = max(1, fixed_rounds)
+        model = _make_lgbm(spw, seed, n_estimators=best_it)
+        model.fit(X_fit, y_fit)
+
+    method = "isotonic" if int(y_cal.sum()) >= 50 else "sigmoid"
     try:
         from sklearn.frozen import FrozenEstimator
 
@@ -92,7 +117,7 @@ def _fit_calibrated(X_tr: pd.DataFrame, y_tr: np.ndarray, seed: int):
     except Exception:
         calibrated = CalibratedClassifierCV(model, method=method, cv="prefit")
     calibrated.fit(X_cal, y_cal)
-    return model, calibrated, method, spw
+    return model, calibrated, method, spw, best_it
 
 
 def _fit_logit(X_tr: pd.DataFrame, y_tr: np.ndarray):
@@ -131,7 +156,7 @@ def train(horizon_q: int = 4, seed: int = 42) -> dict:
     X_te, y_te = X.iloc[te_idx], y[te_idx]
     year_te = (obs.iloc[te_idx].to_numpy() // 4).astype(int)  # calendar year cohort
 
-    eval_model, eval_cal, method, spw = _fit_calibrated(X_tr, y_tr, seed)
+    eval_model, eval_cal, method, spw, eval_best_it = _fit_calibrated(X_tr, y_tr, seed)
     eval_logit = _fit_logit(X_tr, y_tr)
 
     k = settings.review_budget_k
@@ -147,17 +172,36 @@ def train(horizon_q: int = 4, seed: int = 42) -> dict:
         "test_positives": int(y_te.sum()),
         "scale_pos_weight": spw,
         "calibration_method": method,
-        "best_iteration": int(getattr(eval_model, "best_iteration_", 0) or 0),
+        "best_iteration": int(eval_best_it),
         "oot_test": {
             "calibrated_lgbm": evaluate(y_te, p_cal, k=k).as_dict(),
             "raw_lgbm": evaluate(y_te, p_raw, k=k).as_dict(),
             "logit_benchmark": evaluate(y_te, p_logit, k=k).as_dict(),
         },
         "by_year_calibrated": evaluate_by_cohort(y_te, p_cal, year_te, k=25),
+        # honest calibration: all-rows Brier is dominated by negatives; ECE +
+        # top-decile Brier measure where flags actually happen. Calibrator is fit on
+        # a stratified in-train holdout (so it sees positives; a calm temporal tail
+        # inverts Platt) — all calib rows are pre-test, so OOT ranking is unleaked.
+        "oot_calibration": calibration_report(y_te, p_cal),
     }
 
-    # ---- FINAL: train on ALL data, calibrate, save + register for serving ----
-    final_model, final_cal, _, _ = _fit_calibrated(X, y, seed)
+    # ---- FINAL: train on ALL data with the VALIDATED tree count, calibrate, serve ----
+    final_model, final_cal, final_method, final_spw, final_it = _fit_calibrated(
+        X, y, seed, fixed_rounds=eval_best_it
+    )
+    # provenance for the SERVED model (B3): identical pipeline + the tree count
+    # discovered by the eval model's out-of-time early stopping.
+    results["final_model"] = {
+        "n_train": int(len(X)),
+        "n_estimators": int(final_it),
+        "tree_count_source": "eval-model out-of-time early stopping (average_precision)",
+        "calibration_method": final_method,
+        "scale_pos_weight": final_spw,
+        "note": "served model; trained on all data via the identical _fit_calibrated "
+        "pipeline, using the OOT-validated tree count from the eval model whose "
+        "metrics are reported above",
+    }
     _log_to_mlflow(settings, results, final_cal, horizon_q)
     _save_artifacts(settings, final_cal, final_model, results, horizon_q)
     return results
@@ -168,7 +212,7 @@ def _log_to_mlflow(settings, results: dict, calibrated, horizon_q: int) -> None:
         import mlflow
         import mlflow.sklearn
 
-        mlflow.set_tracking_uri(f"sqlite:///{(REPO / 'ml' / 'mlflow.db').as_posix()}")
+        mlflow.set_tracking_uri(settings.mlflow_tracking_uri)  # single source of truth (config)
         mlflow.set_experiment("finlens_bank_distress")
         with mlflow.start_run(run_name=f"lgbm_h{horizon_q}"):
             mlflow.log_param("horizon_q", horizon_q)
@@ -176,12 +220,21 @@ def _log_to_mlflow(settings, results: dict, calibrated, horizon_q: int) -> None:
             mlflow.log_param("scale_pos_weight", results["scale_pos_weight"])
             mlflow.log_param("n_features", len(FEATURE_COLUMNS))
             mlflow.log_param("eval_window_quarters", results["eval_window_quarters"])
+            # served-model provenance (B3): record the FINAL model's training config
+            for key, val in results.get("final_model", {}).items():
+                if isinstance(val, (int, float, str)):
+                    mlflow.log_param(f"final__{key}", val)
             for mname, mset in results["oot_test"].items():
                 for metric, val in mset.items():
                     if isinstance(val, (int, float)) and not (
                         isinstance(val, float) and np.isnan(val)
                     ):
                         mlflow.log_metric(f"{mname}__{metric}", float(val))
+            for metric, val in results.get("oot_calibration", {}).items():
+                if isinstance(val, (int, float)) and not (
+                    isinstance(val, float) and np.isnan(val)
+                ):
+                    mlflow.log_metric(f"calib__{metric}", float(val))
             info = mlflow.sklearn.log_model(
                 calibrated, name="model", registered_model_name=settings.registered_model_name
             )

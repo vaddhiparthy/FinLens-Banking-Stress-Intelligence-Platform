@@ -70,6 +70,44 @@ def evaluate(y_true: np.ndarray, y_score: np.ndarray, k: int = 200) -> EvalMetri
     )
 
 
+def calibration_report(y_true: np.ndarray, y_score: np.ndarray, n_bins: int = 10) -> dict:
+    """Honest calibration measurement for a rare-event model. The all-rows Brier is
+    dominated by true negatives and nearly uninformative, so we also report ECE
+    (expected calibration error), the Brier restricted to the top-scoring decile
+    (where decisions are actually made), and observed-vs-predicted in that decile."""
+    y_true = np.asarray(y_true).astype(int)
+    y_score = np.asarray(y_score, dtype=float)
+    n = len(y_true)
+    if n == 0:
+        return {"ece": float("nan"), "brier_overall": float("nan"),
+                "brier_top_decile": float("nan"), "top_decile_obs": float("nan"),
+                "top_decile_pred": float("nan")}
+    brier_overall = float(brier_score_loss(y_true, y_score)) if y_true.sum() else float("nan")
+    # ECE over equal-width probability bins
+    bins = np.linspace(0.0, 1.0, n_bins + 1)
+    idx = np.clip(np.digitize(y_score, bins) - 1, 0, n_bins - 1)
+    ece = 0.0
+    for b in range(n_bins):
+        m = idx == b
+        if not m.any():
+            continue
+        conf = float(y_score[m].mean())
+        acc = float(y_true[m].mean())
+        ece += (m.sum() / n) * abs(acc - conf)
+    # top-decile (where flags happen)
+    k = max(1, n // 10)
+    top = np.argsort(-y_score)[:k]
+    yt, st = y_true[top], y_score[top]
+    brier_top = float(np.mean((st - yt) ** 2))
+    return {
+        "ece": float(ece),
+        "brier_overall": brier_overall,
+        "brier_top_decile": brier_top,
+        "top_decile_obs": float(yt.mean()),
+        "top_decile_pred": float(st.mean()),
+    }
+
+
 def evaluate_by_cohort(
     y_true: np.ndarray, y_score: np.ndarray, cohort: np.ndarray, k: int = 50
 ) -> dict[str, dict]:

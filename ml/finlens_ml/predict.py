@@ -28,12 +28,33 @@ class LoadedModel:
     source: str
 
 
+# Explicit allow-list of the ONLY non-default types we serialize. Loading is
+# refused if the artifact contains any flagged type outside this set, so a tampered
+# or unexpected artifact cannot execute arbitrary code (a real trust boundary, not
+# the pickle-equivalent of trusting whatever the file declares).
+TRUSTED_SKOPS_TYPES = (
+    "collections.OrderedDict",
+    "lightgbm.basic.Booster",
+    "lightgbm.sklearn.LGBMClassifier",
+    "sklearn.calibration._CalibratedClassifier",
+    "sklearn.calibration._SigmoidCalibration",
+    "sklearn.frozen.FrozenEstimator",
+    "sklearn.frozen._frozen.FrozenEstimator",
+    "sklearn.isotonic.IsotonicRegression",
+)
+
+
 def _skops_load(path: Path):
     import skops.io as sio
 
     untrusted = sio.get_untrusted_types(file=path)
-    # our own artifact: trust sklearn/lightgbm/numpy types we serialized
-    return sio.load(path, trusted=untrusted)
+    unexpected = [t for t in untrusted if t not in TRUSTED_SKOPS_TYPES]
+    if unexpected:
+        raise ValueError(
+            f"refusing to load model artifact {path.name}: unexpected serialized types "
+            f"{unexpected} not in the trusted allow-list (possible tampering)"
+        )
+    return sio.load(path, trusted=list(untrusted))
 
 
 @lru_cache(maxsize=4)

@@ -11,9 +11,10 @@ _ARTIFACT = get_ml_settings().artifact_dir / "calibrated_h4.skops"
 _BOOSTER = get_ml_settings().artifact_dir / "booster_h4.txt"
 _HAS_MODEL = _ARTIFACT.exists() or _BOOSTER.exists()
 
-pytestmark = pytest.mark.skipif(not _HAS_MODEL, reason="no trained model artifact present")
+_needs_model = pytest.mark.skipif(not _HAS_MODEL, reason="no trained model artifact present")
 
 
+@_needs_model
 def test_distressed_scores_higher_than_healthy() -> None:
     from finlens_ml.predict import score_record
 
@@ -39,9 +40,26 @@ def test_distressed_scores_higher_than_healthy() -> None:
     assert p_bad > p_good
 
 
+@_needs_model
 def test_decision_threshold() -> None:
     from finlens_ml.predict import decision
 
     d = decision(0.99)
     assert d["flagged"] is True
     assert decision(0.0)["flagged"] is False
+
+
+def test_skops_load_rejects_unexpected_type(tmp_path) -> None:
+    """The trust boundary is real: a serialized object whose type is NOT on the
+    allow-list must be refused, not silently trusted (the pickle-equivalent bug)."""
+    import pytest
+
+    sio = pytest.importorskip("skops.io")
+    from collections import Counter
+
+    from finlens_ml.predict import _skops_load
+
+    bad = tmp_path / "tampered.skops"
+    sio.dump(Counter({"a": 1}), bad)  # collections.Counter is not on the allow-list
+    with pytest.raises(ValueError, match="unexpected serialized types"):
+        _skops_load(bad)
