@@ -66,7 +66,7 @@ The three "views" are woven into a single story, not separate pages:
 │  • ROC-AUC by year (bars)                   • Cross-segment equity (small mult)│
 ├───────────────────────────────────────────────────────────────────────────┤
 │ GOVERNANCE & LIMITS  (concise, factual)                                        │
-│  SR 26-2 alignment · SHAP transparency · cross-segment equity · the honest     │
+│  SR 11-7 alignment · SHAP transparency · cross-segment equity · the honest     │
 │  rate-risk limitation (what the model sees and what it doesn't)                │
 ├───────────────────────────────────────────────────────────────────────────┤
 │ FOOTER  built by · stack chips (FDIC · DuckDB · LightGBM · MLflow · FastAPI …) │

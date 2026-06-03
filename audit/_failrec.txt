@@ -1,0 +1,10 @@
+keys: ['Acquiring Institution', 'Bank Name', 'Cert', 'City', 'Closing Date', 'Fund', 'State']
+date keys: ['Closing Date']
+metropolitan: [{"Acquiring Institution": "First Independence Bank", "Bank Name": "Metropolitan Capital Bank & Trust", "Cert": "57488", "City": "Chicago", "Closing Date": "30-Jan-26", "Fund": "10550", "State": "IL"}]
+most recent 6:
+  30-Jan-26 | Metropolitan Capital Bank & Trust
+  27-Jun-25 | The Santa Anna National Bank
+  17-Jan-25 | Pulaski Savings Bank
+  18-Oct-24 | The First National Bank of Lindsay
+  26-Apr-24 | Republic First Bank dba Republic Bank
+  3-Nov-23 | Citizens Bank

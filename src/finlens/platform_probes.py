@@ -94,9 +94,12 @@ def probe_airflow_project() -> dict[str, Any]:
         response = requests.get(f"{settings.airflow_api_base_url}/health", timeout=8)
         response.raise_for_status()
         payload = response.json()
-    except Exception as exc:
+    except Exception:
         result["runtime_status"] = "Unavailable"
-        result["detail"] = f"{len(dags)} DAG definitions found; webserver probe failed: {exc}"
+        result["detail"] = (
+            f"{len(dags)} DAG definitions found; webserver health endpoint not reachable "
+            "(Airflow service not running in this environment)"
+        )
         return result
 
     metadatabase = payload.get("metadatabase", {}).get("status")

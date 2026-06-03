@@ -195,6 +195,7 @@ if failures.empty:
 else:
     total_failures = len(failures)
     latest_year = int(failures["year"].max())
+    earliest_year = int(failures["year"].min())
     ttm_count = failures.loc[failures["year"] == latest_year, "bank_id"].count()
     top_state = failures["state"].dropna().value_counts().index[0]
     state_count = int(failures["state"].dropna().value_counts().iloc[0])
@@ -202,7 +203,11 @@ else:
 
     card1, card2, card3, card4 = st.columns(4)
     with card1:
-        metric_card("Total failures", f"{total_failures}", "1980-present FDIC feed view")
+        metric_card(
+            "Total failures",
+            f"{total_failures}",
+            f"{earliest_year}-{latest_year}, FDIC failed-bank list",
+        )
     with card2:
         metric_card("Top state", top_state, f"{state_count} failures in current feed")
     with card3:

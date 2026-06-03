@@ -54,6 +54,10 @@ def _drift() -> dict | None:
     return json.loads(p.read_text()) if p.exists() else None
 
 
+from finlens_ml.features import FEATURE_COLUMNS
+
+N_FEATURES = len(FEATURE_COLUMNS)
+
 m = _metrics()
 section = get_ai_section()
 
@@ -86,7 +90,8 @@ if section == "pipeline":  # AI Pipeline (mirror of Live Pipeline)
     section_heading("Training & scoring pipeline", "Discrete-time hazard model on the FDIC bank-quarter panel.")
     st.markdown(
         "- **Ingest** per-CERT FDIC Call Report financials (free API) → DuckDB panel\n"
-        "- **Features** 31 CAMELS-aligned ratios + trends + peer z-scores (point-in-time)\n"
+        f"- **Features** {N_FEATURES} CAMELS-aligned ratios + trends + peer z-scores "
+        "(point-in-time)\n"
         "- **Label** fails-within-4q with merger/end-of-data censoring (leakage-free)\n"
         "- **Train** LightGBM (monotone + class-weighted) → calibrate → MLflow registry\n"
         "- **Serve** FastAPI (lifespan, calibrated prob + SHAP) · **Monitor** Evidently drift"
@@ -101,7 +106,7 @@ if section == "pipeline":  # AI Pipeline (mirror of Live Pipeline)
 elif section == "contracts":  # Feature Contracts (mirror of Source Contracts)
     from finlens_ml.features import MONOTONE_CONSTRAINTS
 
-    section_heading("Feature contract (31 features)", "Each feature's economic monotone direction vs. distress risk is enforced in the model.")
+    section_heading(f"Feature contract ({len(MONOTONE_CONSTRAINTS)} features)", "Each feature's economic monotone direction vs. distress risk is enforced in the model.")
     sign = {1: "↑ raises risk", -1: "↓ lowers risk", 0: "unconstrained"}
     fc = pd.DataFrame(
         [{"feature": f, "monotone": sign[v]} for f, v in MONOTONE_CONSTRAINTS.items()]
@@ -146,10 +151,16 @@ elif section == "quality":  # Model Quality (mirror of Data Quality)
         by_year = m.get("by_year_calibrated", {})
         if by_year:
             section_heading("By year", "Crisis vs calm cohorts — PR-AUC is honestly low when failures are absent.")
+
+            def _metric_or_na(val: object) -> object:
+                if val is None or isinstance(val, str):
+                    return "n/a (no failures)"
+                return round(val, 4)
+
             st.dataframe(pd.DataFrame([
                 {"year": y, "n": v["n"], "failures": v["n_positive"],
-                 "PR-AUC": v["pr_auc"] if isinstance(v["pr_auc"], str) else round(v["pr_auc"], 4),
-                 "ROC-AUC": v["roc_auc"] if isinstance(v["roc_auc"], str) else round(v["roc_auc"], 4)}
+                 "PR-AUC": _metric_or_na(v["pr_auc"]),
+                 "ROC-AUC": _metric_or_na(v["roc_auc"])}
                 for y, v in by_year.items()
             ]), hide_index=True, use_container_width=True)
         cal = m.get("oot_calibration", {})
@@ -176,8 +187,8 @@ elif section == "decisions":  # Model Decisions (mirror of Architecture Decision
         "- **Monotone constraints** for regulator-defensible, perverse-free relationships\n"
         "- **Calibration** (isotonic) so served probabilities are real, not raw scores\n"
         "- **PR-AUC / recall@k** as headline (accuracy is meaningless at <1% base rate)\n"
-        "- **SR 26-2 aligned** (non-binding); honest fairness = cross-segment equity, "
-        "no protected class for an institution-level model"
+        "- **Aligned with SR 11-7 model-risk principles** (non-binding here); honest "
+        "fairness = cross-segment equity, no protected class for an institution-level model"
     )
     if mc.exists():
         with st.expander("Full model card"):

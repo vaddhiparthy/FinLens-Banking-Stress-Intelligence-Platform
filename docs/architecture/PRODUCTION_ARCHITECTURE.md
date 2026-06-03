@@ -42,7 +42,7 @@ A real bank distress/credit model serving stack typically has:
 3. **Feature store** — offline (training) + online (low-latency serving), train/serve parity.
 4. **Training pipeline** — orchestrated, reproducible, experiment-tracked.
 5. **Model registry** — versioned, stage/alias, lineage to data + code.
-6. **Validation/MRM gate** — SR 11-7/26-2: conceptual soundness, OOT backtest, calibration,
+6. **Validation/MRM gate** — SR 11-7: conceptual soundness, OOT backtest, calibration,
     bias/segment, effective challenge; sign-off before promotion.
 7. **Serving** — real-time low-latency API + batch scoring; champion/challenger; shadow/canary.
 8. **Inference-time feature retrieval** — pull online features by key; request/response logging.

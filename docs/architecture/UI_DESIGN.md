@@ -34,7 +34,7 @@ graph) · Stack · Architecture Decisions (ADRs). Top-right button: **"Open DE A
 
 **Machine Learning** — sections: Model Overview (headline metrics, champion version) ·
 Performance (PR curve, ROC-by-year, recall@k) · Calibration (reliability, ECE, top-decile) ·
-Explainability (global SHAP) · Drift (Evidently data + prediction drift) · Governance (SR 26-2,
+Explainability (global SHAP) · Drift (Evidently data + prediction drift) · Governance (SR 11-7,
 fairness scoping, limits) · **Live Stress Lab** (the existing real-bank fact-check + hypothetical
 sliders with live /predict). Top-right: **"Open ML Architecture →"**. Filters: horizon, cohort,
 segment.

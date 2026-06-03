@@ -43,6 +43,27 @@ def _dataset() -> pd.DataFrame:
         ).df()
 
 
+@lru_cache(maxsize=1)
+def bank_directory() -> pd.DataFrame:
+    """One row per bank (latest quarter) for a searchable name picker, so users
+    never have to know an FDIC CERT. Sorted by name; failed banks flagged."""
+    df = _dataset().copy()
+    latest = df.sort_values("obs_qord").drop_duplicates("cert", keep="last")
+    cols = [c for c in ["cert", "bank_name", "state", "quarter"] if c in latest.columns]
+    out = latest[cols].dropna(subset=["bank_name"]).copy()
+    if "label_4" in latest.columns:
+        ever_failed = df.groupby("cert")["label_4"].max()
+        out["ever_failed"] = out["cert"].map(ever_failed).fillna(0).astype(int)
+    else:
+        out["ever_failed"] = 0
+    out["cert"] = out["cert"].astype(int)
+    out["label"] = (
+        out["bank_name"].astype(str)
+        + " (" + out["state"].fillna("?").astype(str) + ")"
+    )
+    return out.sort_values("bank_name").reset_index(drop=True)
+
+
 def latest_row_for_cert(cert: int) -> dict | None:
     """Most recent bank-quarter feature row for a CERT (for 'insert test bank')."""
     df = _dataset()

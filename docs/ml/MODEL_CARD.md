@@ -113,9 +113,9 @@ and are deliberately not computed. We instead verify the model performs across s
 - Rare-event metrics are noisy in calm cohorts; judge on failure-containing windows.
 
 ## Governance
-Aligned with the **principles** of SR 26-2 (Fed/OCC/FDIC, Apr 17 2026; supersedes
-SR 11-7 + SR 21-8; primary source:
-https://www.federalreserve.gov/supervisionreg/srletters/SR2602.htm) — **non-binding**
-guidance; a GBM is in-scope (non-generative, non-agentic AI). This is a portfolio
-demonstration, not a regulated production model. The substantive validation rests on
+Aligned with the **principles** of SR 11-7 (Fed/OCC, 2011 — the established model-risk
+management guidance; primary source:
+https://www.federalreserve.gov/supervisionreg/srletters/sr1107.htm) — **non-binding**
+here; this is a portfolio demonstration, not a regulated production model. The
+substantive validation rests on
 the SR 11-7 three pillars regardless (see the validation report).

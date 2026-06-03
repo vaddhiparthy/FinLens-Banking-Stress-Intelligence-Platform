@@ -49,7 +49,7 @@ DE-surface section → AI-surface mirror (same flow, same UX shell):
 | Source Contracts (data contracts) | Feature Contracts (feature defs, PIT rules, input schema) |
 | Engineering Stack | AI Stack (MLflow, LightGBM, FastAPI, Evidently, skops, DuckDB) |
 | Data Quality | Model Quality (PR-AUC/recall@k/Brier/calibration, by-cohort, by-segment, drift) |
-| Architecture Decisions (ADRs) | Model Decisions (hazard framing, monotonic, calibration, SR 26-2) |
+| Architecture Decisions (ADRs) | Model Decisions (hazard framing, monotonic, calibration, SR 11-7) |
 | Administration | Model Administration (registry aliases, champion/challenger, retrain triggers) |
 | Wiki | AI Wiki (hazard, calibration, SHAP, drift) — same fixed mini-wiki UX |
 
@@ -203,10 +203,10 @@ Net new resident footprint: ~512m (MLflow) + optional ~512m (ml-api) ≈ ≤1 GB
 
 ## 7. Governance (honest, SR-aligned)
 
-- **SR 26-2** (Fed/OCC/FDIC, Apr 17 2026, supersedes SR 11-7 + SR 21-8) — verified primary source. Principles-based,
-  **non-binding** guidance, ~$30B materiality framing, applies to **non-generative/non-agentic** AI (a GBM qualifies),
-  excludes GenAI/agentic. We claim **"aligned with SR 26-2 principles"**, never "compliant"/"a rule".
-- **SR 11-7 three pillars** (still the substance): conceptual soundness, ongoing monitoring, outcomes analysis;
+- **SR 11-7** (Fed/OCC, 2011) — the established model-risk management guidance and the
+  reference this project aligns to. Principles-based; this is a portfolio demonstration, so we
+  claim **"aligned with SR 11-7 principles"**, never "compliant"/"a rule".
+- **SR 11-7 three pillars** (the substance): conceptual soundness, ongoing monitoring, outcomes analysis;
   effective challenge; documentation + model inventory.
 - **Explainability:** SHAP + monotonic constraints; reason codes framed as validator/supervisor-facing (NOT ECOA/Reg B
   adverse-action — no consumer applicant exists; claiming otherwise is misapplication).

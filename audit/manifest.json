@@ -1,0 +1,665 @@
+{
+  "screens": [
+    {
+      "inputs": [],
+      "selectboxes": 0,
+      "buttons": [
+        "Open Business Surface",
+        "Open Data Engineering Surface",
+        "Open AI Surface"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "01_home"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 0,
+      "buttons": [
+        "swap_horiz\n\nBusiness\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "Stress Pulse",
+        "Failure Forensics",
+        "Macro Transmission",
+        "Predictive Analytics",
+        "Wiki"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "10_biz_stress"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        },
+        {
+          "type": null,
+          "aria": "Selected All years. Failure year",
+          "placeholder": null,
+          "value": ""
+        },
+        {
+          "type": null,
+          "aria": "Selected All states. State",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 2,
+      "buttons": [
+        "swap_horiz\n\nBusiness\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "Stress Pulse",
+        "Failure Forensics",
+        "Macro Transmission",
+        "Predictive Analytics",
+        "Wiki",
+        "\u2039",
+        "\u203a"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "11_biz_failures"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        },
+        {
+          "type": null,
+          "aria": "Selected 10Y-2Y. Select macro signal",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 1,
+      "buttons": [
+        "swap_horiz\n\nBusiness\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "Stress Pulse",
+        "Failure Forensics",
+        "Macro Transmission",
+        "Predictive Analytics",
+        "Wiki"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "12_biz_macro"
+    },
+    {
+      "inputs": [
+        {
+          "type": "text",
+          "aria": "Search Wiki",
+          "placeholder": "Search source contracts, warehouse layers, Airflow, dbt, business concepts...",
+          "value": ""
+        }
+      ],
+      "selectboxes": 0,
+      "buttons": [],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "60_wiki"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        },
+        {
+          "type": "number",
+          "aria": "FDIC CERT",
+          "placeholder": "",
+          "value": "29730"
+        },
+        {
+          "type": null,
+          "aria": "Selected PINNACLE BANK (OR, 2008Q1). Held-out failed bank",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 1,
+      "buttons": [
+        "swap_horiz\n\nBusiness\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "Stress Pulse",
+        "Failure Forensics",
+        "Macro Transmission",
+        "Predictive Analytics",
+        "Wiki",
+        "Insert a bank (by CERT)",
+        "Hold-out test (real failures)",
+        "Hypothetical what-if",
+        "Score this bank"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "13_pred_default"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        },
+        {
+          "type": "number",
+          "aria": "FDIC CERT",
+          "placeholder": "",
+          "value": "29730"
+        },
+        {
+          "type": null,
+          "aria": "Selected PINNACLE BANK (OR, 2008Q1). Held-out failed bank",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 1,
+      "buttons": [
+        "swap_horiz\n\nBusiness\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "Stress Pulse",
+        "Failure Forensics",
+        "Macro Transmission",
+        "Predictive Analytics",
+        "Wiki",
+        "Insert a bank (by CERT)",
+        "Hold-out test (real failures)",
+        "Hypothetical what-if",
+        "Score this bank"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "13a_pred_insert"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        },
+        {
+          "type": "number",
+          "aria": "FDIC CERT",
+          "placeholder": "",
+          "value": "29730"
+        },
+        {
+          "type": null,
+          "aria": "Selected PINNACLE BANK (OR, 2008Q1). Held-out failed bank",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 1,
+      "buttons": [
+        "swap_horiz\n\nBusiness\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "Stress Pulse",
+        "Failure Forensics",
+        "Macro Transmission",
+        "Predictive Analytics",
+        "Wiki",
+        "Insert a bank (by CERT)",
+        "Hold-out test (real failures)",
+        "Hypothetical what-if",
+        "Score this bank"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "13b_pred_holdout"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        },
+        {
+          "type": "number",
+          "aria": "FDIC CERT",
+          "placeholder": "",
+          "value": "29730"
+        },
+        {
+          "type": null,
+          "aria": "Selected PINNACLE BANK (OR, 2008Q1). Held-out failed bank",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 1,
+      "buttons": [
+        "swap_horiz\n\nBusiness\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "Stress Pulse",
+        "Failure Forensics",
+        "Macro Transmission",
+        "Predictive Analytics",
+        "Wiki",
+        "Insert a bank (by CERT)",
+        "Hold-out test (real failures)",
+        "Hypothetical what-if",
+        "Score this bank"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "13c_pred_whatif"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        },
+        {
+          "type": "number",
+          "aria": "FDIC CERT",
+          "placeholder": "",
+          "value": "29730"
+        },
+        {
+          "type": null,
+          "aria": "Selected PINNACLE BANK (OR, 2008Q1). Held-out failed bank",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 1,
+      "buttons": [
+        "swap_horiz\n\nBusiness\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "Stress Pulse",
+        "Failure Forensics",
+        "Macro Transmission",
+        "Predictive Analytics",
+        "Wiki",
+        "Insert a bank (by CERT)",
+        "Hold-out test (real failures)",
+        "Hypothetical what-if",
+        "Score this bank"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "13a2_pred_insert_scored"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 0,
+      "buttons": [
+        "swap_horiz\n\nData Engineering\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "Live Pipeline",
+        "Source Contracts",
+        "Engineering Stack",
+        "Data Quality",
+        "Architecture Decisions",
+        "Administration",
+        "Wiki"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "41_de_contracts"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 0,
+      "buttons": [
+        "swap_horiz\n\nData Engineering\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "Live Pipeline",
+        "Source Contracts",
+        "Engineering Stack",
+        "Data Quality",
+        "Architecture Decisions",
+        "Administration",
+        "Wiki",
+        "Python Ingestion",
+        "Airflow DAG",
+        "dbt Model",
+        "Serving Contract"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "42_de_stack"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 0,
+      "buttons": [
+        "swap_horiz\n\nData Engineering\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "Live Pipeline",
+        "Source Contracts",
+        "Engineering Stack",
+        "Data Quality",
+        "Architecture Decisions",
+        "Administration",
+        "Wiki"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "43_de_quality"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        },
+        {
+          "type": "text",
+          "aria": "Search architecture knowledge base",
+          "placeholder": "Search S3, Airflow, dbt, Snowflake, contracts, lineage, quality...",
+          "value": ""
+        }
+      ],
+      "selectboxes": 0,
+      "buttons": [
+        "swap_horiz\n\nData Engineering\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "Live Pipeline",
+        "Source Contracts",
+        "Engineering Stack",
+        "Data Quality",
+        "Architecture Decisions",
+        "Administration",
+        "Wiki",
+        "Platform",
+        "Data Modeling",
+        "Orchestration",
+        "Warehouse",
+        "Quality",
+        "Decisions",
+        "Theory"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "44_de_decisions"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 0,
+      "buttons": [
+        "swap_horiz\n\nData Engineering\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "Live Pipeline",
+        "Source Contracts",
+        "Engineering Stack",
+        "Data Quality",
+        "Architecture Decisions",
+        "Administration",
+        "Wiki"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "45_de_admin"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 0,
+      "buttons": [
+        "swap_horiz\n\nAI Engineering\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "AI Pipeline",
+        "Feature Contracts",
+        "AI Stack",
+        "Model Quality",
+        "Model Decisions",
+        "Administration",
+        "AI Wiki"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "71_ai_contracts"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 0,
+      "buttons": [
+        "swap_horiz\n\nAI Engineering\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "AI Pipeline",
+        "Feature Contracts",
+        "AI Stack",
+        "Model Quality",
+        "Model Decisions",
+        "Administration",
+        "AI Wiki"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "72_ai_stack"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 0,
+      "buttons": [
+        "swap_horiz\n\nAI Engineering\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "AI Pipeline",
+        "Feature Contracts",
+        "AI Stack",
+        "Model Quality",
+        "Model Decisions",
+        "Administration",
+        "AI Wiki"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "73_ai_quality"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 0,
+      "buttons": [
+        "swap_horiz\n\nAI Engineering\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "AI Pipeline",
+        "Feature Contracts",
+        "AI Stack",
+        "Model Quality",
+        "Model Decisions",
+        "Administration",
+        "AI Wiki"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "74_ai_decisions"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 0,
+      "buttons": [
+        "swap_horiz\n\nAI Engineering\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "AI Pipeline",
+        "Feature Contracts",
+        "AI Stack",
+        "Model Quality",
+        "Model Decisions",
+        "Administration",
+        "AI Wiki"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "75_ai_admin"
+    },
+    {
+      "inputs": [
+        {
+          "type": "checkbox",
+          "aria": "Dark",
+          "placeholder": null,
+          "value": ""
+        }
+      ],
+      "selectboxes": 0,
+      "buttons": [
+        "swap_horiz\n\nAI Engineering\n\nexpand_more",
+        "Business",
+        "Data Engineering",
+        "AI Engineering",
+        "Home",
+        "AI Pipeline",
+        "Feature Contracts",
+        "AI Stack",
+        "Model Quality",
+        "Model Decisions",
+        "Administration",
+        "AI Wiki"
+      ],
+      "smell_flags": [],
+      "exception_blocks": 0,
+      "key": "76_ai_wiki"
+    }
+  ],
+  "console_errors": []
+}

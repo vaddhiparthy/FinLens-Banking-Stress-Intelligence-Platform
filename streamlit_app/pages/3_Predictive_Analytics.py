@@ -59,9 +59,26 @@ def _render_score(result: dict, actual: int | None = None) -> None:
     reasons = pd.DataFrame(result["reasons"])
     if not reasons.empty:
         reasons["impact"] = reasons["shap"].abs().round(3)
-        section_heading("Why — top SHAP reason codes", "Validator-facing drivers of this score.")
+
+        def _fmt_value(v: object) -> str:
+            if v is None or (isinstance(v, float) and v != v):
+                return "n/a (not reported)"
+            if isinstance(v, (int, float)):
+                return f"{v:,.3f}"
+            return str(v)
+
+        reasons["Driver"] = (
+            reasons["feature"].astype(str).str.replace("_", " ").str.title()
+        )
+        reasons["Reported value"] = reasons["value"].map(_fmt_value)
+        reasons = reasons.rename(columns={"direction": "Effect on risk", "impact": "Weight"})
+        section_heading(
+            "Why this score",
+            "The factors that moved this bank's score most, from the model's SHAP "
+            "attribution. Higher weight = larger influence.",
+        )
         st.dataframe(
-            reasons[["feature", "value", "direction", "impact"]],
+            reasons[["Driver", "Reported value", "Effect on risk", "Weight"]],
             hide_index=True,
             use_container_width=True,
         )
@@ -86,21 +103,38 @@ if not _model_available():
 
 scenario = _backend()
 tab_insert, tab_holdout, tab_what_if = st.tabs(
-    ["Insert a bank (by CERT)", "Hold-out test (real failures)", "Hypothetical what-if"]
+    ["Score any bank (by name)", "Hold-out test (real failures)", "Hypothetical what-if"]
 )
 
 with tab_insert:
     st.write(
-        "Enter an FDIC certificate number to score that institution's most recent "
-        "quarter from real Call Report data."
+        "Search for any U.S. bank by name and score its most recent quarter in the panel "
+        "from real FDIC Call Report data. (No need to know any code — just start typing.)"
     )
-    cert = st.number_input("FDIC CERT", min_value=1, max_value=99999, value=29730, step=1)
-    if st.button("Score this bank", key="score_cert"):
-        row = scenario.latest_row_for_cert(int(cert))
+    directory = scenario.bank_directory()
+    labels = directory["label"].tolist()
+    default_idx = next(
+        (i for i, lbl in enumerate(labels) if lbl.startswith("INDYMAC")), 0
+    )
+    choice = st.selectbox(
+        "Bank",
+        labels,
+        index=default_idx,
+        key="insert_bank_pick",
+        help="Type to search across every bank in the panel.",
+        placeholder="Start typing a bank name…",
+    )
+    if choice:
+        pick = directory[directory["label"] == choice].iloc[0]
+        row = scenario.latest_row_for_cert(int(pick["cert"]))
         if row is None:
-            st.warning(f"CERT {int(cert)} not found in the panel (2008Q1-2026Q1).")
+            st.warning("That bank has no scoreable quarter in the panel.")
         else:
-            st.success(f"{row['bank_name']} ({row['state']}) — most recent quarter {row['quarter']}")
+            note = "most recent quarter in panel"
+            st.success(
+                f"{row['bank_name']} ({row['state']}) — {note}: {row['quarter']} "
+                f"· FDIC CERT {row['cert']}"
+            )
             _render_score(scenario.score_features(row["features"]), row["actual_label_4"])
 
 with tab_holdout:
