@@ -31,6 +31,17 @@ dev = [
   "pytest>=8.3.3",
   "ruff>=0.6.9",
 ]
+ml = [
+  "lightgbm>=4.5",
+  "mlflow>=3.1",
+  "shap>=0.46",
+  "skops>=0.11",
+  "fairlearn>=0.12",
+  # evidently pins plotly<6 (conflicts with the app's plotly>=6); the monitoring
+  # job uses evidently's programmatic Report API only and is run isolated so the
+  # app/serving env keeps plotly>=6. See ml/finlens_ml/monitor.py.
+  "evidently>=0.7",
+]
 
 [dependency-groups]
 dev = [
