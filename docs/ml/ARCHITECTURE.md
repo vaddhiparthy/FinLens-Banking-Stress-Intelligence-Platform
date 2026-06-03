@@ -34,24 +34,29 @@ surfaces**:
    (per-bank distress score + SHAP reason codes), and a real **Scenario / Stress Lab** replaces the decommissioned
    fabricated one (insert test bank, hold out a bank, hypothetical what-if).
 2. **Data Engineering surface** = today's Technical surface, rebadged "Data Engineering" with its existing sections.
-3. **Machine Learning Engineering surface** = NEW, mirroring the DE surface's section flow 1:1 so they read as parallel
-   disciplines.
+3. **AI surface** = NEW, mirroring the DE surface's section flow 1:1 so the two engineering pillars read as parallel
+   disciplines. (Naming per Surya: the three surfaces are Business / Data Engineering / AI.)
 
-DE-surface section → ML-surface mirror (same flow, same UX shell):
+This is a **complete IA overhaul**, not a UI tweak: a shared three-way top navigation (Business / Data Engineering /
+AI), a unified page shell used by all surfaces, and the fixed mini-wiki. The Business surface stays standard; the two
+engineering surfaces are structurally mirrored.
 
-| Data Engineering section (existing) | Machine Learning Engineering mirror (new) |
+DE-surface section → AI-surface mirror (same flow, same UX shell):
+
+| Data Engineering section (existing) | AI surface mirror (new) |
 |---|---|
-| Live Pipeline (run status) | ML Pipeline (train/score DAG runs, champion alias, last run) |
+| Live Pipeline (run status) | AI Pipeline (train/score DAG runs, champion alias, last run) |
 | Source Contracts (data contracts) | Feature Contracts (feature defs, PIT rules, input schema) |
-| Engineering Stack | ML Stack (MLflow, LightGBM, FastAPI, Evidently, skops, DuckDB) |
+| Engineering Stack | AI Stack (MLflow, LightGBM, FastAPI, Evidently, skops, DuckDB) |
 | Data Quality | Model Quality (PR-AUC/recall@k/Brier/calibration, by-cohort, by-segment, drift) |
 | Architecture Decisions (ADRs) | Model Decisions (hazard framing, monotonic, calibration, SR 26-2) |
 | Administration | Model Administration (registry aliases, champion/challenger, retrain triggers) |
-| Wiki | ML Wiki (hazard, calibration, SHAP, drift) — same fixed mini-wiki UX |
+| Wiki | AI Wiki (hazard, calibration, SHAP, drift) — same fixed mini-wiki UX |
 
-The top navigation switches between Business / Data Engineering / Machine Learning Engineering. Every section in both
-engineering surfaces exposes the underlying real artifact (SQL, feature defs, run metrics, SHAP, registry state) so
-**no layer is invisible**. The Wiki UX is fixed (no full reload per click) and shared by all three surfaces.
+The top navigation switches between Business / Data Engineering / AI. Every section in both engineering surfaces
+exposes the underlying real artifact (SQL, feature defs, run metrics, SHAP, registry state) so **no layer is
+invisible** — maximum visibility is a hard final-QA criterion. The Wiki UX is fixed (no full reload per click) and
+shared by all three surfaces.
 
 ## 0. Goal
 
