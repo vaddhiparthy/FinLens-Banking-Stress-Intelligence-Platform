@@ -27,4 +27,5 @@ def test_page_runs_without_exception(page: str) -> None:
     from streamlit.testing.v1 import AppTest
 
     at = AppTest.from_file(str(REPO / page), default_timeout=90).run()
-    assert at.exception is None, f"{page} raised: {at.exception}"
+    # AppTest.exception is an (empty-when-clean) ElementList, never None
+    assert not at.exception, f"{page} raised: {list(at.exception)}"
