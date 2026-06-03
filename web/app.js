@@ -47,7 +47,16 @@ function renderHero() {
 }
 
 /* ---------- charts ---------- */
-function mk(el) { const c = echarts.init($(el), null, { renderer: "canvas" }); addEventListener("resize", () => c.resize()); return c; }
+const _charts = new Set();
+let _resizeBound = false;
+function mk(el) {
+  const node = $(el);
+  const c = echarts.getInstanceByDom(node) || echarts.init(node, null, { renderer: "canvas" });
+  c.clear();  // reused instance redraws clean (no stale-merge, no leak)
+  _charts.add(c);
+  if (!_resizeBound) { _resizeBound = true; addEventListener("resize", () => _charts.forEach((x) => x.resize())); }
+  return c;
+}
 
 function renderTimeline() {
   J("/data/timeline.json").then((tl) => {
@@ -109,7 +118,7 @@ function renderGovernance() {
     ["Aligned with SR 26-2 principles", "Non-binding Fed/OCC/FDIC model-risk guidance (Apr 2026). A gradient-boosted classifier is in-scope (non-generative AI). This is a portfolio demonstration, not a regulated production model."],
     ["Explainability", "SHAP drivers per prediction + economically-signed monotone constraints (more capital never raises predicted risk). Validator-facing, not consumer adverse-action."],
     ["Fairness, scoped honestly", "An institution-level model has no protected class, so demographic-parity / disparate-impact do not apply. Assessed instead as performance equity across asset-size tiers, regions, and charter classes."],
-    ["The rate-risk limit", "The model catches credit-driven distress out-of-time, but misses liquidity/rate-driven runs like SVB when no such failures exist in training — the exact 2023 supervisory blind spot. The HTM + uninsured-deposit features surface the vulnerability once peer examples exist."],
+    ["The rate-risk limit", "The model catches credit-driven distress out-of-time but misses liquidity/rate-driven runs like SVB when no such failures exist in training — the exact 2023 supervisory blind spot. The HTM and uninsured-deposit features are included and displayed as a bank's real risk factors, but a model trained before the 2023 regime cannot weight them without in-regime examples."],
     ["No fabrication", "Every figure here is computed from real FDIC data and the trained model. Held-out banks (2019+) are scored by a model trained only on ≤2018 — genuinely out-of-time."],
     ["Reproducible & $0", "Fixed seeds, pinned features, CI metric gate + an import guard that fails the build if the ML code ever touches a paid service. Free public data only."],
   ];
@@ -139,8 +148,11 @@ function setupRealBank() {
   sel.innerHTML = banks.map((b, i) =>
     `<option value="${i}">${b.name} — ${b.state || "?"} · ${b.as_of} · failed ${b.fail_year} ${b.held_out ? "(held-out)" : ""}</option>`).join("");
   sel._banks = banks;
-  // default: a strong, recent, out-of-time HIT
-  const def = banks.findIndex((b) => b.held_out && b.percentile >= 95);
+  // default: the LARGEST recognizable out-of-time HIT (not a tiny obscure failure)
+  let def = -1, bestAssets = -1;
+  banks.forEach((b, i) => {
+    if (b.held_out && b.percentile >= 95 && (b.assets_m || 0) > bestAssets) { bestAssets = b.assets_m || 0; def = i; }
+  });
   sel.value = def >= 0 ? def : 0;
   sel.onchange = () => showBank(banks[sel.value]);
   showBank(banks[sel.value]);
@@ -181,7 +193,7 @@ function renderFactCheck(b, flagged) {
   const verdict = caught ? ["hit", "Model CAUGHT it"] : watch ? ["watch", "Model FLAGGED as elevated"] : ["miss", "Model MISSED it"];
   const assets = b.assets_m ? `$${(b.assets_m / 1e6).toFixed(1)}B` : "—";
   let note = "";
-  if (b.cert === 24735) note = `<p class="subtle" style="margin-top:10px">SVB was a rate/liquidity-driven run, not credit deterioration — invisible to traditional CAMELS ratios and the exact blind spot that surprised regulators in 2023. The out-of-time model (trained pre-2019, no rate failures to learn from) misses it. Trained on SVB's 2023 peers, the same features rank it top ~10% (leave-one-out).</p>`;
+  if (b.cert === 24735) note = `<p class="subtle" style="margin-top:10px">SVB was a rate/liquidity-driven run, not credit deterioration — invisible to traditional CAMELS ratios and the exact blind spot that surprised regulators in 2023. The out-of-time model (trained pre-2019, with no rate-driven failures to learn from) ranks it low. Its HTM concentration (${fmt(b.htm, 0)}%) and uninsured deposits (${fmt(b.uninsured, 0)}%), shown at left, are the factors that actually sank it — signals the model carries but cannot weight without in-regime examples.</p>`;
   $("#fcBody").innerHTML = `
     <div class="fc-verdict ${verdict[0]}">${verdict[1]}</div>
     <div class="fc-row"><span class="k">Outcome</span><span>Failed · ${b.fail_year}</span></div>

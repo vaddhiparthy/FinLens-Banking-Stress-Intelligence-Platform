@@ -33,6 +33,22 @@ def _conn():
     return duckdb.connect(str(get_ml_settings().duckdb_path), read_only=True)
 
 
+def _clean(obj):
+    """Recursively replace non-finite floats (NaN/Inf) with None so the JSON is valid
+    (bare NaN breaks browser JSON.parse and blanks the page)."""
+    if isinstance(obj, float):
+        return obj if np.isfinite(obj) else None
+    if isinstance(obj, dict):
+        return {k: _clean(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_clean(v) for v in obj]
+    return obj
+
+
+def _dump(path, payload):
+    path.write_text(json.dumps(_clean(payload), indent=1, allow_nan=False, default=str))
+
+
 def _quarter_label(qord: int) -> str:
     return f"{qord // 4}Q{qord % 4 + 1}"
 
@@ -181,15 +197,15 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     metrics = json.loads((get_ml_settings().artifact_dir / "metrics_h4.json").read_text())
     conn = _conn()
-    (OUT / "meta.json").write_text(json.dumps(export_meta(metrics), indent=1))
-    (OUT / "performance.json").write_text(json.dumps(export_performance(metrics, conn), indent=1))
-    (OUT / "timeline.json").write_text(json.dumps(export_timeline(conn), indent=1))
-    (OUT / "banks.json").write_text(json.dumps(export_banks(conn), indent=1, default=str))
-    (OUT / "features.json").write_text(json.dumps({
+    _dump(OUT / "meta.json", export_meta(metrics))
+    _dump(OUT / "performance.json", export_performance(metrics, conn))
+    _dump(OUT / "timeline.json", export_timeline(conn))
+    _dump(OUT / "banks.json", export_banks(conn))
+    _dump(OUT / "features.json", {
         "features": FEATURE_COLUMNS,
         "monotone": MONOTONE_CONSTRAINTS,
         "sliders": {k: list(v) for k, v in SLIDER_FEATURES.items()},
-    }, indent=1))
+    })
     banks = json.loads((OUT / "banks.json").read_text())
     print(f"wrote web/data/: {len(banks)} failed banks, meta+performance+timeline+features")
 
