@@ -6,7 +6,7 @@ import streamlit as st
 BUSINESS_PAGE = "business"
 TECHNICAL_PAGE = "technical"
 SIDEBAR_ENABLED = False
-STRESS_LAB_ENABLED = False
+AI_PAGE = "ai"  # third surface: Machine Learning / AI engineering
 
 
 def _set_surface_mode(mode: str) -> None:
@@ -44,8 +44,6 @@ def _business_pages() -> list[tuple[str, str, str, str]]:
         ),
         ("wiki", "pages/6_Wiki.py", "Wiki", ":material/menu_book:"),
     ]
-    if STRESS_LAB_ENABLED:
-        pages.append(("stress", "pages/3_Stress_Lab.py", "Stress Lab", ":material/model_training:"))
     return pages
 
 
@@ -57,8 +55,6 @@ def _business_sections() -> list[tuple[str, str]]:
         ("predictive", "Predictive Analytics"),
         ("wiki", "Wiki"),
     ]
-    if STRESS_LAB_ENABLED:
-        sections.append(("stress", "Stress Lab"))
     return sections
 
 
@@ -153,10 +149,18 @@ def top_navigation(active_page: str, mode: str) -> None:
 
     st.markdown('<div style="height: 1.35rem;"></div>', unsafe_allow_html=True)
     st.markdown('<div class="topbar-anchor"></div>', unsafe_allow_html=True)
-    current_surface_label = "Technical" if mode == TECHNICAL_PAGE else "Business"
+    current_surface_label = {
+        TECHNICAL_PAGE: "Data Engineering",
+        AI_PAGE: "AI Engineering",
+    }.get(mode, "Business")
+    _surfaces = [
+        (BUSINESS_PAGE, "Business", "pages/0_Stress_Pulse.py"),
+        (TECHNICAL_PAGE, "Data Engineering", "pages/4_Under_The_Hood.py"),
+        (AI_PAGE, "AI", "pages/7_AI_Engineering.py"),
+    ]
 
     with st.container(border=True):
-        top_left, top_right = st.columns([1.45, 3.55], vertical_alignment="center")
+        top_left, top_right = st.columns([2.0, 3.0], vertical_alignment="center")
         with top_left:
             st.markdown(
                 f"""
@@ -167,25 +171,25 @@ def top_navigation(active_page: str, mode: str) -> None:
                 """,
                 unsafe_allow_html=True,
             )
-            switch_label = (
-                "Switch to Business Surface"
-                if mode == TECHNICAL_PAGE
-                else "Switch to Technical Surface"
-            )
-            if st.button(
-                switch_label,
-                key=f"surface_switch_{active_page}",
-                use_container_width=True,
-            ):
-                if mode == TECHNICAL_PAGE:
-                    _set_surface_mode(BUSINESS_PAGE)
-                    st.switch_page("pages/0_Stress_Pulse.py")
-                else:
-                    _set_surface_mode(TECHNICAL_PAGE)
-                    st.switch_page("pages/4_Under_The_Hood.py")
+            surface_cols = st.columns(len(_surfaces))
+            for col, (smode, slabel, spath) in zip(surface_cols, _surfaces, strict=False):
+                with col:
+                    if st.button(
+                        slabel,
+                        key=f"surface_{smode}_{active_page}",
+                        disabled=(mode == smode),
+                        use_container_width=True,
+                    ):
+                        _set_surface_mode(smode)
+                        st.switch_page(spath)
         with top_right:
             st.markdown('<div class="section-menu-anchor"></div>', unsafe_allow_html=True)
-            if mode == BUSINESS_PAGE:
+            if mode == AI_PAGE:
+                st.caption(
+                    "AI Engineering sections are tabs on this page (Pipeline · Feature "
+                    "Contracts · Stack · Model Quality · Decisions · Administration · Wiki)."
+                )
+            elif mode == BUSINESS_PAGE:
                 sections = [("home", "Home"), *_business_sections()]
                 page_columns = st.columns(len(sections), vertical_alignment="center")
                 for column, (key, label) in zip(page_columns, sections, strict=False):

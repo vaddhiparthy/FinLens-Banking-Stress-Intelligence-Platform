@@ -2,7 +2,6 @@
 
 import sys
 from pathlib import Path
-from urllib.parse import quote
 
 import pandas as pd
 import streamlit as st
@@ -158,20 +157,21 @@ with left:
     st.page_link("pages/0_Stress_Pulse.py", label="Business Surface", icon=":material/space_dashboard:")
     st.page_link("pages/4_Under_The_Hood.py", label="Technical Surface", icon=":material/account_tree:")
     st.markdown('<div class="wiki-nav-title wiki-nav-spaced">Contents</div>', unsafe_allow_html=True)
-    tree_html = ['<div class="wiki-tree">']
+    # In-script buttons => Streamlit reruns in place (no full browser reload / URL
+    # navigation). This is the fix for the laggy per-click page reloads.
     for cluster, branches in _tree(matches).items():
-        tree_html.append(f'<div class="wiki-tree-cluster">{cluster}</div>')
+        st.markdown(f'<div class="wiki-tree-cluster">{cluster}</div>', unsafe_allow_html=True)
         for branch, titles in branches.items():
-            tree_html.append(f'<div class="wiki-tree-branch">{branch}</div>')
+            st.markdown(f'<div class="wiki-tree-branch">{branch}</div>', unsafe_allow_html=True)
             for title in titles:
-                active_class = " active" if title == st.session_state.get("wiki_article") else ""
-                href = f"?article={quote(_slug(title))}"
-                tree_html.append(
-                    f'<a class="wiki-tree-link{active_class}" href="{href}" target="_self">'
-                    f"{title}</a>"
-                )
-    tree_html.append("</div>")
-    st.markdown("\n".join(tree_html), unsafe_allow_html=True)
+                is_active = title == st.session_state.get("wiki_article")
+                if st.button(
+                    title,
+                    key=f"wiki_nav_{_slug(title)}",
+                    use_container_width=True,
+                    type="primary" if is_active else "secondary",
+                ):
+                    st.session_state["wiki_article"] = title
 
 selected = st.session_state["wiki_article"]
 with center:
