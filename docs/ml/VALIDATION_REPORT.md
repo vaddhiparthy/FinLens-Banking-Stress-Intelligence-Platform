@@ -5,17 +5,17 @@
 ## 1. Conceptual soundness
 - **Theory:** discrete-time hazard (bank-quarter panel) is the established framing for
   time-to-failure with time-varying covariates (BIS two-step; literature consensus).
-- **Features:** 31 CAMELS-aligned ratios with economically-signed **monotone
+- **Features:** 34 CAMELS-aligned ratios with economically-signed **monotone
   constraints** (more capital -> lower risk; higher noncurrent/NCO -> higher risk),
   preventing perverse relationships a validator would reject.
 - **Benchmark / effective challenge:** penalized logistic regression (the SCOR/SEER
   regulatory reference). The GBM must and does beat it on the rare-event metric
-  (PR-AUC 0.2183 vs 0.1078).
+  (PR-AUC 0.1563 vs 0.1093).
 - **No leakage:** rolling-origin out-of-time split with a reporting-lag embargo
   (train q + H < test start), enforced at runtime (assert_no_temporal_overlap), grouped
   by event window; ALFRED-vintage macro committed (no latest-vintage look-ahead);
   labels strictly forward-looking with merger/end-of-data censoring. OOT ROC-AUC
-  0.8156 is below the >0.98 leakage-suspicion threshold.
+  0.8293 is below the >0.98 leakage-suspicion threshold.
 
 ## 2. Ongoing monitoring (plan)
 - **Drift:** Evidently data-drift + prediction-drift on inputs/scores each quarter

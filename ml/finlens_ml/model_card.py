@@ -158,7 +158,7 @@ The LGBM beats the regulatory logit benchmark on PR-AUC (the metric that matters
 <1% base rate) and on recall@k. The logit's ROC-AUC is marginally higher; ROC-AUC is
 deprioritized here and shown only for comparability.
 
-### Calibration (honest)
+### Calibration
 All-rows Brier is dominated by true negatives, so we also report ECE and the flagged
 (top-decile) calibration: ECE={cal.get('ece', float('nan')):.2e}; in the top-scoring
 decile the model predicts {cal.get('top_decile_pred', float('nan')):.4f} vs observed
@@ -167,8 +167,8 @@ decile the model predicts {cal.get('top_decile_pred', float('nan')):.4f} vs obse
 ### Performance by year (calibrated)
 {_md_table(by_year) if not by_year.empty else "(see metrics.json)"}
 
-PR-AUC is honestly low/undefined in calm years with few/zero failures — expected for a
-rare-event model, not a defect.
+In calm years with few or zero failures, PR-AUC is low or undefined — the expected
+behavior of a rare-event model.
 
 ## Top global drivers (SHAP)
 {_md_table(gi.rename(columns={'mean_abs_shap': 'mean_|SHAP|'}))}

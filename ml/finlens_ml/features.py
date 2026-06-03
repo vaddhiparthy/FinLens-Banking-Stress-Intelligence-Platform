@@ -18,7 +18,10 @@ import pandas as pd
 _EPS = 1e-9
 
 
-def _safe_ratio(num: pd.Series, den: pd.Series, scale: float = 100.0) -> pd.Series:
+def _safe_ratio(num, den: pd.Series, scale: float = 100.0) -> pd.Series:
+    # robust to a missing numerator column (None) -> all-NaN aligned to den
+    if num is None:
+        return pd.Series(np.nan, index=den.index)
     den = den.where(den.abs() > _EPS)
     return (num / den) * scale
 
@@ -44,6 +47,19 @@ def add_level_features(df: pd.DataFrame) -> pd.DataFrame:
     out["brokered_to_deposits"] = _safe_ratio(out.get("BRO"), out.get("DEP"))
     out["securities_to_assets"] = _safe_ratio(out.get("SC"), out["ASSET"])
     out["cash_to_assets"] = _safe_ratio(out.get("CHBAL"), out["ASSET"])
+    # Uninsured-deposit share — the 2023-regime (SVB/Signature/First Republic) run signal,
+    # invisible to traditional credit-quality CAMELS ratios. uninsured = DEP - DEPINS.
+    dep = out.get("DEP")
+    depins = out.get("DEPINS")
+    if dep is not None and depins is not None:
+        out["uninsured_deposit_share"] = _safe_ratio(dep - depins, dep)
+    else:
+        out["uninsured_deposit_share"] = float("nan")
+    # Held-to-maturity / available-for-sale securities concentration: long-duration
+    # bonds parked at amortized cost (HTM) hide rate losses; high HTM + high uninsured
+    # is the 2023 run profile. Higher concentration -> higher rate-run vulnerability.
+    out["htm_securities_share"] = _safe_ratio(out.get("SCHA"), out["ASSET"])
+    out["afs_securities_share"] = _safe_ratio(out.get("SCAF"), out["ASSET"])
     return out
 
 
@@ -110,8 +126,11 @@ MONOTONE_CONSTRAINTS: dict[str, int] = {
     "efficiency_ratio": +1,
     "loans_to_deposits": +1,
     "brokered_to_deposits": +1,
-    "securities_to_assets": 0,
+    "securities_to_assets": +1,
     "cash_to_assets": -1,
+    "uninsured_deposit_share": +1,
+    "htm_securities_share": +1,
+    "afs_securities_share": +1,
     "asset_growth_yoy": 0,
     "asset_growth_qoq": 0,
     "equity_to_assets_qoq_delta": -1,

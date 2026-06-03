@@ -36,8 +36,9 @@ PAGE_LIMIT = 10_000  # FDIC API max rows per request
 # consistently. Missing fields for a given vintage are tolerated downstream.
 FINANCIAL_FIELDS = [
     "CERT", "REPDTE", "NAMEFULL", "STALP", "BKCLASS",
-    # size / balance sheet
-    "ASSET", "DEP", "EQ", "LNLSNET", "LNLSGR", "SC", "CHBAL",
+    # size / balance sheet (SCHA=held-to-maturity amortized cost, SCAF=available-for-sale
+    # fair value: HTM/AFS concentration is the duration/rate-risk signal behind 2023)
+    "ASSET", "DEP", "EQ", "LNLSNET", "LNLSGR", "SC", "SCHA", "SCAF", "CHBAL",
     # capital
     "RBCT1J", "RBC1AAJ", "RBC1RWAJ", "RBCRWAJ", "EQV",
     # asset quality
@@ -45,8 +46,8 @@ FINANCIAL_FIELDS = [
     # earnings
     "NETINC", "NETINCQ", "ROA", "ROAPTX", "ROE", "NIMY", "INTINCY", "EINTEXP",
     "NONIIAY", "NOIJY", "ELNATR",
-    # liquidity / funding
-    "IDDEPINS", "DEPDOM", "BRO", "VOLIAB",
+    # liquidity / funding (DEPINS = insured deposits -> uninsured share, the SVB signal)
+    "IDDEPINS", "DEPDOM", "BRO", "VOLIAB", "DEPINS",
     # FDIC-published asset-quality / earnings ratios (stable, convenient)
     "NTLNLSR", "NCLNLSR", "ERNASTR", "EEFFR",
 ]

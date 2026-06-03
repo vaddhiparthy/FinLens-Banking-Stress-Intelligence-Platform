@@ -10,7 +10,7 @@ supervisory advice; **not** a consumer-credit decision (no ECOA/Reg-B adverse ac
 
 ## Model
 Calibrated, monotone-constrained LightGBM discrete-time hazard classifier on a
-per-bank-quarter panel. 31 CAMELS-aligned features. Served model trained on all
+per-bank-quarter panel. 34 CAMELS-aligned features. Served model trained on all
 data with the out-of-time-validated tree count (n_estimators=7),
 calibration=isotonic. Penalized logistic regression is the
 benchmark (effective challenge).
@@ -20,48 +20,48 @@ Lead metric is **PR-AUC** (rare-event); ROC-AUC is comparability-only; accuracy 
 
 | Model | PR-AUC | ROC-AUC | recall@200 | Brier |
 |---|---|---|---|---|
-| Calibrated LGBM | **0.2183** | 0.8156 | 0.424 | 0.00047 |
-| Logit benchmark | 0.1078 | 0.8928 | 0.379 | 0.00815 |
+| Calibrated LGBM | **0.1563** | 0.8293 | 0.424 | 0.00049 |
+| Logit benchmark | 0.1093 | 0.9192 | 0.394 | 0.00826 |
 
 The LGBM beats the regulatory logit benchmark on PR-AUC (the metric that matters at a
 <1% base rate) and on recall@k. The logit's ROC-AUC is marginally higher; ROC-AUC is
 deprioritized here and shown only for comparability.
 
-### Calibration (honest)
+### Calibration
 All-rows Brier is dominated by true negatives, so we also report ECE and the flagged
-(top-decile) calibration: ECE=1.54e-04; in the top-scoring
-decile the model predicts 0.0047 vs observed
-0.0035.
+(top-decile) calibration: ECE=1.67e-04; in the top-scoring
+decile the model predicts 0.0046 vs observed
+0.0034.
 
 ### Performance by year (calibrated)
 |   year |     n |   n_positive |   pr_auc |   roc_auc |
 |-------:|------:|-------------:|---------:|----------:|
-|   2019 | 20455 |           19 |   0.4742 |    0.995  |
-|   2020 | 19901 |            7 |   0.7429 |    0.9999 |
+|   2019 | 20455 |           19 |   0.4473 |    0.996  |
+|   2020 | 19901 |            7 |   0.4906 |    0.9998 |
 |   2021 | 19226 |            0 | nan      |  nan      |
-|   2022 | 18762 |           14 |   0.0007 |    0.4907 |
-|   2023 | 18377 |            9 |   0.0436 |    0.7871 |
-|   2024 | 17868 |            9 |   0.001  |    0.6607 |
-|   2025 |  4354 |            8 |   0.6345 |    0.9303 |
+|   2022 | 18762 |           14 |   0.0009 |    0.5594 |
+|   2023 | 18377 |            9 |   0.0688 |    0.8266 |
+|   2024 | 17868 |            9 |   0.0006 |    0.5811 |
+|   2025 |  4354 |            8 |   0.4604 |    0.941  |
 
-PR-AUC is honestly low/undefined in calm years with few/zero failures — expected for a
-rare-event model, not a defect.
+In calm years with few or zero failures, PR-AUC is low or undefined — the expected
+behavior of a rare-event model.
 
 ## Top global drivers (SHAP)
 | feature                     |   mean_|SHAP| |
 |:----------------------------|--------------:|
-| tier1_rwa_ratio             |    0.235313   |
-| roa                         |    0.0673147  |
-| tier1_leverage              |    0.0306459  |
-| nim_yoy_delta               |    0.021843   |
-| loans_to_deposits_yoy_delta |    0.0191936  |
-| brokered_to_deposits        |    0.0184622  |
-| equity_to_assets            |    0.0172717  |
-| equity_to_assets_peer_z     |    0.0138289  |
-| allowance_to_loans          |    0.0131521  |
-| equity_to_assets_yoy_delta  |    0.0128467  |
-| asset_growth_yoy            |    0.0125425  |
-| nim                         |    0.00772053 |
+| tier1_rwa_ratio             |     0.223902  |
+| roe                         |     0.067966  |
+| equity_to_assets_peer_z     |     0.0247399 |
+| nim_yoy_delta               |     0.0235993 |
+| loans_to_deposits_yoy_delta |     0.0224842 |
+| brokered_to_deposits        |     0.0179655 |
+| tier1_leverage              |     0.0167461 |
+| nco_to_loans                |     0.0138162 |
+| equity_to_assets_yoy_delta  |     0.0136154 |
+| log_assets                  |     0.0128304 |
+| allowance_to_loans          |     0.011476  |
+| asset_growth_yoy            |     0.0111164 |
 
 Capital (tier-1) and earnings (ROA) dominate, consistent with the bank-failure
 literature. Computed as mean |SHAP| over a fixed reservoir sample (n=1500, seed 42)
@@ -76,28 +76,28 @@ and are deliberately not computed. We instead verify the model performs across s
 ### By asset-size tier
 | segment     |     n |   positives |   pr_auc |   roc_auc |   recall_at_k |
 |:------------|------:|------------:|---------:|----------:|--------------:|
-| Q1 smallest | 29736 |          31 |   0.2799 |    0.9153 |         0.452 |
-| Q2          | 29736 |          20 |   0.536  |    0.9942 |         0.85  |
-| Q4 largest  | 29736 |          15 |   0.0328 |    0.9609 |         0.067 |
+| Q1 smallest | 29736 |          31 |   0.2448 |    0.913  |         0.452 |
+| Q2          | 29736 |          20 |   0.5049 |    0.9838 |         0.8   |
+| Q4 largest  | 29736 |          15 |   0.0801 |    0.9915 |         0.2   |
 | Q3          | 29735 |           0 | nan      |  nan      |       nan     |
 
 ### By region
 | segment   |     n |   positives |   pr_auc |   roc_auc |   recall_at_k |
 |:----------|------:|------------:|---------:|----------:|--------------:|
-| Midwest   | 52454 |          25 |   0.3515 |    0.9486 |         0.6   |
-| South     | 41899 |          23 |   0.3188 |    0.9261 |         0.565 |
-| Northeast | 13028 |          10 |   0.209  |    0.9941 |         0.6   |
-| West      | 11337 |           8 |   0.0195 |    0.9511 |         0.125 |
+| Midwest   | 52454 |          25 |   0.3251 |    0.9404 |         0.56  |
+| South     | 41899 |          23 |   0.2733 |    0.9279 |         0.522 |
+| Northeast | 13028 |          10 |   0.4156 |    0.9944 |         0.6   |
+| West      | 11337 |           8 |   0.0274 |    0.983  |         0     |
 | Other     |   225 |           0 | nan      |  nan      |       nan     |
 
 ### By charter class
 | segment   |     n |   positives |   pr_auc |   roc_auc |   recall_at_k |
 |:----------|------:|------------:|---------:|----------:|--------------:|
-| NM        | 67918 |          42 |   0.383  |    0.9929 |         0.524 |
-| N         | 18115 |          11 |   0.0566 |    0.8318 |         0.273 |
-| SM        | 17486 |           7 |   0.0045 |    0.9331 |         0     |
-| SI        |  6471 |           3 |   0.001  |    0.7258 |         0     |
-| SB        |  6271 |           3 |   0.6    |    0.9997 |         1     |
+| NM        | 67918 |          42 |   0.3556 |    0.9936 |         0.5   |
+| N         | 18115 |          11 |   0.1368 |    0.826  |         0.273 |
+| SM        | 17486 |           7 |   0.0195 |    0.9299 |         0.429 |
+| SI        |  6471 |           3 |   0.0014 |    0.7969 |         0     |
+| SB        |  6271 |           3 |   0.6    |    0.9998 |         1     |
 | NC        |  1444 |           0 | nan      |  nan      |       nan     |
 | SL        |  1013 |           0 | nan      |  nan      |       nan     |
 | OI        |   225 |           0 | nan      |  nan      |       nan     |
