@@ -59,9 +59,32 @@ def _skops_load(path: Path):
     return sio.load(path, trusted=list(TRUSTED_SKOPS_TYPES))
 
 
+def _registry_load(settings, horizon_q: int) -> LoadedModel | None:
+    """Resolve the champion via the MLflow registry alias so an alias repoint is a real
+    serve-time rollback. Best-effort: returns None if the registry/model is unavailable,
+    and load_model falls back to the pinned local artifact (offline resilience)."""
+    try:
+        import mlflow
+
+        mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
+        uri = f"models:/{settings.registered_model_name}@{settings.champion_alias}"
+        model = mlflow.sklearn.load_model(uri)
+        return LoadedModel(
+            predict_proba=lambda df: model.predict_proba(df[FEATURE_COLUMNS].astype(float))[:, 1],
+            horizon_q=horizon_q, calibrated=True, source=uri,
+        )
+    except Exception:
+        return None
+
+
 @lru_cache(maxsize=4)
 def load_model(horizon_q: int = 4) -> LoadedModel:
     settings = get_ml_settings()
+    # 1) registry alias (champion) — makes alias-repoint a real rollback
+    reg = _registry_load(settings, horizon_q)
+    if reg is not None:
+        return reg
+    # 2) offline fallback: pinned local artifact (safe skops, then native booster)
     skops_path = settings.artifact_dir / f"calibrated_h{horizon_q}.skops"
     booster_path = settings.artifact_dir / f"booster_h{horizon_q}.txt"
     if skops_path.exists():

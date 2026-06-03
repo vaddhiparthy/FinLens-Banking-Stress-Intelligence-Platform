@@ -79,6 +79,7 @@ class ReasonOut(BaseModel):
 
 
 class PredictResponse(BaseModel):
+    request_id: str
     probability: float
     flagged: bool
     threshold: float
@@ -120,6 +121,7 @@ def ready() -> dict:
 
 
 def _score_one(features: dict) -> PredictResponse:
+    from finlens_ml.audit import log_inference
     from finlens_ml.explain import local_reasons
     from finlens_ml.predict import decision, score_frame
 
@@ -127,13 +129,19 @@ def _score_one(features: dict) -> PredictResponse:
     df = pd.DataFrame([row], columns=FEATURE_COLUMNS).astype(float)
     prob = float(score_frame(df, 4)[0])
     dec = decision(prob)
+    reason_objs = local_reasons(features, top_k=6)
     reasons = [
         ReasonOut(feature=r.feature, value=(None if r.value != r.value else r.value),
                   shap=r.shap, direction=r.direction)
-        for r in local_reasons(features, top_k=6)
+        for r in reason_objs
     ]
+    rid = log_inference(
+        features=row, probability=prob, flagged=dec["flagged"],
+        model_version=app.state.version, horizon_q=4,
+        reasons=[{"feature": r.feature, "shap": r.shap} for r in reason_objs], source="predict",
+    )
     return PredictResponse(
-        probability=prob, flagged=dec["flagged"], threshold=dec["threshold"],
+        request_id=rid, probability=prob, flagged=dec["flagged"], threshold=dec["threshold"],
         horizon_quarters=4, model_version=app.state.version, reasons=reasons,
     )
 
@@ -159,10 +167,17 @@ def predict_batch(req: BatchRequest) -> dict:
         columns=FEATURE_COLUMNS,
     ).astype(float)
     probs = score_frame(df, 4)  # vectorized, single call
-    out = [
-        {"probability": float(p), **{k: v for k, v in decision(float(p)).items() if k != "probability"}}
-        for p in probs
-    ]
+    from finlens_ml.audit import log_inference
+
+    out = []
+    for rec, p in zip(req.records, probs, strict=False):
+        d = decision(float(p))
+        rid = log_inference(
+            features={c: rec.get(c) for c in FEATURE_COLUMNS}, probability=float(p),
+            flagged=d["flagged"], model_version=app.state.version, horizon_q=4, source="batch",
+        )
+        out.append({"request_id": rid, "probability": float(p),
+                    **{k: v for k, v in d.items() if k != "probability"}})
     return {"model_version": app.state.version, "horizon_quarters": 4, "predictions": out}
 
 

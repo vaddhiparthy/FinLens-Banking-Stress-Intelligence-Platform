@@ -22,9 +22,13 @@
   (prediction drift is the earliest signal since labels arrive late).
 - **Freshness / schema:** Pydantic v2 input validation at serving; feature null-rate
   and freshness checks.
-- **Retraining triggers:** scheduled quarterly retrain + drift-threshold trigger;
-  champion/challenger via MLflow aliases; instant rollback by repointing the alias.
+- **Retraining:** quarterly Airflow DAG (`dag_ml_retrain`: build -> train+register -> metric
+  gate -> export); the gate blocks promotion. Serving resolves the MLflow champion alias
+  (`models:/finlens_bank_distress@champion`), so rollback is a real alias repoint, with the
+  pinned local artifact as offline fallback.
 - **Stability:** OMP_NUM_THREADS=1, bounded memory, last-known-good artifact cached.
+- **Audit:** every served request is logged (request id, inputs, version, probability, flag,
+  reason codes) for outcomes analysis and prediction-drift on real traffic.
 
 ## 3. Outcomes analysis (back-testing)
 - Out-of-time backtest on 118,943 bank-quarters / 66 real
@@ -37,5 +41,5 @@
 
 ## Effective challenge
 This report + the benchmark comparison + the adversarial phase reviews constitute the
-independent challenge. Failing any metric gate (PR-AUC / recall@k / calibration /
-champion-vs-challenger) blocks promotion in CI.
+independent challenge. The CI metric gate (PR-AUC must beat the logit benchmark by a
+margin, OOT ROC below the leakage ceiling, calibration ECE bound) blocks promotion.
