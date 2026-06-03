@@ -66,10 +66,14 @@ def main() -> None:
         lab4 = conn.execute("select count(*) from ml.training_dataset where label_4 is not null").fetchone()[0]
 
     missing = [c for c in FEATURE_COLUMNS if c not in feats.columns]
+    # hard reproducibility check: the materialized feature set must exactly match
+    # the declared model feature set (prevents silent drift in the audit trail).
+    assert not missing, f"materialized dataset missing model features: {missing}"
+    n_features = len(FEATURE_COLUMNS)
     print(
         f"DONE: rows={n:,} certs={feats['cert'].nunique():,} "
-        f"quarters={feats['quarter'].nunique()} | H4 labelable={lab4:,} positives={pos4:,} "
-        f"base_rate={pos4 / lab4 * 100:.3f}% | missing_features={missing}",
+        f"quarters={feats['quarter'].nunique()} | n_features={n_features} "
+        f"| H4 labelable={lab4:,} positives={pos4:,} base_rate={pos4 / lab4 * 100:.3f}%",
         flush=True,
     )
 

@@ -8,6 +8,11 @@ For a training observation at quarter q with horizon H, its label looks at quart
 (q, q+H]. To keep the test period (starting at quarter t) strictly out-of-sample, a
 training row must satisfy q + H < t  (i.e. q <= t - H - 1). That gap is the embargo;
 it equals the label horizon and subsumes the call-report reporting lag.
+
+Note on grouping: a bank legitimately appears in both train and test in
+NON-overlapping time windows — that is required for a discrete-time hazard panel and
+is NOT a GroupKFold violation. The embargo guarantees no single observation's label
+window straddles the train/test boundary, which is the property that matters.
 """
 
 from __future__ import annotations
@@ -53,6 +58,9 @@ def rolling_origin_folds(
         test_idx = q.index[(q >= t) & (q < t + n_test_quarters)].to_numpy()
         if len(train_idx) == 0 or len(test_idx) == 0:
             continue
+        # defense-in-depth: every real fold must pass the no-leakage invariant, not
+        # just unit tests. Mirrors the CI import-guard philosophy.
+        assert_no_temporal_overlap(q, train_idx, test_idx, horizon_q)
         folds.append(OOTFold(test_quarter_ord=int(t), train_idx=train_idx, test_idx=test_idx))
     return folds
 
@@ -70,6 +78,7 @@ def final_holdout_split(
     train_cutoff = test_start - horizon_q - 1
     train_idx = q.index[q <= train_cutoff].to_numpy()
     test_idx = q.index[q >= test_start].to_numpy()
+    assert_no_temporal_overlap(q, train_idx, test_idx, horizon_q)
     return train_idx, test_idx
 
 
