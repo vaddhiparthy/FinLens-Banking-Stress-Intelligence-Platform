@@ -187,6 +187,7 @@ page_intro(
     "Failure Forensics",
     "A transformed failure dataset should show concentration, resolution patterns, and cost, not "
     "just a flat archive of collapsed institutions.",
+    wiki_slug="reading-failed-bank-records",
 )
 
 failures = prepare_failures().sort_values(["year", "assets_millions"], ascending=[False, False])

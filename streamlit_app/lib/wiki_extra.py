@@ -221,7 +221,9 @@ EXTRA_ARTICLES: dict[str, dict] = {
             "and the served model is loaded from the registry, so what is scored in production is "
             "what was evaluated out-of-time. The hypothetical 'what-if' tool fills any unset "
             "feature with the panel median, so a slider experiment is always a complete, "
-            "realistic bank rather than a mostly-empty vector. The serving design is detailed in "
+            "realistic bank rather than a mostly-empty vector. (Direct scoring of a real "
+            "bank instead passes missing features through as NaN, which LightGBM handles "
+            "natively; only the what-if path imputes.) The serving design is detailed in "
             "[[Serving the Model]]."
         ),
     },

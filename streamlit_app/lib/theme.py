@@ -1616,6 +1616,153 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         background: {palette["border"]};
         margin: 1.6rem 0 1.4rem;
     }}
+    /* ---- Encyclopedia: section tree + article + home ---- */
+    .wiki-tree-nav {{
+        position: sticky;
+        top: 1rem;
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+        padding-right: .5rem;
+        font-size: .82rem;
+    }}
+    .wiki-tree-home {{
+        display: block;
+        color: {palette["text_soft"]} !important;
+        font-weight: 700;
+        text-decoration: none !important;
+        font-size: .76rem;
+        margin-bottom: .6rem;
+    }}
+    .wiki-tree-home:hover {{ color: {palette["accent"]} !important; }}
+    .wiki-tree-section {{
+        color: {palette["text_main"]};
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-weight: 800;
+        font-size: .9rem;
+        margin: .85rem 0 .25rem;
+    }}
+    .wiki-tree-sub {{
+        color: {palette["text_soft"]};
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        font-size: .64rem;
+        font-weight: 700;
+        margin: .4rem 0 .12rem .1rem;
+    }}
+    .wiki-tree-art {{
+        display: block;
+        color: {palette["text_muted"]} !important;
+        text-decoration: none !important;
+        line-height: 1.35;
+        padding: .12rem 0 .12rem .65rem;
+        border-left: 2px solid transparent;
+    }}
+    .wiki-tree-art:hover {{
+        color: {palette["text_main"]} !important;
+        border-left-color: {palette["border"]};
+    }}
+    .wiki-tree-art.active {{
+        color: {palette["accent"]} !important;
+        border-left-color: {palette["accent"]};
+        font-weight: 700;
+    }}
+    .wiki-art-crumb {{
+        color: {palette["text_soft"]};
+        font-size: .76rem;
+        font-weight: 600;
+        margin-bottom: .35rem;
+    }}
+    .wiki-crumb-home, .wiki-crumb-home:visited {{
+        color: {palette["text_soft"]} !important;
+        text-decoration: none !important;
+    }}
+    .wiki-crumb-home:hover {{ color: {palette["accent"]} !important; }}
+    .wiki-art-lead {{
+        color: {palette["text_muted"]};
+        font-size: 1.02rem;
+        line-height: 1.6;
+        font-weight: 600;
+        margin: .1rem 0 1rem;
+        padding-bottom: .8rem;
+        border-bottom: 1px solid {palette["border"]};
+    }}
+    .wiki-art-nav {{
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid {palette["border"]};
+    }}
+    .wiki-prev, .wiki-next {{
+        color: {palette["accent"]} !important;
+        text-decoration: none !important;
+        font-size: .86rem;
+        font-weight: 600;
+    }}
+    .wiki-next {{ margin-left: auto; text-align: right; }}
+    .wiki-home-head {{ margin-bottom: 1.4rem; }}
+    .wiki-home-title {{
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-size: 2rem;
+        font-weight: 800;
+        color: {palette["text_main"]};
+    }}
+    .wiki-home-sub {{
+        color: {palette["text_muted"]};
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-top: .3rem;
+        max-width: 46rem;
+    }}
+    .wiki-home-stats {{
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.4rem;
+        margin-top: .9rem;
+        padding: .7rem 0;
+        border-top: 1px solid {palette["border"]};
+        border-bottom: 1px solid {palette["border"]};
+        color: {palette["text_soft"]};
+        font-size: .82rem;
+    }}
+    .wiki-home-stats b {{ color: {palette["text_main"]}; font-size: 1rem; }}
+    .wiki-home-section {{
+        display: block;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: {palette["text_main"]} !important;
+        text-decoration: none !important;
+        margin: 1.5rem 0 .6rem;
+    }}
+    .wiki-home-section:hover {{ color: {palette["accent"]} !important; }}
+    .wiki-browse-grid {{
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+        gap: .6rem;
+    }}
+    .wiki-browse-card {{
+        display: flex;
+        flex-direction: column;
+        gap: .2rem;
+        border: 1px solid {palette["border"]};
+        border-radius: 10px;
+        padding: .65rem .75rem;
+        text-decoration: none !important;
+        background: {palette["content_bg"]};
+    }}
+    .wiki-browse-card:hover {{ border-color: {palette["accent"]}; }}
+    .wiki-browse-t {{
+        color: {palette["text_main"]};
+        font-weight: 700;
+        font-size: .86rem;
+    }}
+    .wiki-browse-s {{
+        color: {palette["text_muted"]};
+        font-size: .76rem;
+        line-height: 1.4;
+    }}
     .browser-stage-anchor + div button {{
         min-height: 4.2rem !important;
         border-radius: 18px !important;
@@ -1686,6 +1833,15 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         color: {palette["text_main"]};
         margin-bottom: .38rem;
     }}
+    .page-wiki-link {{
+        display: inline-block;
+        margin-top: .2rem;
+        color: {palette["accent"]} !important;
+        font-size: .82rem;
+        font-weight: 700;
+        text-decoration: none !important;
+    }}
+    .page-wiki-link:hover {{ text-decoration: underline !important; }}
     .page-intro {{
         color: {palette["text_muted"]};
         margin-bottom: .7rem;

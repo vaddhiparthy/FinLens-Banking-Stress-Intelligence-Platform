@@ -1,9 +1,9 @@
 # ruff: noqa: E402,E501
 
+import re
 import sys
 from pathlib import Path
 
-import pandas as pd
 import streamlit as st
 
 PROJECT_ROOT = next(
@@ -12,159 +12,143 @@ PROJECT_ROOT = next(
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from streamlit_app.lib.page_shell import home_navigation
+from streamlit_app.lib import wiki_structure as ws
+from streamlit_app.lib.page_shell import home_navigation, page_footer
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
 from streamlit_app.lib.ui_components import inject_styles, styled_table
-from streamlit_app.lib.wiki_content import ARTICLES
-
-
-def _article_index() -> pd.DataFrame:
-    return pd.DataFrame(
-        [
-            {
-                "Cluster": article["cluster"],
-                "Branch": article["branch"],
-                "Article": title,
-                "Summary": article["summary"],
-            }
-            for title, article in ARTICLES.items()
-        ]
-    )
-
-
-def _matching_articles(query: str) -> list[str]:
-    if not query:
-        return list(ARTICLES)
-    text = query.lower()
-    matches = []
-    for title, article in ARTICLES.items():
-        haystack = " ".join(
-            [title, article["cluster"], article["branch"], article["summary"], article["body"]]
-        ).lower()
-        if text in haystack:
-            matches.append(title)
-    return matches or list(ARTICLES)
-
-
-def _tree(matches: list[str]) -> dict[str, dict[str, list[str]]]:
-    tree: dict[str, dict[str, list[str]]] = {}
-    for title in matches:
-        article = ARTICLES[title]
-        tree.setdefault(article["cluster"], {}).setdefault(article["branch"], []).append(title)
-    return tree
-
-
-def _slug(title: str) -> str:
-    return title.lower().replace(" ", "-").replace("/", "-")
-
-
-def _source_contract_table() -> pd.DataFrame:
-    return pd.DataFrame(
-        [
-            {
-                "Source": "FDIC failed-bank records",
-                "Cadence": "Manual / periodic",
-                "Landing": "Bronze raw artifact",
-                "Gold usage": "Failure timeline, inventory, filters",
-            },
-            {
-                "Source": "FRED macro series",
-                "Cadence": "Daily",
-                "Landing": "Bronze observation panel",
-                "Gold usage": "Macro context and indicator detail",
-            },
-            {
-                "Source": "FDIC/QBP aggregate banking data",
-                "Cadence": "Quarterly",
-                "Landing": "Bronze aggregate artifact",
-                "Gold usage": "Stress Pulse industry metrics",
-            },
-            {
-                "Source": "Current institution metadata",
-                "Cadence": "Quarterly / periodic",
-                "Landing": "Bronze metadata artifact",
-                "Gold usage": "Institution and parent context",
-            },
-        ]
-    )
-
-
-def _warehouse_layer_table() -> pd.DataFrame:
-    return pd.DataFrame(
-        [
-            {"Layer": "Bronze", "Purpose": "Source fidelity", "Consumer": "Normalization jobs"},
-            {"Layer": "Silver", "Purpose": "Canonical shaping", "Consumer": "Intermediate models"},
-            {"Layer": "Intermediate", "Purpose": "Reusable business logic", "Consumer": "Gold marts"},
-            {"Layer": "Gold", "Purpose": "Dashboard contract", "Consumer": "Streamlit / FastAPI"},
-        ]
-    )
-
 
 st.set_page_config(page_title="FinLens | Wiki", layout="wide", initial_sidebar_state="collapsed")
 ensure_theme_state()
 inject_styles(app_css(get_theme_mode(), sidebar_open=False))
 record_page_view("wiki", "shared")
-
 home_navigation()
 
+# Wiki-only: justify article prose for an encyclopedia feel (scoped to this page).
 st.markdown(
-    """
-    <div class="wiki-head">
-        <div class="wiki-head-title">Wiki</div>
-        <div class="wiki-head-sub">How I think about the banking concepts, the data
-        architecture, and the operating evidence behind FinLens. One page, jump-linked,
-        no reloads.</div>
-    </div>
-    """,
+    "<style>.block-container .stMarkdown p{text-align:justify;text-justify:inter-word;}</style>",
     unsafe_allow_html=True,
 )
 
+_LINK = re.compile(r"\[\[([^\]]+)\]\]")
+
+
+def _wikilinks(body: str) -> str:
+    """Convert [[Article Title]] cross-links into clickable article links."""
+    def repl(m: re.Match) -> str:
+        title = m.group(1).strip()
+        if title in ws.ARTICLES:
+            return f"[{title}](?article={ws.slug(title)})"
+        return title
+    return _LINK.sub(repl, body)
+
+
+def _matches(query: str) -> set[str] | None:
+    if not query:
+        return None
+    q = query.lower()
+    hits = set()
+    for t, a in ws.ARTICLES.items():
+        hay = " ".join([t, a.get("summary", ""), a.get("body", "")]).lower()
+        if q in hay:
+            hits.add(t)
+    return hits
+
+
+# ---- routing ----
+slug = st.query_params.get("article", "")
+current = ws.title_for_slug(slug) if slug else None
 query = st.text_input(
-    "Search Wiki",
-    placeholder="Search source contracts, warehouse layers, Airflow, dbt, business concepts...",
-    key="wiki_search",
+    "Search the wiki", key="wiki_search", placeholder="Search articles…",
     label_visibility="collapsed",
 ).strip()
+hits = _matches(query)
 
-matches = _matching_articles(query)
-tree = _tree(matches)
+left, main = st.columns([0.92, 3.08], gap="large")
 
-left, center = st.columns([0.9, 3.1], gap="large")
+# ---- left: section tree ----
 with left:
-    toc = ['<nav class="wiki-toc"><div class="wiki-toc-title">Contents</div>']
-    for cluster, branches in tree.items():
-        toc.append(f'<div class="wiki-toc-cluster">{cluster}</div>')
-        for branch, titles in branches.items():
-            toc.append(f'<div class="wiki-toc-branch">{branch}</div>')
-            for title in titles:
-                toc.append(f'<a class="wiki-toc-link" href="#{_slug(title)}">{title}</a>')
-    toc.append("</nav>")
-    st.markdown("\n".join(toc), unsafe_allow_html=True)
+    nav = ['<nav class="wiki-tree-nav">']
+    nav.append('<a class="wiki-tree-home" href="?article=">FinLens Wiki — home</a>')
+    for _sid, stitle, groups in ws.SECTIONS:
+        sec_titles = [t for _s, ts in groups for t in ts if t in ws.ARTICLES
+                      and (hits is None or t in hits)]
+        if not sec_titles:
+            continue
+        nav.append(f'<div class="wiki-tree-section">{stitle}</div>')
+        for sub, titles in groups:
+            shown = [t for t in titles if t in ws.ARTICLES and (hits is None or t in hits)]
+            if not shown:
+                continue
+            if sub:
+                nav.append(f'<div class="wiki-tree-sub">{sub}</div>')
+            for t in shown:
+                cls = "wiki-tree-art active" if t == current else "wiki-tree-art"
+                nav.append(f'<a class="{cls}" href="?article={ws.slug(t)}">{t}</a>')
+    nav.append("</nav>")
+    st.markdown("\n".join(nav), unsafe_allow_html=True)
 
-with center:
-    if not matches:
-        st.info("No articles match your search.")
-    for title in matches:
-        article = ARTICLES[title]
-        crumb = article["cluster"]
-        if article["branch"] and article["branch"] != article["cluster"]:
-            crumb = f'{article["cluster"]} / {article["branch"]}'
+# ---- main: article or home ----
+with main:
+    if current:
+        a = ws.article(current)
+        sec = ws.section_of(current)
+        sec_title = sec[1] if sec else ""
+        branch = a.get("branch") or ""
+        crumb = sec_title
+        if branch and branch != sec_title:
+            crumb = f"{sec_title} / {branch}"
+        home = '<a class="wiki-crumb-home" href="?article=">Wiki</a>'
         st.markdown(
-            f'<div id="{_slug(title)}" class="wiki-art-title">{title}</div>'
-            f'<div class="wiki-art-meta">{crumb} · {article["summary"]}</div>',
+            f'<div class="wiki-art-crumb">{home} › {crumb}</div>'
+            f'<div class="wiki-art-title">{current}</div>'
+            f'<div class="wiki-art-lead">{a.get("summary", "")}</div>',
             unsafe_allow_html=True,
         )
-        st.markdown(article["body"])
-        if title == "Product Operating Model":
-            styled_table(_article_index())
-        elif title == "Source Contracts":
-            styled_table(_source_contract_table())
-        elif title == "Warehouse Layers":
-            styled_table(_warehouse_layer_table())
-        st.markdown('<div class="wiki-art-divider"></div>', unsafe_allow_html=True)
-
-
-from streamlit_app.lib.page_shell import page_footer  # noqa: E402
+        st.markdown(_wikilinks(a["body"]))
+        # contextual index tables retained from the legacy wiki
+        if current == "How This Wiki Is Organized":
+            rows = [{"Section": s, "Articles": len([t for _x, ts in g for t in ts if t in ws.ARTICLES])}
+                    for _i, s, g in ws.SECTIONS]
+            styled_table(__import__("pandas").DataFrame(rows))
+        prev, nxt = ws.neighbours(current)
+        nav_html = '<div class="wiki-art-nav">'
+        if prev:
+            nav_html += f'<a class="wiki-prev" href="?article={ws.slug(prev)}">‹ {prev}</a>'
+        if nxt:
+            nav_html += f'<a class="wiki-next" href="?article={ws.slug(nxt)}">{nxt} ›</a>'
+        nav_html += "</div>"
+        st.markdown(nav_html, unsafe_allow_html=True)
+    else:
+        s = ws.stats()
+        st.markdown(
+            '<div class="wiki-home-head">'
+            '<div class="wiki-home-title">FinLens Wiki</div>'
+            '<div class="wiki-home-sub">The reference for the platform: the banking domain, '
+            'the architecture, the data engineering, and the model.</div>'
+            f'<div class="wiki-home-stats">'
+            f'<span><b>{s["articles"]}</b> articles</span>'
+            f'<span><b>{s["sections"]}</b> sections</span>'
+            f'<span><b>{s["words"]:,}</b> words</span>'
+            f'<span><b>~{s["read_minutes"]}</b> min read</span>'
+            '</div></div>',
+            unsafe_allow_html=True,
+        )
+        for _sid, stitle, groups in ws.SECTIONS:
+            titles = [t for _s, ts in groups for t in ts if t in ws.ARTICLES]
+            if not titles:
+                continue
+            first = titles[0]
+            cards = "".join(
+                f'<a class="wiki-browse-card" href="?article={ws.slug(t)}">'
+                f'<span class="wiki-browse-t">{t}</span>'
+                f'<span class="wiki-browse-s">{ws.ARTICLES[t].get("summary", "")}</span></a>'
+                for t in titles
+            )
+            st.markdown(
+                f'<a class="wiki-home-section" href="?article={ws.slug(first)}">{stitle}</a>'
+                f'<div class="wiki-browse-grid">{cards}</div>',
+                unsafe_allow_html=True,
+            )
 
 page_footer()

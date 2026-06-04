@@ -203,6 +203,7 @@ page_intro(
     "Macro Transmission",
     "This page stays narrow on purpose: only stable macro indicators, a simple lag view, and the "
     "clearest stress signals that can support a long-lived dashboard.",
+    wiki_slug="macroeconomic-context-and-banking-stress",
 )
 
 frame = build_macro_panel()

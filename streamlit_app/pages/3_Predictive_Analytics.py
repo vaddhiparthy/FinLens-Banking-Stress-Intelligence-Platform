@@ -93,6 +93,7 @@ page_intro(
     "Interactive bank financial-distress early-warning, scored live by the calibrated "
     "gradient-boosted hazard model. Ranks observable public-data stress; it is not "
     "investment, deposit, or supervisory advice.",
+    wiki_slug="how-to-read-a-stress-score",
 )
 
 if not _model_available():

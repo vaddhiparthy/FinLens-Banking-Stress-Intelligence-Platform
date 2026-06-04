@@ -14,8 +14,19 @@ from __future__ import annotations
 from streamlit_app.lib.wiki_content import ARTICLES as _BASE
 from streamlit_app.lib.wiki_extra import EXTRA_ARTICLES as _EXTRA
 
+# Deepened/new article modules authored separately; merged if present so a missing
+# file never breaks the wiki. Later dicts override earlier ones by title.
+try:
+    from streamlit_app.lib.wiki_de_articles import DE_ARTICLES as _DE
+except Exception:
+    _DE = {}
+try:
+    from streamlit_app.lib.wiki_ai_articles import AI_ARTICLES as _AI
+except Exception:
+    _AI = {}
+
 # Merged corpus. Extra/deepened articles override base entries with the same title.
-ARTICLES: dict[str, dict] = {**_BASE, **_EXTRA}
+ARTICLES: dict[str, dict] = {**_BASE, **_EXTRA, **_DE, **_AI}
 
 # section_id, section title, [(subsection title or None, [article titles in order])]
 SECTIONS: list[tuple[str, str, list[tuple[str | None, list[str]]]]] = [

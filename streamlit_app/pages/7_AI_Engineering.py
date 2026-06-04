@@ -100,9 +100,19 @@ _AI_INTRO = {
              "Quick reference for the modeling concepts used across this surface."),
 }
 _title, _copy = _AI_INTRO.get(section, _AI_INTRO["pipeline"])
+_WIKI_SLUG = {
+    "pipeline": "problem-framing-discrete-time-hazard",
+    "notebook": "out-of-time-evaluation",
+    "contracts": "feature-engineering-and-the-monotone-contract",
+    "stack": "serving-the-model",
+    "quality": "out-of-time-evaluation",
+    "decisions": "model-risk-and-governance",
+    "administration": "serving-the-model",
+    "wiki": None,
+}
 
 status_ribbon("Machine Learning Engineering")
-page_intro("AI Engineering", _title, _copy)
+page_intro("AI Engineering", _title, _copy, wiki_slug=_WIKI_SLUG.get(section))
 
 
 if section == "pipeline":

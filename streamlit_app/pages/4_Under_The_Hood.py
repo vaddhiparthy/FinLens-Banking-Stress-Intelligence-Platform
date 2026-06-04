@@ -1148,10 +1148,19 @@ intro_copy = (
     else "This is the engineering operations surface: source-to-bronze, bronze-to-silver, "
     "silver-to-gold, and dashboard serving status."
 )
+_DE_WIKI = {
+    "pipeline": "platform-architecture",
+    "classification": "source-policy-overview",
+    "implementation": "tooling-choices-and-their-rationale",
+    "status": "data-quality-strategy",
+    "decisions": "platform-architecture",
+    "administration": "deployment-topology",
+}
 page_intro(
     "Data Engineering",
     intro_title,
     intro_copy,
+    wiki_slug=_DE_WIKI.get(active_section),
 )
 
 pipeline_frame = pipeline_status_frame()

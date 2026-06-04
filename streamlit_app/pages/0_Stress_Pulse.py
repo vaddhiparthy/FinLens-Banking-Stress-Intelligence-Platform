@@ -402,6 +402,7 @@ page_intro(
     "A low-risk, durable industry health surface built around stable aggregate banking signals. "
     "This page stays focused on what can refresh reliably over time without brittle joins or "
     "high-maintenance source logic.",
+    wiki_slug="banking-industry-stress-defined",
 )
 
 if frame.empty:
