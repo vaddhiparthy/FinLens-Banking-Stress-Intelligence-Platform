@@ -192,6 +192,21 @@ def status_ribbon(text: str) -> None:
     st.markdown(f'<div class="status-ribbon">{text}</div>', unsafe_allow_html=True)
 
 
+def page_footer() -> None:
+    """Consistent site footer on every page: anchors short pages and carries the
+    standing provenance/credit so no page ends in dead space."""
+    st.markdown(
+        '<div class="site-footer">'
+        '<span class="site-footer-brand">FinLens</span>'
+        '<span class="site-footer-note">Public FDIC &amp; FRED data · $0 infrastructure'
+        ' · real data only, nothing fabricated</span>'
+        '<a class="site-footer-link" href="https://surya.vaddhiparthy.com" '
+        'target="_blank">Built by Surya Vaddhiparthy</a>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+
 def page_intro(eyebrow: str, title: str, copy: str) -> None:
     st.markdown(
         f"""
@@ -225,7 +240,7 @@ def _navigate_section(mode: str, key: str) -> None:
         else:
             st.session_state["technical_section"] = key
             st.switch_page("pages/4_Under_The_Hood.py")
-    else:  # business — each section is its own page
+    else:  # business, each section is its own page
         st.switch_page(_page_path(key))
 
 
@@ -261,16 +276,23 @@ def _render_section_tabs(active_page: str, mode: str) -> None:
                 _navigate_section(mode, key)
 
 
-def top_navigation(active_page: str, mode: str) -> None:
-    _set_surface_mode(mode)
-    current_label = _SURFACE_META.get(mode, _SURFACE_META[BUSINESS_PAGE])[0]
+def _render_top_bar(active_page: str, mode: str) -> None:
+    """The single persistent chrome used on every page: surface dropdown (left),
+    centred FinLens wordmark + credit (fills the otherwise-empty header), theme
+    toggle (right). Identical placement everywhere so navigation never moves."""
+    is_home = mode == "home"
+    trigger = "Explore surfaces" if is_home else _SURFACE_META.get(mode, _SURFACE_META[BUSINESS_PAGE])[0]
 
     st.markdown('<div class="topbar-anchor"></div>', unsafe_allow_html=True)
-    bar_left, bar_right = st.columns([4.0, 1.0], vertical_alignment="center")
+    bar_left, bar_center, bar_right = st.columns([1.25, 2.5, 1.25], vertical_alignment="center")
     with bar_left:
         st.markdown('<div class="surface-pop-anchor"></div>', unsafe_allow_html=True)
-        with st.popover(current_label, icon=":material/swap_horiz:"):
-            st.markdown('<div class="pop-title">Switch surface</div>', unsafe_allow_html=True)
+        with st.popover(trigger, icon=":material/grid_view:", use_container_width=True):
+            st.markdown('<div class="pop-title">Go to surface</div>', unsafe_allow_html=True)
+            if not is_home and st.button(
+                "Home", key=f"pop_home_{active_page}", use_container_width=True
+            ):
+                st.switch_page(_page_path("home"))
             for smode, slabel, spath in _SURFACES:
                 if st.button(
                     slabel,
@@ -280,8 +302,20 @@ def top_navigation(active_page: str, mode: str) -> None:
                 ):
                     _set_surface_mode(smode)
                     st.switch_page(spath)
+    with bar_center:
+        st.markdown(
+            '<div class="brandbar">'
+            '<span class="brandbar-name">FinLens</span>'
+            '<span class="brandbar-tag">Banking Stress Intelligence</span></div>',
+            unsafe_allow_html=True,
+        )
     with bar_right:
-        st.markdown('<div class="theme-toggle-anchor"></div>', unsafe_allow_html=True)
+        st.markdown(
+            '<a class="topbar-credit" href="https://surya.vaddhiparthy.com" '
+            'target="_blank">Built by Surya Vaddhiparthy</a>'
+            '<div class="theme-toggle-anchor"></div>',
+            unsafe_allow_html=True,
+        )
         dark = st.toggle(
             "Dark", value=st.session_state.get("theme_dark", False),
             key=f"theme_toggle_{active_page}",
@@ -290,4 +324,13 @@ def top_navigation(active_page: str, mode: str) -> None:
             st.session_state["theme_dark"] = dark
             st.rerun()
 
+
+def top_navigation(active_page: str, mode: str) -> None:
+    _set_surface_mode(mode)
+    _render_top_bar(active_page, mode)
     _render_section_tabs(active_page, mode)
+
+
+def home_navigation() -> None:
+    """Top bar for the landing page: same chrome, no section tabs."""
+    _render_top_bar("home", "home")

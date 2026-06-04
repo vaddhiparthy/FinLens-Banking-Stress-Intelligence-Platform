@@ -483,3 +483,8 @@ else:
         "are central to the 2023 regional-bank story. It is intentionally not filled with "
         "estimated values.",
     )
+
+
+from streamlit_app.lib.page_shell import page_footer  # noqa: E402
+
+page_footer()

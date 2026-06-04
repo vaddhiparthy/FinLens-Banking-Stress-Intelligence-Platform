@@ -47,7 +47,7 @@ def chart_note(title: str, copy: str) -> None:
 def styled_table(frame: pd.DataFrame) -> None:
     header = "".join(f"<th>{escape(str(column))}</th>" for column in frame.columns)
     rows = []
-    for _, row in frame.fillna("—").iterrows():
+    for _, row in frame.fillna(", ").iterrows():
         cells = "".join(f"<td>{escape(str(value))}</td>" for value in row.tolist())
         rows.append(f"<tr>{cells}</tr>")
     st.markdown(

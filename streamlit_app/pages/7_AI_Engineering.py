@@ -1,5 +1,5 @@
 # ruff: noqa: E402
-"""AI Engineering surface — the ML pillar, mirroring the Data Engineering sections.
+"""AI Engineering surface, the ML pillar, mirroring the Data Engineering sections.
 
 Every section exposes the REAL underlying artifact (max visibility, nothing hidden):
 metrics from the actual training run, drift from the real Evidently report, the live
@@ -62,28 +62,28 @@ m = _metrics()
 section = get_ai_section()
 
 _AI_INTRO = {
-    "pipeline": ("Bank-Distress Model — Pipeline",
+    "pipeline": ("Bank-Distress Model: Pipeline",
                  "How the discrete-time hazard model is trained and scored on the FDIC "
                  "bank-quarter panel, end to end."),
-    "contracts": ("Bank-Distress Model — Feature Contracts",
+    "contracts": ("Bank-Distress Model: Feature Contracts",
                   "The model's input contract: every feature and the economic monotone "
                   "direction enforced against distress risk."),
-    "stack": ("Bank-Distress Model — ML Stack",
+    "stack": ("Bank-Distress Model: ML Stack",
               "The open-source, $0 production stack behind training, calibration, "
               "serving, and monitoring."),
-    "quality": ("Bank-Distress Model — Model Quality",
-                "Real out-of-time performance, calibration, by-year cohorts, and drift — "
+    "quality": ("Bank-Distress Model: Model Quality",
+                "Real out-of-time performance, calibration, by-year cohorts, and drift, "
                 "no fabricated numbers."),
-    "decisions": ("Bank-Distress Model — Model Decisions",
+    "decisions": ("Bank-Distress Model: Model Decisions",
                   "The key modeling choices and the governance posture behind them."),
-    "administration": ("Bank-Distress Model — Administration",
+    "administration": ("Bank-Distress Model: Administration",
                        "Registry, promotion, retraining, rollback, and the $0 guard."),
-    "wiki": ("Bank-Distress Model — AI Wiki",
+    "wiki": ("Bank-Distress Model: AI Wiki",
              "Quick reference for the modeling concepts used across this surface."),
 }
 _title, _copy = _AI_INTRO.get(section, _AI_INTRO["pipeline"])
 
-status_ribbon("Machine Learning Engineering surface — every layer visible")
+status_ribbon("Machine Learning Engineering surface, every layer visible")
 page_intro("AI Engineering", _title, _copy)
 
 if section == "pipeline":  # AI Pipeline (mirror of Live Pipeline)
@@ -121,14 +121,14 @@ elif section == "stack":  # AI Stack (mirror of Engineering Stack)
         {"layer": "Calibration", "tool": "scikit-learn CalibratedClassifierCV + FrozenEstimator"},
         {"layer": "Explainability", "tool": "SHAP TreeExplainer"},
         {"layer": "Tracking/registry", "tool": "MLflow 3.x (aliases, sqlite/Postgres)"},
-        {"layer": "Serialization", "tool": "skops (safe, allow-listed — no pickle)"},
+        {"layer": "Serialization", "tool": "skops (safe, allow-listed, no pickle)"},
         {"layer": "Serving", "tool": "FastAPI (lifespan, Pydantic v2)"},
         {"layer": "Monitoring", "tool": "Evidently 0.7.x (data + prediction drift)"},
         {"layer": "Store", "tool": "DuckDB point-in-time panel"},
     ]))
 
 elif section == "quality":  # Model Quality (mirror of Data Quality)
-    section_heading("Out-of-time performance", "Real metrics — PR-AUC is the rare-event headline; ROC is comparability-only.")
+    section_heading("Out-of-time performance", "Real metrics, PR-AUC is the rare-event headline; ROC is comparability-only.")
     if not m:
         st.info("Train the model to populate metrics.")
     else:
@@ -150,7 +150,7 @@ elif section == "quality":  # Model Quality (mirror of Data Quality)
         )
         by_year = m.get("by_year_calibrated", {})
         if by_year:
-            section_heading("By year", "Crisis vs calm cohorts — PR-AUC is honestly low when failures are absent.")
+            section_heading("By year", "Crisis vs calm cohorts, PR-AUC is honestly low when failures are absent.")
 
             def _metric_or_na(val: object) -> object:
                 if val is None or isinstance(val, str):
@@ -222,3 +222,8 @@ elif section == "wiki":  # AI Wiki (mirror of Wiki)
     }.items():
         with st.expander(term):
             st.write(body)
+
+
+from streamlit_app.lib.page_shell import page_footer  # noqa: E402
+
+page_footer()

@@ -296,3 +296,8 @@ with readouts_tab:
         "than static prose.",
     )
     styled_table(_insight_frame())
+
+
+from streamlit_app.lib.page_shell import page_footer  # noqa: E402
+
+page_footer()

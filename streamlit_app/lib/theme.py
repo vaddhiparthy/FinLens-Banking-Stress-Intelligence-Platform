@@ -19,7 +19,7 @@ PALETTE = {
     "shadow": "0 10px 30px rgba(15, 23, 42, 0.08)",
 }
 
-# Engineering theme — GitHub Dark Dimmed-derived, flat, hairline borders, one blue accent.
+# Engineering theme, GitHub Dark Dimmed-derived, flat, hairline borders, one blue accent.
 # sand == content_bg and accent == link so the existing gradients render flat.
 DARK_PALETTE = {
     "sidebar_bg": "#1b2026",
@@ -556,6 +556,171 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         font-size: .64rem;
         font-weight: 800;
         margin-bottom: .35rem;
+    }}
+    .brandbar {{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        line-height: 1.05;
+        text-decoration: none;
+    }}
+    .brandbar-name {{
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-size: 1.18rem;
+        font-weight: 800;
+        letter-spacing: -.01em;
+        color: {palette["text_main"]};
+    }}
+    .brandbar-tag {{
+        font-size: .68rem;
+        font-weight: 600;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+        color: {palette["text_soft"]};
+        margin-top: .12rem;
+    }}
+    .topbar-credit {{
+        display: block;
+        text-align: right;
+        font-size: .72rem;
+        font-weight: 600;
+        color: {palette["text_soft"]} !important;
+        text-decoration: none;
+        margin-bottom: .2rem;
+    }}
+    .topbar-credit:hover {{
+        color: {palette["accent"]} !important;
+    }}
+    /* ---- Landing page (full-bleed, scrollable) ---- */
+    .landing-hero {{
+        text-align: center;
+        max-width: 50rem;
+        margin: 2.4rem auto 1.4rem;
+        padding: 0 1rem;
+    }}
+    .landing-eyebrow {{
+        color: {palette["accent"]};
+        text-transform: uppercase;
+        letter-spacing: .18em;
+        font-size: .72rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+    }}
+    .landing-h1 {{
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-size: clamp(2.6rem, 5.5vw, 4.2rem);
+        line-height: 1.04;
+        font-weight: 800;
+        letter-spacing: -.03em;
+        color: {palette["text_main"]};
+        margin: 0 0 1.1rem;
+    }}
+    .landing-sub {{
+        max-width: 42rem;
+        margin: 0 auto;
+        color: {palette["text_muted"]};
+        font-size: 1.05rem;
+        line-height: 1.65;
+    }}
+    .landing-pick {{
+        text-align: center;
+        color: {palette["text_soft"]};
+        text-transform: uppercase;
+        letter-spacing: .16em;
+        font-size: .72rem;
+        font-weight: 800;
+        margin: 1.6rem 0 .9rem;
+    }}
+    .surface-card {{
+        border: 1px solid {palette["border"]};
+        border-top: 3px solid {palette["accent"]};
+        border-radius: 14px;
+        background: {palette["content_bg"]};
+        padding: 1.1rem 1.15rem .9rem;
+        min-height: 9.5rem;
+    }}
+    .surface-card-k {{
+        color: {palette["accent"]};
+        text-transform: uppercase;
+        letter-spacing: .12em;
+        font-size: .68rem;
+        font-weight: 800;
+        margin-bottom: .35rem;
+    }}
+    .surface-card-t {{
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        color: {palette["text_main"]};
+        font-size: 1.18rem;
+        font-weight: 700;
+        margin-bottom: .35rem;
+    }}
+    .surface-card-c {{
+        color: {palette["text_muted"]};
+        font-size: .86rem;
+        line-height: 1.5;
+    }}
+    div[class*="st-key-home_open_"] button {{
+        background: transparent !important;
+        border: 1px solid {palette["accent"]} !important;
+        color: {palette["accent"]} !important;
+        -webkit-text-fill-color: {palette["accent"]} !important;
+        font-weight: 700 !important;
+        border-radius: 10px !important;
+        min-height: 2.6rem !important;
+        margin-top: .55rem;
+        box-shadow: none !important;
+    }}
+    div[class*="st-key-home_open_"] button:hover {{
+        background: {palette["accent"]} !important;
+        border-color: {palette["accent"]} !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+    }}
+    div[class*="st-key-home_open_"] button:hover * {{
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+    }}
+    .site-footer {{
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: .6rem;
+        margin: 3.5rem 0 .5rem;
+        padding-top: 1rem;
+        border-top: 1px solid {palette["border"]};
+    }}
+    .site-footer-brand {{
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-weight: 800;
+        font-size: .92rem;
+        color: {palette["text_main"]};
+    }}
+    .site-footer-note {{
+        color: {palette["text_soft"]};
+        font-size: .76rem;
+    }}
+    .site-footer-link {{
+        color: {palette["text_soft"]} !important;
+        font-size: .76rem;
+        font-weight: 600;
+        text-decoration: none;
+    }}
+    .site-footer-link:hover {{
+        color: {palette["accent"]} !important;
+    }}
+    .landing-section-rule {{
+        height: 1px;
+        background: {palette["border"]};
+        max-width: 64rem;
+        margin: 2.6rem auto 1.6rem;
+    }}
+    .landing-h2 {{
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: {palette["text_main"]};
+        margin: 1.4rem 0 .8rem;
     }}
     /* Section top-tabs (targeted via Streamlit's per-key container class) */
     div[class*="st-key-tab_"] {{

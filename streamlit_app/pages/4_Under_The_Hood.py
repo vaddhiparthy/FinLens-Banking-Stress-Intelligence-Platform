@@ -77,7 +77,7 @@ def dag_chart(frame: pd.DataFrame) -> go.Figure:
     for row in frame.itertuples():
         color = _status_color(row.status, palette)
         link_colors.append(color)
-        link_labels.append(f"{row.flow_no}. {row.flow_name} — {row.status}")
+        link_labels.append(f"{row.flow_no}. {row.flow_name}, {row.status}")
     figure = go.Figure(
         go.Sankey(
             arrangement="snap",
@@ -247,7 +247,7 @@ def freshness_table() -> pd.DataFrame:
     sources = connector_report.get("sources", [])
     if not sources:
         return pd.DataFrame(
-            [{"Source": "No connector report", "Freshness": "—", "SLA": "—", "Status": "Missing"}]
+            [{"Source": "No connector report", "Freshness": ", ", "SLA": ", ", "Status": "Missing"}]
         )
     return pd.DataFrame(
         [
@@ -257,7 +257,7 @@ def freshness_table() -> pd.DataFrame:
                 "SLA": item["cadence"],
                 "Status": item["status"],
                 "Required input": ", ".join(item.get("required_env", [])) or "None required",
-                "Missing input": ", ".join(item.get("missing_env", [])) or "—",
+                "Missing input": ", ".join(item.get("missing_env", [])) or ", ",
             }
             for item in sources
         ]
@@ -287,7 +287,7 @@ def source_activation_frame() -> pd.DataFrame:
                     "Source": "No connector report",
                     "Activation": "Missing",
                     "Reason": "Run connector readiness",
-                    "Cadence": "—",
+                    "Cadence": ", ",
                 }
             ]
         )
@@ -686,7 +686,7 @@ def latest_pipeline_run_frame() -> pd.DataFrame:
                 {
                     "Step": "No run recorded",
                     "Status": "Pending",
-                    "Duration": "—",
+                    "Duration": ", ",
                     "Detail": "Run scripts/run_local_pipeline.py --probe-platform",
                 }
             ]
@@ -712,8 +712,8 @@ def dbt_build_frame() -> pd.DataFrame:
                 {
                     "Target": "local",
                     "Status": "Pending",
-                    "Return code": "—",
-                    "Captured at": "—",
+                    "Return code": ", ",
+                    "Captured at": ", ",
                     "Summary": "Run scripts/run_local_pipeline.py --run-dbt-build",
                 }
             ]
@@ -767,7 +767,7 @@ def dbt_results_frame() -> pd.DataFrame:
                     "Resource type": "No artifact",
                     "Name": "Run dbt build",
                     "Status": "Pending",
-                    "Execution seconds": "—",
+                    "Execution seconds": ", ",
                     "Adapter response": "dbt target/run_results.json is not present",
                 }
             ]
@@ -782,10 +782,10 @@ def warehouse_inventory_frame() -> pd.DataFrame:
             [
                 {
                     "Layer": "No warehouse",
-                    "Schema": "—",
+                    "Schema": ", ",
                     "Table": "Run pipeline",
-                    "Rows": "—",
-                    "Columns": "—",
+                    "Rows": ", ",
+                    "Columns": ", ",
                 }
             ]
         )
@@ -800,9 +800,9 @@ def source_landing_frame() -> pd.DataFrame:
                 {
                     "Source": "No raw files",
                     "Raw files": 0,
-                    "Latest artifact": "—",
-                    "Latest record count": "—",
-                    "Ingested at": "—",
+                    "Latest artifact": ", ",
+                    "Latest record count": ", ",
+                    "Ingested at": ", ",
                     "Storage path": "Run ingestion",
                 }
             ]
@@ -923,8 +923,8 @@ def airflow_runs_frame() -> pd.DataFrame:
                     "DAG": "No run artifact",
                     "Latest run": "Run Airflow collector",
                     "State": "Pending",
-                    "Started": "—",
-                    "Ended": "—",
+                    "Started": ", ",
+                    "Ended": ", ",
                 }
             ]
         )
@@ -1332,3 +1332,8 @@ elif active_section == "administration":
 
 elif active_section == "decisions":
     render_architecture_decisions()
+
+
+from streamlit_app.lib.page_shell import page_footer  # noqa: E402
+
+page_footer()

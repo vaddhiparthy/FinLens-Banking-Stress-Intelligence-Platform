@@ -259,3 +259,8 @@ section_heading(
     "the drill-down because the charts are the primary analytical interaction on this page.",
 )
 styled_table(indicator_board(frame))
+
+
+from streamlit_app.lib.page_shell import page_footer  # noqa: E402
+
+page_footer()

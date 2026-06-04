@@ -271,3 +271,8 @@ else:
         start = (current_page - 1) * 12
         styled_table(inventory.iloc[start : start + 12])
         _render_inventory_pager(current_page, total_pages)
+
+
+from streamlit_app.lib.page_shell import page_footer  # noqa: E402
+
+page_footer()

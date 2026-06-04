@@ -12,6 +12,7 @@ PROJECT_ROOT = next(
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from streamlit_app.lib.page_shell import home_navigation
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
 from streamlit_app.lib.ui_components import inject_styles, styled_table
@@ -105,24 +106,19 @@ ensure_theme_state()
 inject_styles(app_css(get_theme_mode(), sidebar_open=False))
 record_page_view("wiki", "shared")
 
+home_navigation()
+
 st.markdown(
     """
     <div class="wiki-head">
-        <div class="wiki-head-title">FinLens Wiki</div>
-        <div class="wiki-head-sub">Business meaning, data architecture, and operating
-        evidence. One page, jump-linked, no reloads.</div>
+        <div class="wiki-head-title">Wiki</div>
+        <div class="wiki-head-sub">How I think about the banking concepts, the data
+        architecture, and the operating evidence behind FinLens. One page, jump-linked,
+        no reloads.</div>
     </div>
     """,
     unsafe_allow_html=True,
 )
-
-nav_cols = st.columns(3)
-with nav_cols[0]:
-    st.page_link("app.py", label="Home", icon=":material/home:")
-with nav_cols[1]:
-    st.page_link("pages/0_Stress_Pulse.py", label="Business", icon=":material/space_dashboard:")
-with nav_cols[2]:
-    st.page_link("pages/4_Under_The_Hood.py", label="Data Engineering", icon=":material/account_tree:")
 
 query = st.text_input(
     "Search Wiki",
@@ -155,7 +151,7 @@ with center:
         if article["branch"] and article["branch"] != article["cluster"]:
             crumb = f'{article["cluster"]} / {article["branch"]}'
         st.markdown(
-            f'<h2 id="{_slug(title)}" class="wiki-art-title">{title}</h2>'
+            f'<div id="{_slug(title)}" class="wiki-art-title">{title}</div>'
             f'<div class="wiki-art-meta">{crumb} · {article["summary"]}</div>',
             unsafe_allow_html=True,
         )
@@ -167,3 +163,8 @@ with center:
         elif title == "Warehouse Layers":
             styled_table(_warehouse_layer_table())
         st.markdown('<div class="wiki-art-divider"></div>', unsafe_allow_html=True)
+
+
+from streamlit_app.lib.page_shell import page_footer  # noqa: E402
+
+page_footer()

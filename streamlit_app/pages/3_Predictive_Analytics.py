@@ -1,10 +1,10 @@
 # ruff: noqa: E402
-"""Predictive Analytics — REAL interactive bank-distress scoring.
+"""Predictive Analytics, REAL interactive bank-distress scoring.
 
 Backed by the trained model (ml/finlens_ml). Three in-page tabs (st.tabs = no full
 reload): insert a real bank by CERT, hold out a real failed bank (predicted vs
 actual), and a hypothetical what-if with CAMELS sliders. Every number is computed
-live from the real calibrated model + SHAP — nothing is fabricated.
+live from the real calibrated model + SHAP, nothing is fabricated.
 """
 
 import sys
@@ -69,14 +69,18 @@ def _render_score(result: dict, actual: int | None = None) -> None:
 
         reasons["Driver"] = reasons["feature"].astype(str).map(scenario.humanize_feature)
         reasons["Reported value"] = reasons["value"].map(_fmt_value)
-        reasons = reasons.rename(columns={"direction": "Effect on risk", "impact": "Weight"})
+        reasons["Effect on this score"] = reasons["direction"].map(
+            {"increases risk": "↑ pushed score up", "decreases risk": "↓ pushed score down"}
+        ).fillna(reasons["direction"])
+        reasons = reasons.rename(columns={"impact": "Weight"})
         section_heading(
             "Why this score",
-            "The factors that moved this bank's score most, from the model's SHAP "
-            "attribution. Higher weight = larger influence.",
+            "How each factor moved THIS bank's score (its SHAP contribution). A low value on "
+            "a 'capital lowers risk' feature still pushes the score up. Higher weight = "
+            "larger influence.",
         )
         st.dataframe(
-            reasons[["Driver", "Reported value", "Effect on risk", "Weight"]],
+            reasons[["Driver", "Reported value", "Effect on this score", "Weight"]],
             hide_index=True,
             use_container_width=True,
         )
@@ -107,7 +111,7 @@ tab_insert, tab_holdout, tab_what_if = st.tabs(
 with tab_insert:
     st.write(
         "Search for any U.S. bank by name and score its most recent quarter in the panel "
-        "from real FDIC Call Report data. (No need to know any code — just start typing.)"
+        "from real FDIC Call Report data. (No need to know any code, just start typing.)"
     )
     directory = scenario.bank_directory()
     labels = directory["label"].tolist()
@@ -130,7 +134,7 @@ with tab_insert:
         else:
             note = "most recent quarter in panel"
             st.success(
-                f"{row['bank_name']} ({row['state']}) — {note}: {row['quarter']} "
+                f"{row['bank_name']} ({row['state']}), {note}: {row['quarter']} "
                 f"· FDIC CERT {row['cert']}"
             )
             _render_score(scenario.score_features(row["features"]), row["actual_label_4"])
@@ -170,3 +174,8 @@ with tab_what_if:
         "Monotone constraints are enforced in the model: more capital never increases "
         "predicted risk; higher noncurrent loans never decreases it."
     )
+
+
+from streamlit_app.lib.page_shell import page_footer  # noqa: E402
+
+page_footer()
