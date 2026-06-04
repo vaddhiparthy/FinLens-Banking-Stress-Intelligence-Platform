@@ -4,7 +4,7 @@
 Backed by the trained model (ml/finlens_ml). Three in-page tabs (st.tabs = no full
 reload): insert a real bank by CERT, hold out a real failed bank (predicted vs
 actual), and a hypothetical what-if with CAMELS sliders. Every number is computed
-live from the real calibrated model + SHAP, nothing is fabricated.
+live from the calibrated model + SHAP.
 """
 
 import sys
@@ -98,8 +98,7 @@ page_intro(
 if not _model_available():
     chart_note(
         "Model artifact not present",
-        "Train the model (python ml/finlens_ml/train.py) to activate this surface. "
-        "The page is wired to the real model and will show no fabricated output.",
+        "Train the model (python ml/finlens_ml/train.py) to activate this surface.",
     )
     st.stop()
 

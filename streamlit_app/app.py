@@ -164,8 +164,7 @@ st.markdown(
         <p class="landing-sub">
             I built FinLens to turn free public banking data (FDIC Call Reports, failure
             history, FRED macro series) into an early-warning read on bank distress, and to
-            show the full data-engineering and machine-learning build behind it. Everything
-            here runs on real public data. Nothing is fabricated.
+            show the full data-engineering and machine-learning build behind it.
         </p>
     </div>
     """,
@@ -237,8 +236,8 @@ with left:
 with right:
     section_heading(
         "What is live right now",
-        "These surfaces show real public data and runtime status. Where a source is not "
-        "wired up, I say so rather than filling the gap with invented values.",
+        "These surfaces show live public data and runtime status. Where a source is not "
+        "wired up yet, the UI labels it plainly instead of guessing.",
     )
     styled_table(_data_summary())
 

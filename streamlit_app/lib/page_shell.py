@@ -198,8 +198,8 @@ def page_footer() -> None:
     st.markdown(
         '<div class="site-footer">'
         '<span class="site-footer-brand">FinLens</span>'
-        '<span class="site-footer-note">Public FDIC &amp; FRED data · $0 infrastructure'
-        ' · real data only, nothing fabricated</span>'
+        '<span class="site-footer-note">Public FDIC &amp; FRED data · open-source stack'
+        '</span>'
         '<a class="site-footer-link" href="https://surya.vaddhiparthy.com" '
         'target="_blank">Built by Surya Vaddhiparthy</a>'
         '</div>',

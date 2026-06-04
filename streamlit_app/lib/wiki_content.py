@@ -7,8 +7,8 @@ ARTICLES = {'About FinLens': {'cluster': 'Orientation',
                    'summary': 'FinLens is my public-data banking stress intelligence platform. I convert four '
                               'official US banking and macroeconomic data sources into governed analytical marts and '
                               'serve them through a deliberately small business surface and a substantive technical '
-                              'surface. My goal was to demonstrate end-to-end data engineering on a problem that is '
-                              'genuinely useful instead of artificially constructed.',
+                              'surface. My goal was to demonstrate end-to-end data engineering on a real banking '
+                              'problem.',
                    'body': "I'm Surya Vaddhiparthy (M.S., Data Science), and I built and run FinLens as a "
                            'portfolio project at `https://surya.vaddhiparthy.com/finlens/`. I document the whole thing '
                            'in full at the same address.\n'

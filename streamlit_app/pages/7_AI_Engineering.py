@@ -4,7 +4,7 @@
 Every section exposes the REAL underlying artifact (max visibility, nothing hidden):
 metrics from the actual training run, drift from the real Evidently report, the live
 feature contract + monotone signs, the registry/serving state, and the governance
-docs. In-page st.tabs => no full reload per section. $0, no fabrication.
+docs. In-page st.tabs => no full reload per section.
 """
 
 import json
@@ -72,8 +72,7 @@ _AI_INTRO = {
               "The open-source, $0 production stack behind training, calibration, "
               "serving, and monitoring."),
     "quality": ("Bank-Distress Model: Model Quality",
-                "Real out-of-time performance, calibration, by-year cohorts, and drift, "
-                "no fabricated numbers."),
+                "Out-of-time performance, calibration, by-year cohorts, and drift."),
     "decisions": ("Bank-Distress Model: Model Decisions",
                   "The key modeling choices and the governance posture behind them."),
     "administration": ("Bank-Distress Model: Administration",
@@ -83,7 +82,7 @@ _AI_INTRO = {
 }
 _title, _copy = _AI_INTRO.get(section, _AI_INTRO["pipeline"])
 
-status_ribbon("Machine Learning Engineering surface, every layer visible")
+status_ribbon("Machine Learning Engineering")
 page_intro("AI Engineering", _title, _copy)
 
 if section == "pipeline":  # AI Pipeline (mirror of Live Pipeline)
@@ -128,7 +127,7 @@ elif section == "stack":  # AI Stack (mirror of Engineering Stack)
     ]))
 
 elif section == "quality":  # Model Quality (mirror of Data Quality)
-    section_heading("Out-of-time performance", "Real metrics, PR-AUC is the rare-event headline; ROC is comparability-only.")
+    section_heading("Out-of-time performance", "PR-AUC is the rare-event headline; ROC is comparability-only.")
     if not m:
         st.info("Train the model to populate metrics.")
     else:
@@ -150,7 +149,7 @@ elif section == "quality":  # Model Quality (mirror of Data Quality)
         )
         by_year = m.get("by_year_calibrated", {})
         if by_year:
-            section_heading("By year", "Crisis vs calm cohorts, PR-AUC is honestly low when failures are absent.")
+            section_heading("By year", "Crisis vs calm cohorts; PR-AUC is low when a year has no failures.")
 
             def _metric_or_na(val: object) -> object:
                 if val is None or isinstance(val, str):
@@ -189,8 +188,8 @@ elif section == "decisions":  # Model Decisions (mirror of Architecture Decision
         "- **Monotone constraints** for regulator-defensible, perverse-free relationships\n"
         "- **Calibration** (isotonic) so served probabilities are real, not raw scores\n"
         "- **PR-AUC / recall@k** as headline (accuracy is meaningless at <1% base rate)\n"
-        "- **Aligned with SR 11-7 model-risk principles** (non-binding here); honest "
-        "fairness = cross-segment equity, no protected class for an institution-level model"
+        "- **Aligned with SR 11-7 model-risk principles** (non-binding here); fairness "
+        "scoped as cross-segment equity, no protected class for an institution-level model"
     )
     if mc.exists():
         with st.expander("Full model card"):
