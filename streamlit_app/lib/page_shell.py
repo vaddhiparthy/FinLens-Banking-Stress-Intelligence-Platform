@@ -73,6 +73,7 @@ def _technical_sections() -> list[tuple[str, str]]:
 def _ai_sections() -> list[tuple[str, str]]:
     return [
         ("pipeline", "AI Pipeline"),
+        ("notebook", "Notebook"),
         ("contracts", "Feature Contracts"),
         ("stack", "AI Stack"),
         ("quality", "Model Quality"),

@@ -80,6 +80,9 @@ _AI_INTRO = {
     "pipeline": ("Bank-Distress Model: Pipeline",
                  "How the discrete-time hazard model is trained and scored on the FDIC "
                  "bank-quarter panel, end to end, with the real code at each step."),
+    "notebook": ("Bank-Distress Model: Analysis Notebook",
+                 "The actual Jupyter notebook I built this with, executed on the real "
+                 "panel: EDA, the out-of-time evaluation, calibration, and SHAP."),
     "contracts": ("Bank-Distress Model: Feature Contracts",
                   "The model's input contract: every feature, its enforced monotone "
                   "direction, its measured importance, and how the features correlate."),
@@ -124,6 +127,27 @@ if section == "pipeline":
     _show_code(labels.attach_labels, "Leakage-safe labelling (labels.attach_labels)", expanded=True)
     _show_code(splits.final_holdout_split, "Out-of-time split with embargo (splits.final_holdout_split)")
     _show_code(train._fit_calibrated, "Model + probability calibration (train._fit_calibrated)")
+
+elif section == "notebook":
+    import streamlit.components.v1 as components
+
+    nb_html = PROJECT_ROOT / "ml" / "notebooks" / "bank_distress_analysis.html"
+    nb_src = PROJECT_ROOT / "ml" / "notebooks" / "bank_distress_analysis.py"
+    section_heading(
+        "Analysis notebook",
+        "Executed on the real FDIC panel. Same protocol as the shipped metrics.",
+    )
+    if nb_html.exists():
+        components.html(nb_html.read_text(encoding="utf-8"), height=900, scrolling=True)
+        st.caption(
+            "Rendered from the executed notebook "
+            "(ml/notebooks/bank_distress_analysis.ipynb). Re-run with jupytext + nbconvert."
+        )
+        if nb_src.exists():
+            with st.expander("Notebook source (jupytext)"):
+                st.code(nb_src.read_text(encoding="utf-8"), language="python")
+    else:
+        st.info("Run ml/notebooks build (jupytext + nbconvert) to render the notebook.")
 
 elif section == "contracts":
     from finlens_ml import features
