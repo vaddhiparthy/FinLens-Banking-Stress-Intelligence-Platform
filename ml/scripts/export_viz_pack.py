@@ -54,7 +54,10 @@ def _oot_predictions():
     X = df[FEATURE_COLUMNS].astype(float)
     y = df["label_4"].to_numpy()
     obs = df["obs_qord"]
-    tr_idx, te_idx = final_holdout_split(obs, horizon_q=4, holdout_quarters=EVAL_HOLDOUT_QUARTERS)
+    tr_idx, te_idx = final_holdout_split(
+        obs, horizon_q=4, holdout_quarters=EVAL_HOLDOUT_QUARTERS,
+        reporting_lag_q=get_ml_settings().reporting_lag_q,
+    )
     X_tr, y_tr = X.iloc[tr_idx], y[tr_idx]
     X_te, y_te = X.iloc[te_idx], y[te_idx]
     year_te = (obs.iloc[te_idx].to_numpy() // 4).astype(int)

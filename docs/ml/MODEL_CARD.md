@@ -20,8 +20,8 @@ Lead metric is **PR-AUC** (rare-event); ROC-AUC is comparability-only; accuracy 
 
 | Model | PR-AUC | ROC-AUC | recall@200 | Brier |
 |---|---|---|---|---|
-| Calibrated LGBM | **0.1563** | 0.8293 | 0.424 | 0.00049 |
-| Logit benchmark | 0.1093 | 0.9192 | 0.394 | 0.00826 |
+| Calibrated LGBM | **0.1939** | 0.8167 | 0.424 | 0.00048 |
+| Logit benchmark | 0.1117 | 0.9196 | 0.394 | 0.00827 |
 
 The LGBM beats the regulatory logit benchmark on PR-AUC (the metric that matters at a
 <1% base rate) and on recall@k. The logit's ROC-AUC is marginally higher; ROC-AUC is
@@ -29,20 +29,20 @@ deprioritized here and shown only for comparability.
 
 ### Calibration
 All-rows Brier is dominated by true negatives, so we also report ECE and the flagged
-(top-decile) calibration: ECE=1.67e-04; in the top-scoring
-decile the model predicts 0.0046 vs observed
-0.0034.
+(top-decile) calibration: ECE=1.65e-04; in the top-scoring
+decile the model predicts 0.0044 vs observed
+0.0032.
 
 ### Performance by year (calibrated)
 |   year |     n |   n_positive |   pr_auc |   roc_auc |
 |-------:|------:|-------------:|---------:|----------:|
-|   2019 | 20455 |           19 |   0.4473 |    0.996  |
-|   2020 | 19901 |            7 |   0.4906 |    0.9998 |
+|   2019 | 20455 |           19 |   0.4206 |    0.9954 |
+|   2020 | 19901 |            7 |   0.6613 |    0.9998 |
 |   2021 | 19226 |            0 | nan      |  nan      |
-|   2022 | 18762 |           14 |   0.0009 |    0.5594 |
-|   2023 | 18377 |            9 |   0.0688 |    0.8266 |
-|   2024 | 17868 |            9 |   0.0006 |    0.5811 |
-|   2025 |  4354 |            8 |   0.4604 |    0.941  |
+|   2022 | 18762 |           14 |   0.0007 |    0.392  |
+|   2023 | 18377 |            9 |   0.0784 |    0.8113 |
+|   2024 | 17868 |            9 |   0.0008 |    0.6637 |
+|   2025 |  4354 |            8 |   0.5801 |    0.9599 |
 
 In calm years with few or zero failures, PR-AUC is low or undefined — the expected
 behavior of a rare-event model.
@@ -113,9 +113,9 @@ and are deliberately not computed. We instead verify the model performs across s
 - Rare-event metrics are noisy in calm cohorts; judge on failure-containing windows.
 
 ## Governance
-Aligned with the **principles** of SR 11-7 (Fed/OCC, 2011 — the established model-risk
-management guidance; primary source:
-https://www.federalreserve.gov/supervisionreg/srletters/sr1107.htm) — **non-binding**
-here; this is a portfolio demonstration, not a regulated production model. The
-substantive validation rests on
+Aligned with the **principles** of SR 26-2 (Fed/OCC/FDIC, Apr 17 2026; supersedes
+SR 11-7 + SR 21-8; primary source:
+https://www.federalreserve.gov/supervisionreg/srletters/SR2602.htm) — **non-binding**
+guidance; a GBM is in-scope (non-generative, non-agentic AI). This is a portfolio
+demonstration, not a regulated production model. The substantive validation rests on
 the SR 11-7 three pillars regardless (see the validation report).

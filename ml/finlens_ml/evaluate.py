@@ -70,6 +70,72 @@ def evaluate(y_true: np.ndarray, y_score: np.ndarray, k: int = 200) -> EvalMetri
     )
 
 
+def bootstrap_metrics(
+    y_true: np.ndarray, y_score: np.ndarray, k: int = 200, n_boot: int = 2000, seed: int = 42
+) -> dict:
+    """Stratified bootstrap 95% CIs. With ~66 positives a point estimate is not a
+    defensible result, so PR-AUC / ROC-AUC / recall@k are reported with intervals."""
+    y_true = np.asarray(y_true).astype(int)
+    y_score = np.asarray(y_score, dtype=float)
+    n = len(y_true)
+    rng = np.random.default_rng(seed)
+    aps: list[float] = []
+    rocs: list[float] = []
+    recs: list[float] = []
+    for _ in range(n_boot):
+        idx = rng.integers(0, n, n)
+        yt, ys = y_true[idx], y_score[idx]
+        if yt.sum() == 0 or yt.sum() == len(yt):
+            continue
+        aps.append(float(average_precision_score(yt, ys)))
+        rocs.append(float(roc_auc_score(yt, ys)))
+        recs.append(recall_precision_at_k(yt, ys, k)[0])
+
+    def _ci(a: list[float]) -> list[float]:
+        arr = np.asarray(a, dtype=float)
+        if arr.size == 0:
+            return [float("nan"), float("nan")]
+        return [float(np.percentile(arr, 2.5)), float(np.percentile(arr, 97.5))]
+
+    return {
+        "n_boot_effective": len(aps),
+        "pr_auc_ci": _ci(aps),
+        "roc_auc_ci": _ci(rocs),
+        "recall_at_k_ci": _ci(recs),
+    }
+
+
+def paired_bootstrap_ap_diff(
+    y_true: np.ndarray, score_a: np.ndarray, score_b: np.ndarray,
+    n_boot: int = 2000, seed: int = 42,
+) -> dict:
+    """Paired bootstrap of (AP_a - AP_b): is model A's PR-AUC edge over benchmark B
+    real, or inside the noise band? Reports the CI of the difference and P(A>B)."""
+    y_true = np.asarray(y_true).astype(int)
+    a = np.asarray(score_a, dtype=float)
+    b = np.asarray(score_b, dtype=float)
+    n = len(y_true)
+    rng = np.random.default_rng(seed)
+    diffs: list[float] = []
+    for _ in range(n_boot):
+        idx = rng.integers(0, n, n)
+        yt = y_true[idx]
+        if yt.sum() == 0 or yt.sum() == len(yt):
+            continue
+        diffs.append(
+            float(average_precision_score(yt, a[idx]) - average_precision_score(yt, b[idx]))
+        )
+    arr = np.asarray(diffs, dtype=float)
+    if arr.size == 0:
+        return {"ap_diff_median": float("nan"), "ap_diff_ci": [float("nan"), float("nan")],
+                "prob_a_beats_b": float("nan")}
+    return {
+        "ap_diff_median": float(np.median(arr)),
+        "ap_diff_ci": [float(np.percentile(arr, 2.5)), float(np.percentile(arr, 97.5))],
+        "prob_a_beats_b": float((arr > 0).mean()),
+    }
+
+
 def calibration_report(y_true: np.ndarray, y_score: np.ndarray, n_bins: int = 10) -> dict:
     """Honest calibration measurement for a rare-event model. The all-rows Brier is
     dominated by true negatives and nearly uninformative, so we also report ECE

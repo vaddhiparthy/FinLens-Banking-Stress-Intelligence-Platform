@@ -219,6 +219,13 @@ def generate_validation_report(horizon_q: int = 4) -> Path:
     settings = get_ml_settings()
     metrics = json.loads((settings.artifact_dir / f"metrics_h{horizon_q}.json").read_text())
     t = metrics["oot_test"]["calibrated_lgbm"]
+    lg = metrics["oot_test"]["logit_benchmark"]
+    ci = metrics.get("oot_test_ci", {})
+    prci = ci.get("pr_auc_ci", [float("nan"), float("nan")])
+    rci = ci.get("recall_at_k_ci", [float("nan"), float("nan")])
+    diff = metrics.get("lgbm_vs_logit_ap_diff", {})
+    dci = diff.get("ap_diff_ci", [float("nan"), float("nan")])
+    rb = metrics.get("rolling_backtest", {}).get("aggregate", {})
     report = f"""# Validation Report — FinLens Bank-Distress Model (SR 11-7 three pillars)
 
 *Effective-challenge package. Metrics computed from real out-of-time evaluation.*
@@ -229,14 +236,21 @@ def generate_validation_report(horizon_q: int = 4) -> Path:
 - **Features:** {len(FEATURE_COLUMNS)} CAMELS-aligned ratios with economically-signed **monotone
   constraints** (more capital -> lower risk; higher noncurrent/NCO -> higher risk),
   preventing perverse relationships a validator would reject.
-- **Benchmark / effective challenge:** penalized logistic regression (the SCOR/SEER
-  regulatory reference). The GBM must and does beat it on the rare-event metric
-  (PR-AUC {t['pr_auc']:.4f} vs {metrics['oot_test']['logit_benchmark']['pr_auc']:.4f}).
-- **No leakage:** rolling-origin out-of-time split with a reporting-lag embargo
-  (train q + H < test start), enforced at runtime (assert_no_temporal_overlap), grouped
-  by event window; ALFRED-vintage macro committed (no latest-vintage look-ahead);
-  labels strictly forward-looking with merger/end-of-data censoring. OOT ROC-AUC
-  {t['roc_auc']:.4f} is below the >0.98 leakage-suspicion threshold.
+- **Benchmark / effective challenge:** penalized logistic regression, a standard
+  regulatory-style linear reference. The GBM beats it on the rare-event metric
+  (PR-AUC {t['pr_auc']:.4f} vs {lg['pr_auc']:.4f}); because that margin sits on
+  {metrics['test_positives']} positives it is reported with a paired bootstrap (see §3),
+  not as a bare point comparison.
+- **No leakage:** the embargo guarantees a training row's label window (q, q+H] ends
+  strictly before the test start (train q <= test_start - H - reporting_lag - 1),
+  enforced at runtime (`assert_no_temporal_overlap`); labels are strictly forward-looking
+  with merger / end-of-data censoring. OOT ROC-AUC {t['roc_auc']:.4f} is well below the
+  >0.98 leakage-suspicion threshold.
+- **Honest data caveats:** the bank-level model does **not** join macro series (FRED is
+  business-surface context, not a model input), so no macro-vintage question arises here.
+  FDIC `/financials` returns currently-restated values, not the originally-filed Call
+  Report; feature values are as-served, and originally-filed FFIEC data is the path to
+  strict point-in-time feature integrity.
 
 ## 2. Ongoing monitoring (plan)
 - **Drift:** Evidently data-drift + prediction-drift on inputs/scores each quarter
@@ -252,13 +266,29 @@ def generate_validation_report(horizon_q: int = 4) -> Path:
   reason codes) for outcomes analysis and prediction-drift on real traffic.
 
 ## 3. Outcomes analysis (back-testing)
-- Out-of-time backtest on {metrics['n_test']:,} bank-quarters / {metrics['test_positives']} real
+- **Headline holdout:** {metrics['n_test']:,} bank-quarters / {metrics['test_positives']} real
   failures (2019-2026, includes the 2023 SVB/Signature/First-Republic cluster).
+- **Uncertainty (the point estimates are not the result):** 95% stratified-bootstrap CIs —
+  PR-AUC [{prci[0]:.3f}, {prci[1]:.3f}], recall@k [{rci[0]:.3f}, {rci[1]:.3f}]. The PR-AUC
+  edge over the logit is a paired bootstrap: difference 95% CI
+  [{dci[0]:+.3f}, {dci[1]:+.3f}], P(LGBM > logit) = {diff.get('prob_a_beats_b', float('nan')):.1%}.
+- **Multi-origin rolling backtest:** {rb.get('n_folds', 0)} embargoed out-of-time folds,
+  PR-AUC mean {rb.get('pr_auc_mean')} (std {rb.get('pr_auc_std')}, range
+  {rb.get('pr_auc_min')}-{rb.get('pr_auc_max')}); strong in failure-containing windows,
+  near-floor in calm years.
 - Reported by-year cohorts (crisis vs calm) — the model is not a single-period fit.
-- Calibration verified on the OOT set (ECE + top-decile observed-vs-predicted), not
-  just an uninformative all-rows Brier.
-- Served-model provenance recorded (trained on all data with the OOT-validated tree
-  count); reproducible (fixed seed, pinned feature set, $0 CI import-guard).
+- Calibration verified on the OOT set (ECE + top-decile observed-vs-predicted), not just
+  an uninformative all-rows Brier.
+- Served-model provenance recorded; reproducible (fixed seed, pinned feature set, $0 CI
+  import-guard).
+
+## Known gaps (honest, on the path to production)
+- Hyperparameters are not yet tuned via time-series CV; the served tree count comes from a
+  single eval split's early stopping. Tuning across the rolling folds is the next step.
+- Benchmark ladder is a single penalized logit; an unconstrained GBM and a discrete-time
+  hazard logit are planned challengers.
+- Competing risks (merger vs failure) are handled by censoring, not a formal Fine-Gray /
+  cause-specific model; a sensitivity analysis is the planned check.
 
 ## Effective challenge
 This report + the benchmark comparison + the adversarial phase reviews constitute the

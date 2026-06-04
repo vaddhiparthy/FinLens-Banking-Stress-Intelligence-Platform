@@ -37,11 +37,13 @@ def rolling_origin_folds(
     min_train_quarters: int = 8,
     step: int = 1,
     n_test_quarters: int = 1,
+    reporting_lag_q: int = 0,
 ) -> list[OOTFold]:
     """Generate expanding-window out-of-time folds keyed by quarter ordinal.
 
     ``obs_qord`` is the per-row observation-quarter ordinal (year*4 + quarter-1).
-    Each fold: train where q <= t - horizon - 1 (embargo), test where t <= q < t+n.
+    Each fold: train where q <= t - horizon - reporting_lag - 1 (embargo), test where
+    t <= q < t+n.
     """
     q = pd.Series(obs_qord).reset_index(drop=True)
     quarters = np.sort(q.dropna().unique())
@@ -50,10 +52,10 @@ def rolling_origin_folds(
     folds: list[OOTFold] = []
     first_q = quarters[0]
     # earliest test quarter that leaves room for min_train_quarters of embargoed train
-    earliest_test = first_q + min_train_quarters + horizon_q
+    earliest_test = first_q + min_train_quarters + horizon_q + reporting_lag_q
     test_candidates = [t for t in quarters if t >= earliest_test]
     for t in test_candidates[::step]:
-        train_cutoff = t - horizon_q - 1
+        train_cutoff = t - horizon_q - reporting_lag_q - 1
         train_idx = q.index[(q <= train_cutoff)].to_numpy()
         test_idx = q.index[(q >= t) & (q < t + n_test_quarters)].to_numpy()
         if len(train_idx) == 0 or len(test_idx) == 0:
@@ -66,16 +68,18 @@ def rolling_origin_folds(
 
 
 def final_holdout_split(
-    obs_qord: pd.Series, *, horizon_q: int, holdout_quarters: int = 8
+    obs_qord: pd.Series, *, horizon_q: int, holdout_quarters: int = 8, reporting_lag_q: int = 0
 ) -> tuple[np.ndarray, np.ndarray]:
     """A single train/test cut: last ``holdout_quarters`` are the out-of-time test set,
-    with the horizon embargo applied to the train side."""
+    with the horizon embargo (plus the call-report reporting lag) applied to the train
+    side. ``reporting_lag_q`` adds quarters to the embargo to reflect that Call Reports
+    file after quarter-end, so a training row's data is genuinely available as-of."""
     q = pd.Series(obs_qord).reset_index(drop=True)
     quarters = np.sort(q.dropna().unique())
     if len(quarters) <= holdout_quarters:
         raise ValueError("not enough quarters for the requested holdout")
     test_start = quarters[-holdout_quarters]
-    train_cutoff = test_start - horizon_q - 1
+    train_cutoff = test_start - horizon_q - reporting_lag_q - 1
     train_idx = q.index[q <= train_cutoff].to_numpy()
     test_idx = q.index[q >= test_start].to_numpy()
     assert_no_temporal_overlap(q, train_idx, test_idx, horizon_q)

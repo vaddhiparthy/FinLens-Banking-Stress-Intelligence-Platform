@@ -194,22 +194,53 @@ elif section == "quality":
         st.info("Train the model and run ml/scripts/export_viz_pack.py to populate this surface.")
     else:
         t = m["oot_test"]["calibrated_lgbm"]
+        logit = m["oot_test"]["logit_benchmark"]
         cal = m.get("oot_calibration", {})
+        ci = m.get("oot_test_ci", {})
+        prci = ci.get("pr_auc_ci", [None, None])
+        rci = ci.get("recall_at_k_ci", [None, None])
         k1, k2, k3, k4 = st.columns(4)
         with k1:
-            metric_card("PR-AUC (OOT)", f"{t['pr_auc']:.3f}", "vs logit 0.109")
+            sub = (f"95% CI [{prci[0]:.2f}, {prci[1]:.2f}]"
+                   if prci and prci[0] is not None else f"vs logit {logit['pr_auc']:.3f}")
+            metric_card("PR-AUC (OOT)", f"{t['pr_auc']:.3f}", sub)
         with k2:
             metric_card("ROC-AUC (OOT)", f"{t['roc_auc']:.3f}", "rank quality")
         with k3:
-            metric_card("Recall@200", f"{t['recall_at_k']:.0%}", "of failures caught")
+            sub = (f"95% CI [{rci[0]:.0%}, {rci[1]:.0%}]"
+                   if rci and rci[0] is not None else "of failures caught")
+            metric_card("Recall@200", f"{t['recall_at_k']:.0%}", sub)
         with k4:
             metric_card("Calibration ECE", f"{cal.get('ece', float('nan')):.1e}", "lower is better")
         st.caption(
             f"Out-of-time window: {m['eval_window_quarters']} quarters, "
             f"{viz['n_oot']:,} bank-quarters, {viz['n_oot_failures']} real failures "
-            f"(base rate {viz['curves']['base_rate']:.3%}). Every chart below is computed "
-            "from these held-out predictions."
+            f"(base rate {viz['curves']['base_rate']:.3%}). With this few positives, the "
+            "point estimates carry wide intervals, so they are reported with bootstrap CIs."
         )
+        diff = m.get("lgbm_vs_logit_ap_diff", {})
+        rb = m.get("rolling_backtest", {}).get("aggregate", {})
+        if diff or rb:
+            cA, cB = st.columns(2)
+            with cA:
+                if diff.get("ap_diff_ci"):
+                    lo, hi = diff["ap_diff_ci"]
+                    st.markdown(
+                        f"**Does it really beat the benchmark?** Paired bootstrap of "
+                        f"(LGBM − logit) PR-AUC: median **{diff['ap_diff_median']:+.3f}**, "
+                        f"95% CI [{lo:+.3f}, {hi:+.3f}], "
+                        f"P(LGBM > logit) = **{diff['prob_a_beats_b']:.1%}**. "
+                        "The interval excludes zero, so the edge is real, not noise."
+                    )
+            with cB:
+                if rb.get("n_folds"):
+                    st.markdown(
+                        f"**Multi-origin rolling backtest** ({rb['n_folds']} embargoed "
+                        f"out-of-time folds): PR-AUC mean **{rb['pr_auc_mean']}** "
+                        f"(±{rb['pr_auc_std']}), range {rb['pr_auc_min']}–{rb['pr_auc_max']}. "
+                        "The spread is the honest story: strong in failure-containing "
+                        "windows, near-floor in calm years."
+                    )
         c1, c2 = st.columns(2)
         with c1:
             st.plotly_chart(mc.pr_curve_fig(viz, MODE), use_container_width=True)

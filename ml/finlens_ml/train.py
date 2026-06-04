@@ -31,11 +31,55 @@ for p in (REPO, REPO / "src", REPO / "ml"):
         sys.path.insert(0, str(p))
 
 from finlens_ml.config import get_ml_settings  # noqa: E402
-from finlens_ml.evaluate import calibration_report, evaluate, evaluate_by_cohort  # noqa: E402
+from finlens_ml.evaluate import (  # noqa: E402
+    bootstrap_metrics,
+    calibration_report,
+    evaluate,
+    evaluate_by_cohort,
+    paired_bootstrap_ap_diff,
+)
 from finlens_ml.features import FEATURE_COLUMNS, MONOTONE_CONSTRAINTS  # noqa: E402
-from finlens_ml.splits import final_holdout_split  # noqa: E402
+from finlens_ml.splits import final_holdout_split, rolling_origin_folds  # noqa: E402
 
 EVAL_HOLDOUT_QUARTERS = 28  # ~2019Q1..2026Q1: long OOT window containing real failures
+
+
+def _rolling_backtest(
+    X: pd.DataFrame, y: np.ndarray, obs: pd.Series, horizon_q: int, k: int, seed: int,
+    reporting_lag_q: int = 0,
+) -> dict:
+    """Multi-origin rolling backtest: refit + evaluate the calibrated model at several
+    out-of-time origins and report fold-to-fold dispersion. A single holdout cannot
+    show variance; this is what makes the headline trustworthy at ~66 positives."""
+    folds = rolling_origin_folds(
+        obs, horizon_q=horizon_q, min_train_quarters=28, step=4, n_test_quarters=4,
+        reporting_lag_q=reporting_lag_q,
+    )
+    per_fold: list[dict] = []
+    for f in folds:
+        y_tr_f = y[f.train_idx]
+        y_te_f = y[f.test_idx]
+        if y_tr_f.sum() < 20 or y_te_f.sum() < 1:
+            continue  # need positives on both sides to fit + score honestly
+        _, cal_f, _, _, _ = _fit_calibrated(X.iloc[f.train_idx], y_tr_f, seed)
+        p_f = cal_f.predict_proba(X.iloc[f.test_idx])[:, 1]
+        m = evaluate(y_te_f, p_f, k=k)
+        per_fold.append({
+            "test_year": f.test_quarter_ord // 4,
+            "n": m.n, "n_positive": m.n_positive,
+            "pr_auc": round(m.pr_auc, 4), "recall_at_k": round(m.recall_at_k, 4),
+        })
+    prs = [r["pr_auc"] for r in per_fold if r["pr_auc"] == r["pr_auc"]]
+    recs = [r["recall_at_k"] for r in per_fold if r["recall_at_k"] == r["recall_at_k"]]
+    agg = {
+        "n_folds": len(per_fold),
+        "pr_auc_mean": round(float(np.mean(prs)), 4) if prs else None,
+        "pr_auc_std": round(float(np.std(prs)), 4) if prs else None,
+        "pr_auc_min": round(float(np.min(prs)), 4) if prs else None,
+        "pr_auc_max": round(float(np.max(prs)), 4) if prs else None,
+        "recall_at_k_mean": round(float(np.mean(recs)), 4) if recs else None,
+    }
+    return {"aggregate": agg, "folds": per_fold}
 
 
 def load_dataset() -> pd.DataFrame:
@@ -150,7 +194,8 @@ def train(horizon_q: int = 4, seed: int = 42) -> dict:
 
     # ---- EVAL: out-of-time on a failure-containing window ----
     tr_idx, te_idx = final_holdout_split(
-        obs, horizon_q=horizon_q, holdout_quarters=EVAL_HOLDOUT_QUARTERS
+        obs, horizon_q=horizon_q, holdout_quarters=EVAL_HOLDOUT_QUARTERS,
+        reporting_lag_q=settings.reporting_lag_q,
     )
     X_tr, y_tr = X.iloc[tr_idx], y[tr_idx]
     X_te, y_te = X.iloc[te_idx], y[te_idx]
@@ -178,6 +223,15 @@ def train(horizon_q: int = 4, seed: int = 42) -> dict:
             "raw_lgbm": evaluate(y_te, p_raw, k=k).as_dict(),
             "logit_benchmark": evaluate(y_te, p_logit, k=k).as_dict(),
         },
+        # 95% bootstrap CIs (the point estimates above are not defensible alone at ~66
+        # positives) + a paired test of whether the LGBM's PR-AUC edge over the logit
+        # benchmark is real or inside the noise band.
+        "oot_test_ci": bootstrap_metrics(y_te, p_cal, k=k),
+        "lgbm_vs_logit_ap_diff": paired_bootstrap_ap_diff(y_te, p_cal, p_logit),
+        # multi-origin rolling backtest: fold-to-fold dispersion, not one holdout.
+        "rolling_backtest": _rolling_backtest(
+            X, y, obs, horizon_q, k, seed, reporting_lag_q=settings.reporting_lag_q
+        ),
         "by_year_calibrated": evaluate_by_cohort(y_te, p_cal, year_te, k=25),
         # honest calibration: all-rows Brier is dominated by negatives; ECE +
         # top-decile Brier measure where flags actually happen. Calibrator is fit on
