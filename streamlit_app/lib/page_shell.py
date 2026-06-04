@@ -78,7 +78,7 @@ def _ai_sections() -> list[tuple[str, str]]:
         ("quality", "Model Quality"),
         ("decisions", "Model Decisions"),
         ("administration", "Administration"),
-        ("wiki", "AI Wiki"),
+        ("wiki", "Wiki"),
     ]
 
 
