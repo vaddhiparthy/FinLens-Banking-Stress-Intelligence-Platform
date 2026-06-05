@@ -17,7 +17,7 @@ pytest.importorskip("streamlit")
 
 PAGES = [
     "streamlit_app/app.py",
-    "streamlit_app/pages/3_Predictive_Analytics.py",
+    "streamlit_app/pages/3_Early_Warning.py",
     "streamlit_app/pages/7_AI_Engineering.py",
 ]
 

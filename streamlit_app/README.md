@@ -8,7 +8,7 @@ The active Streamlit product is organized into three surfaces:
   - `Macro Transmission`
   - `Predictive Analytics` (live, model-backed: insert a bank, hold out a real failure, what-if)
   - `Wiki`
-- data engineering surface (`pages/4_Under_The_Hood.py`):
+- data engineering surface (`pages/4_Data_Engineering.py`):
   - `Live Pipeline`
   - `Source Contracts`
   - `Engineering Stack`

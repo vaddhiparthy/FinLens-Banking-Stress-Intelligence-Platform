@@ -17,16 +17,16 @@ def _page_path(page_key: str) -> str:
     page_map = {
         "home": "app.py",
         "overview": "pages/0_Stress_Pulse.py",
-        "banks": "pages/1_Banks.py",
-        "metrics": "pages/2_Metrics.py",
-        "predictive": "pages/3_Predictive_Analytics.py",
+        "banks": "pages/1_Failure_Forensics.py",
+        "metrics": "pages/2_Macro_Transmission.py",
+        "predictive": "pages/3_Early_Warning.py",
         "wiki": "pages/6_Wiki.py",
-        "pipeline": "pages/4_Under_The_Hood.py",
-        "status": "pages/4_Under_The_Hood.py",
-        "classification": "pages/4_Under_The_Hood.py",
-        "implementation": "pages/4_Under_The_Hood.py",
-        "administration": "pages/4_Under_The_Hood.py",
-        "decisions": "pages/4_Under_The_Hood.py",
+        "pipeline": "pages/4_Data_Engineering.py",
+        "status": "pages/4_Data_Engineering.py",
+        "classification": "pages/4_Data_Engineering.py",
+        "implementation": "pages/4_Data_Engineering.py",
+        "administration": "pages/4_Data_Engineering.py",
+        "decisions": "pages/4_Data_Engineering.py",
     }
     return page_map[page_key]
 
@@ -34,11 +34,11 @@ def _page_path(page_key: str) -> str:
 def _business_pages() -> list[tuple[str, str, str, str]]:
     pages = [
         ("overview", "pages/0_Stress_Pulse.py", "Stress Pulse", ":material/space_dashboard:"),
-        ("banks", "pages/1_Banks.py", "Failure Forensics", ":material/account_balance:"),
-        ("metrics", "pages/2_Metrics.py", "Macro Transmission", ":material/show_chart:"),
+        ("banks", "pages/1_Failure_Forensics.py", "Failure Forensics", ":material/account_balance:"),
+        ("metrics", "pages/2_Macro_Transmission.py", "Macro Transmission", ":material/show_chart:"),
         (
             "predictive",
-            "pages/3_Predictive_Analytics.py",
+            "pages/3_Early_Warning.py",
             "Early Warning",
             ":material/neurology:",
         ),
@@ -187,7 +187,7 @@ def _render_sidebar_sections(active_page: str, mode: str) -> None:
             disabled=current == key,
         ):
             st.session_state["technical_section"] = key
-            st.switch_page("pages/4_Under_The_Hood.py")
+            st.switch_page("pages/4_Data_Engineering.py")
 
 def status_ribbon(text: str) -> None:
     st.markdown(f'<div class="status-ribbon">{text}</div>', unsafe_allow_html=True)
@@ -229,7 +229,7 @@ def page_intro(eyebrow: str, title: str, copy: str, wiki_slug: str | None = None
 
 _SURFACES = [
     (BUSINESS_PAGE, "Business", "pages/0_Stress_Pulse.py"),
-    (TECHNICAL_PAGE, "Data Engineering", "pages/4_Under_The_Hood.py"),
+    (TECHNICAL_PAGE, "Data Engineering", "pages/4_Data_Engineering.py"),
     (AI_PAGE, "AI Engineering", "pages/7_AI_Engineering.py"),
 ]
 
@@ -249,7 +249,7 @@ def _navigate_section(mode: str, key: str) -> None:
             st.switch_page(_page_path("wiki"))
         else:
             st.session_state["technical_section"] = key
-            st.switch_page("pages/4_Under_The_Hood.py")
+            st.switch_page("pages/4_Data_Engineering.py")
     else:  # business, each section is its own page
         st.switch_page(_page_path(key))
 

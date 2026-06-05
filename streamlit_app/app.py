@@ -196,7 +196,7 @@ with ent_d:
     )
     if st.button("Enter Data Engineering", key="home_open_de", use_container_width=True):
         st.session_state["technical_section"] = "pipeline"
-        st.switch_page("pages/4_Under_The_Hood.py")
+        st.switch_page("pages/4_Data_Engineering.py")
 with ent_a:
     st.markdown(
         '<div class="surface-card surface-card-a">'
