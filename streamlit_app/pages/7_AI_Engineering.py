@@ -357,11 +357,13 @@ elif section == "quality":
                 for dgp, d in bd.items():
                     c = d.get("coverage", {})
                     cells.append(f"{dgp}: " + ", ".join(f"{k} {v:.0%}" for k, v in c.items()))
+                rc = cov.get("recall_jeffreys_coverage")
+                recall_clause = (f" recall@k Jeffreys coverage {rc:.0%}." if isinstance(rc, (int, float))
+                                 else " " + cov.get("recall_note", ""))
                 st.caption(
                     f"Chosen interval method: **{cov['chosen_method']}** (nominal "
                     f"{cov.get('nominal', 0.95):.0%}). Measured coverage under external-truth "
-                    f"DGPs — " + " · ".join(cells) + ". recall@k Jeffreys coverage "
-                    f"{cov.get('recall_jeffreys_coverage')}."
+                    f"DGPs — " + " · ".join(cells) + "." + recall_clause
                 )
         c1, c2 = st.columns(2)
         with c1:
