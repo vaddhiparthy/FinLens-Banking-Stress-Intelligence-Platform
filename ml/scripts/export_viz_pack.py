@@ -125,11 +125,19 @@ def _ablation_pack(metrics: dict) -> dict:
               ("Tuned LGBM", "heavy_tune", "shipped"),
               ("Bagged LGBM", "bagged", "did_not_ship"),
               ("Stacked", "stack_logit", "did_not_ship")]
+        served = metrics["oot_test"]["calibrated_lgbm"]
+        served_ci = metrics.get("oot_test_ci", {}).get("pr_auc_ci")
         for label, key, status in nm:
             if key in r:
                 d = r[key]
-                rungs.append({"name": label, "ap_point": round(d["pr_auc"], 4), "ap_ci": d["ci"],
-                              "recall_jeffreys": _jeffreys(d.get("recall_at_k", 0), n_pos),
+                # the shipped rung IS the served model: use its committed metrics, not
+                # the experiment's separate fit, so it matches the headline exactly.
+                if status == "shipped":
+                    ap, ci, rk = round(served["pr_auc"], 4), served_ci, served.get("recall_at_k", 0)
+                else:
+                    ap, ci, rk = round(d["pr_auc"], 4), d["ci"], d.get("recall_at_k", 0)
+                rungs.append({"name": label, "ap_point": ap, "ap_ci": ci,
+                              "recall_jeffreys": _jeffreys(rk, n_pos),
                               "p_better_vs_shipped": "descriptive", "status": status})
     u = metrics.get("challengers", {}).get("unconstrained_gbm")
     if u:

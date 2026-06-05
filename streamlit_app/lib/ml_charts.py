@@ -401,15 +401,27 @@ def ablation_forest_fig(pack: dict, mode: str | None = None) -> go.Figure:
                         name=name, showlegend=False,
                         hovertext=f"AP {pt:.3f} CI[{ci[0]:.3f},{ci[1]:.3f}] "
                                   f"P(>shipped)={r.get('p_better_vs_shipped','-')}")
-    fig.add_vline(x=0.221, line=dict(color=pal["rose"], width=1.2, dash="dash"),
-                  annotation_text="shipped 0.221", annotation_font=dict(size=9, color=pal["rose"]))
+    # shipped reference = the actual served model's OOT PR-AUC (from the pack), not a
+    # hardcoded value; label it with that number so it never contradicts the headline.
+    served = (pack.get("curves") or {}).get("pr_auc")
+    if served is not None:
+        fig.add_vline(x=served, line=dict(color=pal["rose"], width=1.2, dash="dash"),
+                      annotation_text=f"shipped {served:.3f}",
+                      annotation_font=dict(size=9, color=pal["rose"]))
     fig.update_xaxes(title="OOT PR-AUC (average precision)", range=[0, 0.35])
-    fig.add_annotation(xref="paper", yref="paper", x=0, y=1.12, showarrow=False,
+    # explanation placed ABOVE the title (separate rows, generous top margin) so the two
+    # never overprint.
+    fig.add_annotation(xref="paper", yref="paper", x=0, y=1.20, showarrow=False,
                        xanchor="left", font=dict(size=9, color=pal["text_muted"]),
                        text="CIs overlap by construction at n_pos≈66; rank by point estimate. "
                             "Unconstrained GBM (grey) scores highest but isn't shipped: "
                             "monotonicity is required for examiner-legibility.")
-    return _base(fig, pal, height=360, legend=False, title="Effective-challenge ladder")
+    fig = _base(fig, pal, height=380, legend=False)
+    fig.update_layout(margin=dict(l=10, r=12, t=72, b=14),
+                      title=dict(text="Effective-challenge ladder", x=0, xanchor="left",
+                                 y=0.99, yanchor="top",
+                                 font=dict(size=13, color=pal["text_main"])))
+    return fig
 
 
 def multi_horizon_pr_fig(pack: dict, mode: str | None = None) -> go.Figure | None:

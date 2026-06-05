@@ -34,5 +34,12 @@
   "noncurrent_health": {
     "fdic_frac_zero": 0.481,
     "pit_frac_zero": 0.148
+  },
+  "noncurrent_reconstruction": {
+    "validation_quarter": "2018Q1",
+    "category_sum_vs_official_corr": 0.968,
+    "category_sum_over_official_median_ratio": 0.403,
+    "n_banks_both_nonzero": 4334,
+    "note": "pre-2014 RC-N has no total line; the label-based category sum is validated against the 2014+ official total (1403+1407) where both exist. Rank-correct but magnitude-light, hence a 2014 boundary level shift."
   }
 }

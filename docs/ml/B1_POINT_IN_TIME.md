@@ -34,11 +34,11 @@ assets convention.)
 
 ## Real finding: FDIC's stored noncurrent is broken
 The FDIC `/financials` `P9LNLS` (noncurrent loans) used by the shipped panel is **zero
-for ~48-57% of bank-quarters every year** - implausible (a $47B-loan bank shows $1k
-noncurrent). The point-in-time RC-N values (nonaccrual + 90-days-past-due) populate it
-correctly (zero-rate ~5%) and rank-agree where FDIC has real values (corr 0.84 on the
-both-nonzero subset). This is a genuine data-quality bug in the shipped panel that B1
-exposes.
+for 48.1% of bank-quarters** - implausibly high for "no noncurrent loans." The
+point-in-time RC-N values (nonaccrual + 90-days-past-due) populate it far more fully:
+zero-rate **14.8%** (`ml/artifacts/b1_compare.json`: `fdic_frac_zero` 0.481 vs
+`pit_frac_zero` 0.148). Where FDIC does report a non-zero value the two rank-agree.
+This is a genuine data-quality gap in the shipped panel that B1 exposes.
 
 ## Why the full retrain underperforms (honest)
 Same recipe, same OOT protocol, only the data source differs
@@ -54,7 +54,8 @@ Two causes, both real:
    codes only exist 2014+. Pre-2014 capital is recoverable (RCON fallback, now ~98%
    filled), but pre-2014 noncurrent has NO total line; a label-based per-category sum
    is rank-correct (corr 0.968 vs the 2014+ official total) but **magnitude-light
-   (~0.33x)**, creating a level shift across the 2014 boundary. Since 88% of the
+   (~0.40x; `ml/artifacts/b1_compare.json` `noncurrent_reconstruction`)**, creating a
+   level shift across the 2014 boundary. Since 88% of the
    failures are 2008-2012, training on a feature-sparse / level-shifted crisis era
    collapses OOT performance.
 2. **Restated data is cleaner.** Restatements fix filing errors, so originally-filed
