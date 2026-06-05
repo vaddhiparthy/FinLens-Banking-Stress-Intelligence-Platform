@@ -266,6 +266,36 @@ elif section == "quality":
                         "The spread is the honest story: strong in failure-containing "
                         "windows, near-floor in calm years."
                     )
+        chal = m.get("challengers", {})
+        tune = m.get("hyperparameter_tuning", {})
+        if chal:
+            section_heading(
+                "Effective-challenge ladder",
+                "The constrained model vs an unconstrained GBM (same tuned params, no "
+                "monotone constraints) and the penalized logit. The monotone constraints "
+                "should not cost meaningful PR-AUC.",
+            )
+            ladder = [
+                {"model": "Calibrated LGBM (monotone)", "PR-AUC": round(t["pr_auc"], 4),
+                 "ROC-AUC": round(t["roc_auc"], 4), "recall@200": round(t["recall_at_k"], 3)},
+            ]
+            if "unconstrained_gbm" in chal:
+                u = chal["unconstrained_gbm"]
+                ladder.append({"model": "Unconstrained GBM", "PR-AUC": round(u["pr_auc"], 4),
+                               "ROC-AUC": round(u["roc_auc"], 4),
+                               "recall@200": round(u["recall_at_k"], 3)})
+            ladder.append({"model": "Penalized logit", "PR-AUC": round(logit["pr_auc"], 4),
+                           "ROC-AUC": round(logit["roc_auc"], 4),
+                           "recall@200": round(logit["recall_at_k"], 3)})
+            st.dataframe(pd.DataFrame(ladder), hide_index=True, use_container_width=True)
+        if tune.get("tuned"):
+            bp = tune.get("best_params", {})
+            st.caption(
+                f"Hyperparameters tuned with Optuna over {tune.get('n_trials')} trials on "
+                f"{tune.get('n_inner_folds')} inner time-series CV folds "
+                f"(best CV PR-AUC {tune.get('cv_mean_pr_auc')}); not hand-set. "
+                f"Tuned: {bp}."
+            )
         c1, c2 = st.columns(2)
         with c1:
             st.plotly_chart(mc.pr_curve_fig(viz, MODE), use_container_width=True)
@@ -295,9 +325,20 @@ elif section == "quality":
                 f"(share {ds.get('share_of_drifted_columns')}); prediction-drift score "
                 f"{ds.get('prediction_drift_score')}."
             )
-            dfig = mc.drift_fig(viz, MODE)
-            if dfig:
-                st.plotly_chart(dfig, use_container_width=True)
+            c5, c6 = st.columns(2)
+            with c5:
+                dfig = mc.drift_fig(viz, MODE)
+                if dfig:
+                    st.plotly_chart(dfig, use_container_width=True)
+            with c6:
+                pfig = mc.psi_fig(viz, MODE)
+                if pfig:
+                    st.plotly_chart(pfig, use_container_width=True)
+            st.caption(
+                "PSI (population stability index) is computed per feature against the "
+                "training-era reference; it is the standard input-stability check a "
+                "validator expects alongside Evidently drift."
+            )
 
 elif section == "decisions":
     section_heading(

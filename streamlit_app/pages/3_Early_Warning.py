@@ -58,13 +58,14 @@ def _tier(prob: float, threshold: float) -> tuple[str, str]:
     return "LOW RISK", "ok"
 
 
-def _render_score(result: dict, actual: int | None = None) -> None:
+def _render_score(result: dict, actual: int | None = None, key: str = "score") -> None:
     prob = result["probability"]
     thr = result["threshold"]
     tier, cls = _tier(prob, thr)
     g, info = st.columns([1, 1.15], vertical_alignment="center")
     with g:
-        st.plotly_chart(mc.probability_gauge(prob, thr, MODE), use_container_width=True)
+        st.plotly_chart(mc.probability_gauge(prob, thr, MODE), use_container_width=True,
+                        key=f"ew_gauge_{key}")
     with info:
         st.markdown(
             f'<div class="ew-badge ew-{cls}">{tier}</div>'
@@ -177,7 +178,7 @@ with tab_insert:
                 f"{row['bank_name']} ({row['state']}), scored as of {row['quarter']} "
                 f"(outcome known) · FDIC CERT {row['cert']}"
             )
-            _render_score(scenario.score_features(row["features"]), row["actual_label_4"])
+            _render_score(scenario.score_features(row["features"]), row["actual_label_4"], key="insert")
 
 with tab_holdout:
     st.write(
@@ -193,7 +194,7 @@ with tab_holdout:
         pick = failed[failed["label"] == choice].iloc[0]
         row = scenario.latest_known_row_for_cert(int(pick["cert"]))
         if row is not None:
-            _render_score(scenario.score_features(row["features"]), row["actual_label_4"])
+            _render_score(scenario.score_features(row["features"]), row["actual_label_4"], key="holdout")
 
 with tab_what_if:
     st.write(
@@ -209,7 +210,7 @@ with tab_what_if:
                 scenario.SLIDER_LABELS.get(feat, feat),
                 float(lo), float(hi), float(default), key=f"wi_{feat}",
             )
-    _render_score(scenario.score_hypothetical(vals))
+    _render_score(scenario.score_hypothetical(vals), key="whatif")
     st.caption(
         "This is a made-up bank, not a real institution. Monotone constraints are enforced: "
         "more capital never increases predicted risk; higher noncurrent loans never decreases it."

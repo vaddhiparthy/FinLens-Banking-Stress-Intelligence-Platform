@@ -177,6 +177,28 @@ def by_year_fig(pack_by_year: list, mode: str | None = None) -> go.Figure:
     return _base(fig, pal, legend=False, title="Out-of-time PR-AUC by year")
 
 
+def psi_fig(pack: dict, mode: str | None = None) -> go.Figure | None:
+    """Population Stability Index per feature (reference <=2018 vs current 2019+),
+    with the standard 0.1 (moderate) and 0.25 (significant) reference lines."""
+    pal = get_palette(mode)
+    rows = pack.get("psi") or []
+    if not rows:
+        return None
+    rows = rows[:12][::-1]
+    labels = [r["feature"].replace("_", " ") for r in rows]
+    vals = [r["psi"] for r in rows]
+    colors = [pal["rose"] if v >= 0.25 else ("#c69026" if v >= 0.1 else pal["teal"]) for v in vals]
+    fig = go.Figure()
+    fig.add_bar(x=vals, y=labels, orientation="h", marker_color=colors,
+                text=[f"{v:.2f}" for v in vals], textposition="outside")
+    fig.add_vline(x=0.1, line=dict(color=pal["text_soft"], width=1, dash="dot"))
+    fig.add_vline(x=0.25, line=dict(color=pal["rose"], width=1, dash="dot"))
+    fig.update_xaxes(title="PSI (>0.1 moderate shift, >0.25 significant)",
+                     range=[0, max(max(vals) * 1.25, 0.3)])
+    return _base(fig, pal, height=360, legend=False,
+                 title="Feature stability (PSI): reference vs current")
+
+
 def probability_gauge(prob: float, threshold: float, mode: str | None = None) -> go.Figure:
     """A calibrated-probability gauge for one bank, banded green / amber / red."""
     pal = get_palette(mode)

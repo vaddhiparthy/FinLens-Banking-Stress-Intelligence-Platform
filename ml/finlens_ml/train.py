@@ -90,28 +90,105 @@ def load_dataset() -> pd.DataFrame:
         return conn.execute("select * from ml.training_dataset").df()
 
 
-def _make_lgbm(spw: float, seed: int, n_estimators: int):
+# hand-set defaults, overridden by the tuned params discovered via time-series CV
+_DEFAULT_PARAMS = {
+    "learning_rate": 0.03,
+    "num_leaves": 31,
+    "min_child_samples": 100,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "reg_lambda": 1.0,
+}
+
+
+def _make_lgbm(spw: float, seed: int, n_estimators: int, params: dict | None = None,
+               monotone: bool = True):
     import lightgbm as lgb
 
+    p = dict(_DEFAULT_PARAMS)
+    if params:
+        p.update({k: v for k, v in params.items() if k in _DEFAULT_PARAMS})
     return lgb.LGBMClassifier(
         objective="binary",
         n_estimators=n_estimators,
-        learning_rate=0.03,
-        num_leaves=31,
-        min_child_samples=100,
-        subsample=0.8,
         subsample_freq=1,
-        colsample_bytree=0.8,
-        reg_lambda=1.0,
-        monotone_constraints=[MONOTONE_CONSTRAINTS[c] for c in FEATURE_COLUMNS],
+        monotone_constraints=(
+            [MONOTONE_CONSTRAINTS[c] for c in FEATURE_COLUMNS] if monotone else None
+        ),
         scale_pos_weight=spw,
         n_jobs=4,
         random_state=seed,
         verbose=-1,
+        **p,
     )
 
 
-def _fit_calibrated(X_tr: pd.DataFrame, y_tr: np.ndarray, seed: int, fixed_rounds: int | None = None):
+def _tune_hyperparameters(
+    X_tr: pd.DataFrame, y_tr: np.ndarray, obs_tr: pd.Series, horizon_q: int,
+    seed: int, reporting_lag_q: int = 0, n_trials: int = 30, timeout: int = 300,
+) -> tuple[dict, dict]:
+    """Tune LightGBM via Optuna over INNER rolling-origin folds (which never touch the
+    final held-out window), scoring on PR-AUC. Replaces hand-set magic numbers with a
+    searched configuration and reports the search so the choice is auditable."""
+    import lightgbm as lgb
+    import optuna
+    from sklearn.metrics import average_precision_score
+
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    X_tr = X_tr.reset_index(drop=True)
+    folds = rolling_origin_folds(
+        obs_tr.reset_index(drop=True), horizon_q=horizon_q, min_train_quarters=24,
+        step=4, n_test_quarters=4, reporting_lag_q=reporting_lag_q,
+    )
+    folds = [f for f in folds
+             if y_tr[f.test_idx].sum() >= 1 and y_tr[f.train_idx].sum() >= 20][-4:]
+    if not folds:
+        return {}, {"tuned": False, "reason": "not enough inner folds with positives"}
+    mc = [MONOTONE_CONSTRAINTS[c] for c in FEATURE_COLUMNS]
+
+    def objective(trial: "optuna.Trial") -> float:
+        sp = {
+            "num_leaves": trial.suggest_int("num_leaves", 15, 63),
+            "min_child_samples": trial.suggest_int("min_child_samples", 40, 300),
+            "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.12, log=True),
+            "reg_lambda": trial.suggest_float("reg_lambda", 0.1, 12.0, log=True),
+            "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
+            "subsample": trial.suggest_float("subsample", 0.6, 1.0),
+        }
+        spw_cap = trial.suggest_float("spw_cap", 10.0, 50.0)
+        aps = []
+        for f in folds:
+            ytr = y_tr[f.train_idx]
+            spw = min(float((ytr == 0).sum() / max(1, (ytr == 1).sum())), spw_cap)
+            m = lgb.LGBMClassifier(
+                objective="binary", n_estimators=500, subsample_freq=1,
+                monotone_constraints=mc, scale_pos_weight=spw, n_jobs=4,
+                random_state=seed, verbose=-1, **sp,
+            )
+            m.fit(X_tr.iloc[f.train_idx], ytr)
+            p = m.predict_proba(X_tr.iloc[f.test_idx])[:, 1]
+            aps.append(float(average_precision_score(y_tr[f.test_idx], p)))
+        return float(np.mean(aps))
+
+    study = optuna.create_study(
+        direction="maximize", sampler=optuna.samplers.TPESampler(seed=seed)
+    )
+    study.optimize(objective, n_trials=n_trials, timeout=timeout, show_progress_bar=False)
+    best = dict(study.best_params)
+    info = {
+        "tuned": True,
+        "n_trials": len(study.trials),
+        "n_inner_folds": len(folds),
+        "cv_mean_pr_auc": round(float(study.best_value), 4),
+        "best_params": {k: (round(v, 4) if isinstance(v, float) else v)
+                        for k, v in best.items()},
+    }
+    return best, info
+
+
+def _fit_calibrated(X_tr: pd.DataFrame, y_tr: np.ndarray, seed: int,
+                    fixed_rounds: int | None = None, params: dict | None = None,
+                    monotone: bool = True):
     """Fit LightGBM (monotone + class-weighted) and calibrate on a stratified
     in-training holdout.
 
@@ -132,15 +209,17 @@ def _fit_calibrated(X_tr: pd.DataFrame, y_tr: np.ndarray, seed: int, fixed_round
     )
     # moderate the class weight: raw neg/pos (~190) is so extreme the model saturates
     # instantly; a capped weight keeps positives emphasized, calibration fixes probs.
+    # The cap is tuned (params["spw_cap"]) rather than a hand-set 25.
+    spw_cap = float(params.get("spw_cap", 25.0)) if params else 25.0
     raw_spw = float((y_fit == 0).sum() / max(1, (y_fit == 1).sum()))
-    spw = float(min(raw_spw, 25.0))
+    spw = float(min(raw_spw, spw_cap))
 
     if fixed_rounds is None:
         X_core, X_val, y_core, y_val = train_test_split(
             X_fit, y_fit, test_size=0.15, stratify=y_fit, random_state=seed
         )
-        spw = float(min(float((y_core == 0).sum() / max(1, (y_core == 1).sum())), 25.0))
-        model = _make_lgbm(spw, seed, n_estimators=3000)
+        spw = float(min(float((y_core == 0).sum() / max(1, (y_core == 1).sum())), spw_cap))
+        model = _make_lgbm(spw, seed, n_estimators=3000, params=params, monotone=monotone)
         model.fit(
             X_core, y_core,
             eval_set=[(X_val, y_val)],
@@ -150,7 +229,7 @@ def _fit_calibrated(X_tr: pd.DataFrame, y_tr: np.ndarray, seed: int, fixed_round
         best_it = int(getattr(model, "best_iteration_", 0) or model.n_estimators)
     else:
         best_it = max(1, fixed_rounds)
-        model = _make_lgbm(spw, seed, n_estimators=best_it)
+        model = _make_lgbm(spw, seed, n_estimators=best_it, params=params, monotone=monotone)
         model.fit(X_fit, y_fit)
 
     method = "isotonic" if int(y_cal.sum()) >= 50 else "sigmoid"
@@ -201,13 +280,27 @@ def train(horizon_q: int = 4, seed: int = 42) -> dict:
     X_te, y_te = X.iloc[te_idx], y[te_idx]
     year_te = (obs.iloc[te_idx].to_numpy() // 4).astype(int)  # calendar year cohort
 
-    eval_model, eval_cal, method, spw, eval_best_it = _fit_calibrated(X_tr, y_tr, seed)
+    # ---- TUNE on inner rolling folds (the final 28q holdout is never seen here) ----
+    best_params, tuning_info = _tune_hyperparameters(
+        X_tr, y_tr, obs.iloc[tr_idx], horizon_q, seed,
+        reporting_lag_q=settings.reporting_lag_q,
+    )
+
+    eval_model, eval_cal, method, spw, eval_best_it = _fit_calibrated(
+        X_tr, y_tr, seed, params=best_params
+    )
     eval_logit = _fit_logit(X_tr, y_tr)
+    # challenger: an UNCONSTRAINED GBM (same tuned params, no monotone) — proves the
+    # economic constraints do not cost meaningful performance.
+    unc_model, unc_cal, _, _, _ = _fit_calibrated(
+        X_tr, y_tr, seed, params=best_params, monotone=False
+    )
 
     k = settings.review_budget_k
     p_cal = eval_cal.predict_proba(X_te)[:, 1]
     p_raw = eval_model.predict_proba(X_te)[:, 1]
     p_logit = eval_logit.predict_proba(X_te)[:, 1]
+    p_unc = unc_cal.predict_proba(X_te)[:, 1]
 
     results = {
         "horizon_q": horizon_q,
@@ -223,6 +316,13 @@ def train(horizon_q: int = 4, seed: int = 42) -> dict:
             "raw_lgbm": evaluate(y_te, p_raw, k=k).as_dict(),
             "logit_benchmark": evaluate(y_te, p_logit, k=k).as_dict(),
         },
+        # effective-challenge ladder: the constrained model vs an unconstrained GBM
+        # (monotone constraints should not cost meaningful PR-AUC) and the logit.
+        "challengers": {
+            "unconstrained_gbm": evaluate(y_te, p_unc, k=k).as_dict(),
+            "logit": evaluate(y_te, p_logit, k=k).as_dict(),
+        },
+        "hyperparameter_tuning": tuning_info,
         # 95% bootstrap CIs (the point estimates above are not defensible alone at ~66
         # positives) + a paired test of whether the LGBM's PR-AUC edge over the logit
         # benchmark is real or inside the noise band.
@@ -240,9 +340,9 @@ def train(horizon_q: int = 4, seed: int = 42) -> dict:
         "oot_calibration": calibration_report(y_te, p_cal),
     }
 
-    # ---- FINAL: train on ALL data with the VALIDATED tree count, calibrate, serve ----
+    # ---- FINAL: train on ALL data with the TUNED params + validated tree count ----
     final_model, final_cal, final_method, final_spw, final_it = _fit_calibrated(
-        X, y, seed, fixed_rounds=eval_best_it
+        X, y, seed, fixed_rounds=eval_best_it, params=best_params
     )
     # provenance for the SERVED model (B3): identical pipeline + the tree count
     # discovered by the eval model's out-of-time early stopping.

@@ -61,11 +61,42 @@ def _oot_predictions():
     X_tr, y_tr = X.iloc[tr_idx], y[tr_idx]
     X_te, y_te = X.iloc[te_idx], y[te_idx]
     year_te = (obs.iloc[te_idx].to_numpy() // 4).astype(int)
-    eval_model, eval_cal, *_ = _fit_calibrated(X_tr, y_tr, 42)
+    # reuse the SAME tuned hyperparameters the shipped model was trained with, so the
+    # curves match the served model and the metrics table.
+    metrics = json.loads((ART / "metrics_h4.json").read_text())
+    best_params = metrics.get("hyperparameter_tuning", {}).get("best_params") or None
+    eval_model, eval_cal, *_ = _fit_calibrated(X_tr, y_tr, 42, params=best_params)
     logit = _fit_logit(X_tr, y_tr)
     p_cal = eval_cal.predict_proba(X_te)[:, 1]
     p_logit = logit.predict_proba(X_te)[:, 1]
     return y_te, p_cal, p_logit, year_te
+
+
+def _psi_report(top_features: list[str], n_bins: int = 10) -> list[dict]:
+    """Population Stability Index per feature: reference (<=2018) vs current (2019+).
+    PSI < 0.1 stable, 0.1-0.25 moderate shift, > 0.25 significant shift."""
+    conn = _conn()
+    df = conn.execute("select * from ml.training_dataset").df()
+    conn.close()
+    ref = df[df["obs_qord"] < 2019 * 4]
+    cur = df[df["obs_qord"] >= 2019 * 4]
+    rows = []
+    for f in top_features:
+        r = pd.to_numeric(ref[f], errors="coerce").dropna()
+        c = pd.to_numeric(cur[f], errors="coerce").dropna()
+        if len(r) < 50 or len(c) < 50:
+            continue
+        edges = np.unique(np.quantile(r, np.linspace(0, 1, n_bins + 1)))
+        if len(edges) < 3:
+            continue
+        r_pct = np.histogram(r, bins=edges)[0] / len(r)
+        c_pct = np.histogram(c, bins=edges)[0] / len(c)
+        eps = 1e-4
+        r_pct = np.clip(r_pct, eps, None)
+        c_pct = np.clip(c_pct, eps, None)
+        psi = float(np.sum((c_pct - r_pct) * np.log(c_pct / r_pct)))
+        rows.append({"feature": f, "psi": round(psi, 3)})
+    return sorted(rows, key=lambda x: -x["psi"])
 
 
 def _curves(y, p):
@@ -193,6 +224,7 @@ def main() -> None:
         "threshold_sweep": _threshold_sweep(y, p_cal),
         "shap_importance": shap_imp,
         "correlation": _correlation(sample, top_feats),
+        "psi": _psi_report(top_feats),
         "drift_top_features": drift.get("top_drifted_features", []),
         "drift_summary": {
             "n_features_analyzed": drift.get("n_features_analyzed"),

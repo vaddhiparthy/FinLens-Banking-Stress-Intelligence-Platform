@@ -123,6 +123,20 @@ def generate_model_card(horizon_q: int = 4) -> Path:
     logit = metrics["oot_test"]["logit_benchmark"]
     cal = metrics.get("oot_calibration", {})
     fm = metrics.get("final_model", {})
+    chal = metrics.get("challengers", {})
+    unc = chal.get("unconstrained_gbm")
+    tune = metrics.get("hyperparameter_tuning", {})
+    tune_line = (
+        f"Hyperparameters are tuned with Optuna over {tune.get('n_trials')} trials on "
+        f"{tune.get('n_inner_folds')} inner time-series CV folds (best CV PR-AUC "
+        f"{tune.get('cv_mean_pr_auc')}), not hand-set."
+        if tune.get("tuned") else ""
+    )
+    unc_row = (
+        f"| Unconstrained GBM | {unc['pr_auc']:.4f} | {unc['roc_auc']:.4f} | "
+        f"{unc['recall_at_k']:.3f} | {unc['brier']:.5f} |\n"
+        if unc else ""
+    )
     by_year = pd.DataFrame(
         [{"year": y, **{k: (round(v, 4) if isinstance(v, float) else v)
                         for k, v in m.items() if k in ("n", "n_positive", "pr_auc", "roc_auc")}}
@@ -143,8 +157,9 @@ supervisory advice; **not** a consumer-credit decision (no ECOA/Reg-B adverse ac
 Calibrated, monotone-constrained LightGBM discrete-time hazard classifier on a
 per-bank-quarter panel. {len(FEATURE_COLUMNS)} CAMELS-aligned features. Served model trained on all
 data with the out-of-time-validated tree count (n_estimators={fm.get('n_estimators')}),
-calibration={fm.get('calibration_method')}. Penalized logistic regression is the
-benchmark (effective challenge).
+calibration={fm.get('calibration_method')}. {tune_line} The effective-challenge ladder is a
+penalized logistic regression and an unconstrained GBM (same tuned params, no monotone
+constraints).
 
 ## Out-of-time performance (test window: last {metrics['eval_window_quarters']} quarters, {metrics['n_test']:,} bank-quarters, {metrics['test_positives']} real failures)
 Lead metric is **PR-AUC** (rare-event); ROC-AUC is comparability-only; accuracy is not reported.
@@ -152,7 +167,7 @@ Lead metric is **PR-AUC** (rare-event); ROC-AUC is comparability-only; accuracy 
 | Model | PR-AUC | ROC-AUC | recall@{t['k']} | Brier |
 |---|---|---|---|---|
 | Calibrated LGBM | **{t['pr_auc']:.4f}** | {t['roc_auc']:.4f} | {t['recall_at_k']:.3f} | {t['brier']:.5f} |
-| Logit benchmark | {logit['pr_auc']:.4f} | {logit['roc_auc']:.4f} | {logit['recall_at_k']:.3f} | {logit['brier']:.5f} |
+{unc_row}| Logit benchmark | {logit['pr_auc']:.4f} | {logit['roc_auc']:.4f} | {logit['recall_at_k']:.3f} | {logit['brier']:.5f} |
 
 The LGBM beats the regulatory logit benchmark on PR-AUC (the metric that matters at a
 <1% base rate) and on recall@k. The logit's ROC-AUC is marginally higher; ROC-AUC is
@@ -198,17 +213,20 @@ and are deliberately not computed. We instead verify the model performs across s
 - SHAP assumes feature independence in probability space; correlated CAMELS ratios
   violate this, so local SHAP is validator/supervisor-facing transparency, **not** a
   legally-sufficient adverse-action reason code.
-- Macro context (ALFRED-vintage) is an optional enhancement gated on a free FRED key;
-  the core model is bank-level (capital+earnings carry most of the signal).
+- The model is bank-level and does **not** use macro series as inputs (capital and
+  earnings carry most of the signal); FRED macro is business-surface context only.
+- Features come from the FDIC `/financials` endpoint (currently-restated values, not the
+  originally-filed Call Report); strict point-in-time feature integrity would require
+  originally-filed FFIEC CDR data.
 - Rare-event metrics are noisy in calm cohorts; judge on failure-containing windows.
 
 ## Governance
-Aligned with the **principles** of SR 26-2 (Fed/OCC/FDIC, Apr 17 2026; supersedes
-SR 11-7 + SR 21-8; primary source:
-https://www.federalreserve.gov/supervisionreg/srletters/SR2602.htm) — **non-binding**
-guidance; a GBM is in-scope (non-generative, non-agentic AI). This is a portfolio
-demonstration, not a regulated production model. The substantive validation rests on
-the SR 11-7 three pillars regardless (see the validation report).
+Aligned with the **principles** of SR 11-7 (Fed/OCC, 2011 — the established model-risk
+management guidance; primary source:
+https://www.federalreserve.gov/supervisionreg/srletters/sr1107.htm) — **non-binding**
+here; a GBM is in scope (non-generative, non-agentic). This is a portfolio demonstration,
+not a regulated production model. The substantive validation rests on the SR 11-7 three
+pillars (see the validation report).
 """
     out = Path(settings.repo_root) / "docs" / "ml" / "MODEL_CARD.md"
     out.write_text(card, encoding="utf-8")
@@ -236,11 +254,15 @@ def generate_validation_report(horizon_q: int = 4) -> Path:
 - **Features:** {len(FEATURE_COLUMNS)} CAMELS-aligned ratios with economically-signed **monotone
   constraints** (more capital -> lower risk; higher noncurrent/NCO -> higher risk),
   preventing perverse relationships a validator would reject.
-- **Benchmark / effective challenge:** penalized logistic regression, a standard
-  regulatory-style linear reference. The GBM beats it on the rare-event metric
+- **Benchmark / effective challenge:** a ladder of a penalized logistic regression (a
+  regulatory-style linear reference) and an unconstrained GBM (same tuned params, no
+  monotone constraints). The constrained GBM beats the logit on the rare-event metric
   (PR-AUC {t['pr_auc']:.4f} vs {lg['pr_auc']:.4f}); because that margin sits on
   {metrics['test_positives']} positives it is reported with a paired bootstrap (see §3),
-  not as a bare point comparison.
+  not as a bare point comparison. The unconstrained GBM confirms the monotone constraints
+  cost little to no performance.
+- **Hyperparameters:** tuned with Optuna over inner time-series CV folds (not hand-set
+  magic numbers); the search is recorded in the metrics artifact.
 - **No leakage:** the embargo guarantees a training row's label window (q, q+H] ends
   strictly before the test start (train q <= test_start - H - reporting_lag - 1),
   enforced at runtime (`assert_no_temporal_overlap`); labels are strictly forward-looking
@@ -283,12 +305,16 @@ def generate_validation_report(horizon_q: int = 4) -> Path:
   import-guard).
 
 ## Known gaps (honest, on the path to production)
-- Hyperparameters are not yet tuned via time-series CV; the served tree count comes from a
-  single eval split's early stopping. Tuning across the rolling folds is the next step.
-- Benchmark ladder is a single penalized logit; an unconstrained GBM and a discrete-time
-  hazard logit are planned challengers.
-- Competing risks (merger vs failure) are handled by censoring, not a formal Fine-Gray /
-  cause-specific model; a sensitivity analysis is the planned check.
+- Competing risks (merger vs failure) are handled by right-censoring, not a formal
+  Fine-Gray / cause-specific hazard model. Informative censoring (a stressed bank acquired
+  instead of failing) could bias the failure hazard down; a cause-specific treatment is the
+  next refinement.
+- Features come from the FDIC `/financials` endpoint, which serves currently-restated
+  values rather than the originally-filed Call Report. The leakage embargo handles label
+  timing, not feature restatement; sourcing originally-filed FFIEC CDR data is the path to
+  strict point-in-time feature integrity.
+- The data is U.S. public Call Report financials only; it cannot see confidential
+  supervisory information, intraday liquidity, or deposit-flow data.
 
 ## Effective challenge
 This report + the benchmark comparison + the adversarial phase reviews constitute the

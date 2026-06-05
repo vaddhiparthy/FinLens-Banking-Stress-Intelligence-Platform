@@ -11,16 +11,18 @@ supervisory advice; **not** a consumer-credit decision (no ECOA/Reg-B adverse ac
 ## Model
 Calibrated, monotone-constrained LightGBM discrete-time hazard classifier on a
 per-bank-quarter panel. 34 CAMELS-aligned features. Served model trained on all
-data with the out-of-time-validated tree count (n_estimators=7),
-calibration=isotonic. Penalized logistic regression is the
-benchmark (effective challenge).
+data with the out-of-time-validated tree count (n_estimators=23),
+calibration=isotonic. Hyperparameters are tuned with Optuna over 15 trials on 3 inner time-series CV folds (best CV PR-AUC 0.5205), not hand-set. The effective-challenge ladder is a
+penalized logistic regression and an unconstrained GBM (same tuned params, no monotone
+constraints).
 
 ## Out-of-time performance (test window: last 28 quarters, 118,943 bank-quarters, 66 real failures)
 Lead metric is **PR-AUC** (rare-event); ROC-AUC is comparability-only; accuracy is not reported.
 
 | Model | PR-AUC | ROC-AUC | recall@200 | Brier |
 |---|---|---|---|---|
-| Calibrated LGBM | **0.1939** | 0.8167 | 0.424 | 0.00048 |
+| Calibrated LGBM | **0.2213** | 0.8153 | 0.455 | 0.00047 |
+| Unconstrained GBM | 0.2643 | 0.8267 | 0.470 | 0.00046 |
 | Logit benchmark | 0.1117 | 0.9196 | 0.394 | 0.00827 |
 
 The LGBM beats the regulatory logit benchmark on PR-AUC (the metric that matters at a
@@ -29,20 +31,20 @@ deprioritized here and shown only for comparability.
 
 ### Calibration
 All-rows Brier is dominated by true negatives, so we also report ECE and the flagged
-(top-decile) calibration: ECE=1.65e-04; in the top-scoring
-decile the model predicts 0.0044 vs observed
-0.0032.
+(top-decile) calibration: ECE=1.13e-04; in the top-scoring
+decile the model predicts 0.0041 vs observed
+0.0033.
 
 ### Performance by year (calibrated)
 |   year |     n |   n_positive |   pr_auc |   roc_auc |
 |-------:|------:|-------------:|---------:|----------:|
-|   2019 | 20455 |           19 |   0.4206 |    0.9954 |
-|   2020 | 19901 |            7 |   0.6613 |    0.9998 |
+|   2019 | 20455 |           19 |   0.4855 |    0.9689 |
+|   2020 | 19901 |            7 |   0.5179 |    0.9997 |
 |   2021 | 19226 |            0 | nan      |  nan      |
-|   2022 | 18762 |           14 |   0.0007 |    0.392  |
-|   2023 | 18377 |            9 |   0.0784 |    0.8113 |
-|   2024 | 17868 |            9 |   0.0008 |    0.6637 |
-|   2025 |  4354 |            8 |   0.5801 |    0.9599 |
+|   2022 | 18762 |           14 |   0.0006 |    0.3543 |
+|   2023 | 18377 |            9 |   0.2033 |    0.855  |
+|   2024 | 17868 |            9 |   0.0014 |    0.7102 |
+|   2025 |  4354 |            8 |   0.6197 |    0.975  |
 
 In calm years with few or zero failures, PR-AUC is low or undefined — the expected
 behavior of a rare-event model.
@@ -50,18 +52,18 @@ behavior of a rare-event model.
 ## Top global drivers (SHAP)
 | feature                     |   mean_|SHAP| |
 |:----------------------------|--------------:|
-| tier1_rwa_ratio             |     0.223902  |
-| roe                         |     0.067966  |
-| equity_to_assets_peer_z     |     0.0247399 |
-| nim_yoy_delta               |     0.0235993 |
-| loans_to_deposits_yoy_delta |     0.0224842 |
-| brokered_to_deposits        |     0.0179655 |
-| tier1_leverage              |     0.0167461 |
-| nco_to_loans                |     0.0138162 |
-| equity_to_assets_yoy_delta  |     0.0136154 |
-| log_assets                  |     0.0128304 |
-| allowance_to_loans          |     0.011476  |
-| asset_growth_yoy            |     0.0111164 |
+| tier1_rwa_ratio             |     0.276475  |
+| roe                         |     0.0612907 |
+| equity_to_assets_yoy_delta  |     0.0543573 |
+| tier1_leverage              |     0.0512393 |
+| equity_to_assets            |     0.0456171 |
+| roa                         |     0.0432891 |
+| allowance_to_loans          |     0.0311957 |
+| equity_to_assets_peer_z     |     0.0291698 |
+| asset_growth_yoy            |     0.0229229 |
+| loans_to_deposits_yoy_delta |     0.0212886 |
+| nco_to_loans                |     0.0163775 |
+| brokered_to_deposits        |     0.0130042 |
 
 Capital (tier-1) and earnings (ROA) dominate, consistent with the bank-failure
 literature. Computed as mean |SHAP| over a fixed reservoir sample (n=1500, seed 42)
@@ -76,28 +78,28 @@ and are deliberately not computed. We instead verify the model performs across s
 ### By asset-size tier
 | segment     |     n |   positives |   pr_auc |   roc_auc |   recall_at_k |
 |:------------|------:|------------:|---------:|----------:|--------------:|
-| Q1 smallest | 29736 |          31 |   0.2448 |    0.913  |         0.452 |
-| Q2          | 29736 |          20 |   0.5049 |    0.9838 |         0.8   |
-| Q4 largest  | 29736 |          15 |   0.0801 |    0.9915 |         0.2   |
+| Q1 smallest | 29736 |          31 |   0.1428 |    0.9274 |         0.387 |
+| Q2          | 29736 |          20 |   0.6299 |    0.9938 |         0.85  |
+| Q4 largest  | 29736 |          15 |   0.0633 |    0.9423 |         0.2   |
 | Q3          | 29735 |           0 | nan      |  nan      |       nan     |
 
 ### By region
 | segment   |     n |   positives |   pr_auc |   roc_auc |   recall_at_k |
 |:----------|------:|------------:|---------:|----------:|--------------:|
-| Midwest   | 52454 |          25 |   0.3251 |    0.9404 |         0.56  |
-| South     | 41899 |          23 |   0.2733 |    0.9279 |         0.522 |
-| Northeast | 13028 |          10 |   0.4156 |    0.9944 |         0.6   |
-| West      | 11337 |           8 |   0.0274 |    0.983  |         0     |
+| Midwest   | 52454 |          25 |   0.3181 |    0.9706 |         0.52  |
+| South     | 41899 |          23 |   0.1959 |    0.9317 |         0.478 |
+| Northeast | 13028 |          10 |   0.1826 |    0.9823 |         0.6   |
+| West      | 11337 |           8 |   0.0058 |    0.9312 |         0     |
 | Other     |   225 |           0 | nan      |  nan      |       nan     |
 
 ### By charter class
 | segment   |     n |   positives |   pr_auc |   roc_auc |   recall_at_k |
 |:----------|------:|------------:|---------:|----------:|--------------:|
-| NM        | 67918 |          42 |   0.3556 |    0.9936 |         0.5   |
-| N         | 18115 |          11 |   0.1368 |    0.826  |         0.273 |
-| SM        | 17486 |           7 |   0.0195 |    0.9299 |         0.429 |
-| SI        |  6471 |           3 |   0.0014 |    0.7969 |         0     |
-| SB        |  6271 |           3 |   0.6    |    0.9998 |         1     |
+| NM        | 67918 |          42 |   0.2651 |    0.9845 |         0.452 |
+| N         | 18115 |          11 |   0.0758 |    0.8398 |         0.273 |
+| SM        | 17486 |           7 |   0.0041 |    0.9463 |         0     |
+| SI        |  6471 |           3 |   0.0031 |    0.8848 |         0     |
+| SB        |  6271 |           3 |   1      |    1      |         1     |
 | NC        |  1444 |           0 | nan      |  nan      |       nan     |
 | SL        |  1013 |           0 | nan      |  nan      |       nan     |
 | OI        |   225 |           0 | nan      |  nan      |       nan     |
@@ -108,14 +110,17 @@ and are deliberately not computed. We instead verify the model performs across s
 - SHAP assumes feature independence in probability space; correlated CAMELS ratios
   violate this, so local SHAP is validator/supervisor-facing transparency, **not** a
   legally-sufficient adverse-action reason code.
-- Macro context (ALFRED-vintage) is an optional enhancement gated on a free FRED key;
-  the core model is bank-level (capital+earnings carry most of the signal).
+- The model is bank-level and does **not** use macro series as inputs (capital and
+  earnings carry most of the signal); FRED macro is business-surface context only.
+- Features come from the FDIC `/financials` endpoint (currently-restated values, not the
+  originally-filed Call Report); strict point-in-time feature integrity would require
+  originally-filed FFIEC CDR data.
 - Rare-event metrics are noisy in calm cohorts; judge on failure-containing windows.
 
 ## Governance
-Aligned with the **principles** of SR 26-2 (Fed/OCC/FDIC, Apr 17 2026; supersedes
-SR 11-7 + SR 21-8; primary source:
-https://www.federalreserve.gov/supervisionreg/srletters/SR2602.htm) — **non-binding**
-guidance; a GBM is in-scope (non-generative, non-agentic AI). This is a portfolio
-demonstration, not a regulated production model. The substantive validation rests on
-the SR 11-7 three pillars regardless (see the validation report).
+Aligned with the **principles** of SR 11-7 (Fed/OCC, 2011 — the established model-risk
+management guidance; primary source:
+https://www.federalreserve.gov/supervisionreg/srletters/sr1107.htm) — **non-binding**
+here; a GBM is in scope (non-generative, non-agentic). This is a portfolio demonstration,
+not a regulated production model. The substantive validation rests on the SR 11-7 three
+pillars (see the validation report).

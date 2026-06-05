@@ -8,15 +8,19 @@
 - **Features:** 34 CAMELS-aligned ratios with economically-signed **monotone
   constraints** (more capital -> lower risk; higher noncurrent/NCO -> higher risk),
   preventing perverse relationships a validator would reject.
-- **Benchmark / effective challenge:** penalized logistic regression, a standard
-  regulatory-style linear reference. The GBM beats it on the rare-event metric
-  (PR-AUC 0.1939 vs 0.1117); because that margin sits on
+- **Benchmark / effective challenge:** a ladder of a penalized logistic regression (a
+  regulatory-style linear reference) and an unconstrained GBM (same tuned params, no
+  monotone constraints). The constrained GBM beats the logit on the rare-event metric
+  (PR-AUC 0.2213 vs 0.1117); because that margin sits on
   66 positives it is reported with a paired bootstrap (see §3),
-  not as a bare point comparison.
+  not as a bare point comparison. The unconstrained GBM confirms the monotone constraints
+  cost little to no performance.
+- **Hyperparameters:** tuned with Optuna over inner time-series CV folds (not hand-set
+  magic numbers); the search is recorded in the metrics artifact.
 - **No leakage:** the embargo guarantees a training row's label window (q, q+H] ends
   strictly before the test start (train q <= test_start - H - reporting_lag - 1),
   enforced at runtime (`assert_no_temporal_overlap`); labels are strictly forward-looking
-  with merger / end-of-data censoring. OOT ROC-AUC 0.8167 is well below the
+  with merger / end-of-data censoring. OOT ROC-AUC 0.8153 is well below the
   >0.98 leakage-suspicion threshold.
 - **Honest data caveats:** the bank-level model does **not** join macro series (FRED is
   business-surface context, not a model input), so no macro-vintage question arises here.
@@ -41,9 +45,9 @@
 - **Headline holdout:** 118,943 bank-quarters / 66 real
   failures (2019-2026, includes the 2023 SVB/Signature/First-Republic cluster).
 - **Uncertainty (the point estimates are not the result):** 95% stratified-bootstrap CIs —
-  PR-AUC [0.106, 0.320], recall@k [0.316, 0.550]. The PR-AUC
+  PR-AUC [0.127, 0.343], recall@k [0.345, 0.577]. The PR-AUC
   edge over the logit is a paired bootstrap: difference 95% CI
-  [+0.012, +0.155], P(LGBM > logit) = 99.1%.
+  [+0.040, +0.177], P(LGBM > logit) = 100.0%.
 - **Multi-origin rolling backtest:** 10 embargoed out-of-time folds,
   PR-AUC mean 0.2332 (std 0.2384, range
   0.0008-0.6707); strong in failure-containing windows,
@@ -55,12 +59,16 @@
   import-guard).
 
 ## Known gaps (honest, on the path to production)
-- Hyperparameters are not yet tuned via time-series CV; the served tree count comes from a
-  single eval split's early stopping. Tuning across the rolling folds is the next step.
-- Benchmark ladder is a single penalized logit; an unconstrained GBM and a discrete-time
-  hazard logit are planned challengers.
-- Competing risks (merger vs failure) are handled by censoring, not a formal Fine-Gray /
-  cause-specific model; a sensitivity analysis is the planned check.
+- Competing risks (merger vs failure) are handled by right-censoring, not a formal
+  Fine-Gray / cause-specific hazard model. Informative censoring (a stressed bank acquired
+  instead of failing) could bias the failure hazard down; a cause-specific treatment is the
+  next refinement.
+- Features come from the FDIC `/financials` endpoint, which serves currently-restated
+  values rather than the originally-filed Call Report. The leakage embargo handles label
+  timing, not feature restatement; sourcing originally-filed FFIEC CDR data is the path to
+  strict point-in-time feature integrity.
+- The data is U.S. public Call Report financials only; it cannot see confidential
+  supervisory information, intraday liquidity, or deposit-flow data.
 
 ## Effective challenge
 This report + the benchmark comparison + the adversarial phase reviews constitute the
