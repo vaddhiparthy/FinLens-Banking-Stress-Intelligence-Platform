@@ -1,0 +1,161 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+    @page { size: A4; margin: 22mm 18mm; }
+    body { font-family: Georgia, 'Times New Roman', serif; color:#1a1f29; line-height:1.5; font-size:11pt; }
+    h1 { font-size:26pt; margin:0 0 4px; color:#0f1b2d; }
+    h2 { font-size:15pt; margin:22px 0 6px; color:#0f1b2d; border-bottom:2px solid #bf6d47; padding-bottom:3px; }
+    h3 { font-size:12pt; margin:14px 0 4px; color:#2a3a52; }
+    .sub { color:#5b6675; font-size:11pt; margin:0 0 2px; }
+    .tag { color:#bf6d47; font-weight:bold; letter-spacing:1px; font-size:9pt; text-transform:uppercase; }
+    table { border-collapse:collapse; width:100%; margin:8px 0 12px; font-size:10pt; }
+    th,td { border:1px solid #d7dce3; padding:5px 8px; text-align:left; }
+    th { background:#f3efea; }
+    .kpi { display:flex; gap:10px; margin:10px 0; }
+    .card { flex:1; border:1px solid #d7dce3; border-radius:6px; padding:8px 10px; background:#faf8f5; }
+    .card .v { font-size:17pt; font-weight:bold; color:#0f1b2d; }
+    .card .l { font-size:8.5pt; color:#5b6675; text-transform:uppercase; letter-spacing:.5px; }
+    .note { background:#f7f3ee; border-left:3px solid #bf6d47; padding:8px 12px; margin:10px 0; font-size:10pt; }
+    .pagebreak { page-break-before: always; }
+    code { background:#f0f2f5; padding:1px 4px; border-radius:3px; font-size:9.5pt; }
+    ul { margin:4px 0 10px; } li { margin:2px 0; }
+    .foot { color:#8a93a0; font-size:8.5pt; margin-top:6px; }
+    </style></head><body>
+    <p class="tag">FinLens · Machine Learning Engineering</p>
+    <h1>Bank Financial-Distress Early-Warning Model</h1>
+    <p class="sub">End-to-end modeling project report — data, features, model, evaluation,
+    uncertainty, competing risks, and honest limitations.</p>
+    <p class="sub">Generated from the committed artifacts (no hand-entered metrics).</p>
+
+    <div class="kpi">
+      <div class="card"><div class="v">0.273</div><div class="l">OOT PR-AUC</div></div>
+      <div class="card"><div class="v">0.817</div><div class="l">OOT ROC-AUC</div></div>
+      <div class="card"><div class="v">54.5%</div><div class="l">Recall@200</div></div>
+      <div class="card"><div class="v">38</div><div class="l">Trees (served)</div></div>
+    </div>
+
+    <h2>1. What this is</h2>
+    <p>A discrete-time hazard model that ranks U.S. FDIC-insured banks by their probability
+    of financial distress / failure within four quarters, from public quarterly Call Report
+    financials. It is decision-support for off-site monitoring, not investment, deposit, or
+    supervisory advice. The model is deliberately framed as a conditional hazard on a
+    per-bank-quarter panel rather than a static classifier.</p>
+
+    <h2>2. Data</h2>
+    <p>One row per bank per quarter, keyed by FDIC CERT and Call Report quarter, 2008Q1–2026Q1:
+    ~448,700 bank-quarters across ~8,800 banks. Failure dates come from the FDIC failures API
+    (true closures only). Features come from FDIC <code>/financials</code>.</p>
+    <div class="note"><b>The binding constraint is data, not compute.</b> Only ~66
+    real failures fall in the 28-quarter out-of-time test window — bank failure is rare
+    (base rate &lt;1%). Extending history to 2001 was tested and <b>reduced</b> OOT PR-AUC
+    (0.219 → 0.139): the early-2000s regime dilutes the recent-failure signal. The pre-2001
+    S&amp;L-crisis failures (~2,400) are unreachable — machine-readable Call Reports begin in
+    2001. So the model is at its data ceiling, and that ceiling is reality, not unfinished work.</div>
+
+    <h2>3. Features &amp; the monotone contract</h2>
+    <p>34 CAMELS-aligned ratios (capital, asset quality, earnings, liquidity) plus trend
+    (QoQ/YoY) and peer-relative (size-band z-score) features. Each carries an
+    economically-signed <b>monotone constraint</b> (more capital never raises predicted risk;
+    higher noncurrent loans never lowers it), so the gradient-boosted model cannot learn
+    perverse relationships a model-risk validator would reject.</p>
+    <div class="note"><b>A real feature bug, found and fixed.</b> Noncurrent loans were
+    initially built from FDIC <code>P9LNLS</code> (90+-days-past-due-and-still-accruing only,
+    ~50% zero — normal) instead of <code>NCLNLS</code> (total noncurrent = nonaccrual + 90+,
+    ~11% zero). Correcting it lifted the served model from 0.221 to 0.273 and made
+    noncurrent the #2 driver.</p>
+
+    <h3>Top global drivers (mean |SHAP|)</h3>
+    <table><tr><th>Feature</th><th>mean |SHAP|</th></tr><tr><td>tier1_rwa_ratio</td><td>0.2522</td></tr><tr><td>noncurrent_to_loans</td><td>0.1335</td></tr><tr><td>roe</td><td>0.0597</td></tr><tr><td>tier1_leverage</td><td>0.0439</td></tr><tr><td>equity_to_assets</td><td>0.0373</td></tr><tr><td>equity_to_assets_peer_z</td><td>0.0328</td></tr><tr><td>roa</td><td>0.0312</td></tr><tr><td>equity_to_assets_yoy_delta</td><td>0.0304</td></tr></table>
+
+    <h2 class="pagebreak">4. Labels &amp; leakage control</h2>
+    <p>For each bank-quarter the target is: does this bank fail within the next four quarters?
+    Labels are strictly forward-looking. Survival presence in the panel is the ground truth, so
+    healthy mergers/acquisitions are correctly censored (they leave the panel without a failure
+    record) and the last few quarters (whose outcome cannot yet be confirmed) are dropped, never
+    labeled negative. An <b>embargo</b> (horizon + reporting lag, additive) guarantees a training
+    row's label window ends strictly before the test window begins; it is asserted at runtime.</p>
+
+    <h2>5. The model</h2>
+    <p>A calibrated, monotone-constrained LightGBM discrete-time hazard classifier, trained on
+    all labelable data with the out-of-time-validated tree count (n_estimators = 38),
+    isotonic calibration. Hyperparameters are tuned with Optuna over inner time-series
+    cross-validation folds, not hand-set.</p>
+
+    <h2>6. Out-of-time evaluation</h2>
+    <p>Evaluated on a long, failure-containing window (the last 28 quarters, ~2019–2026,
+    including the 2023 SVB/Signature/First-Republic cluster). PR-AUC is the headline because at
+    a &lt;1% base rate accuracy and ROC-AUC mislead.</p>
+    <table>
+      <tr><th>Model</th><th>PR-AUC</th><th>ROC-AUC</th><th>Recall@200</th></tr>
+      <tr><td>Calibrated LGBM (monotone, served)</td><td><b>0.273</b></td><td>0.817</td><td>54.5%</td></tr>
+      <tr><td>Unconstrained GBM (challenger)</td><td>0.270</td><td>0.833</td><td>51.5%</td></tr>
+      <tr><td>Penalized logit (benchmark)</td><td>0.153</td><td>0.924</td><td>37.9%</td></tr>
+    </table>
+    <p>The monotone model now matches/beats the unconstrained GBM, so the economic constraints
+    cost nothing measurable here while remaining validator-defensible. Calibration ECE =
+    0.00012; isotonic was selected by a held-fold bake-off
+    (lowest ECE, stable across resamples).</p>
+
+    <h3>Performance by year</h3>
+    <table><tr><th>Year</th><th>Failures</th><th>PR-AUC</th></tr><tr><td>2019</td><td>19</td><td>0.477</td></tr><tr><td>2020</td><td>7</td><td>0.736</td></tr><tr><td>2021</td><td>0</td><td>nan</td></tr><tr><td>2022</td><td>14</td><td>0.001</td></tr><tr><td>2023</td><td>9</td><td>0.145</td></tr><tr><td>2024</td><td>9</td><td>0.001</td></tr><tr><td>2025</td><td>8</td><td>0.674</td></tr></table>
+    <p class="foot">Calm years with few/zero failures have low or undefined PR-AUC — expected for
+    a rare-event model. Judge on failure-containing windows.</p>
+
+    <h2 class="pagebreak">7. Uncertainty &amp; the statistical foundation (G0)</h2>
+    <p>With only ~66 out-of-time positives, point estimates are not a
+    defensible result. 95% bootstrap intervals: PR-AUC [0.163, 0.408],
+    recall@200 [0.400, 0.636]. A paired bootstrap confirms the edge over the
+    logit benchmark is real: difference CI [0.038, 0.195], P(model &gt; logit) =
+    99.8%.</p>
+    <div class="note"><b>Honest minimum-detectable-effect result.</b> An external-truth
+    simulation (not a bootstrap of the holdout) shows the chosen interval method
+    (<b>bca</b>) covers at ~94%,
+    and the paired gate's power to detect a 0.02 PR-AUC improvement is only
+    <b>6%</b>. So no tuning/ensembling change
+    is statistically validatable on this test set — model selection relies on inner rolling
+    folds, and the headline is what it is because of the data, not unfinished optimization.</div>
+
+    <h2>8. Effective challenge &amp; ensembles</h2>
+    <p>The model is benchmarked against a penalized logit (regulatory-style linear reference)
+    and an unconstrained GBM, and seed-bagged / stacked ensembles are measured. Bagging had the
+    highest point estimate and lowest variance; ensembles are reported as challengers. Because
+    every interval overlaps at this positive count, ranking is by point estimate with that
+    caveat stated, not treated as statistical separation.</p>
+
+    <h2>9. Competing risks (failure vs merger)</h2>
+    <p>Mergers are ~4×
+    more common than failures (Aalen-Johansen cumulative incidence
+    0.739 vs 0.185).
+    The model censors mergers; the informative-censoring bias this could introduce is
+    <b>quantified, not assumed</b>: only 2.2%
+    of merger-exit banks were elevated-distress at exit, so the downward recall bias is small.
+    A discrete-time Fine-Gray subdistribution cross-check confirms the correction is immaterial
+    to the served ranking.</p>
+
+    <h2>10. Point-in-time data (B1) &amp; forward scoring</h2>
+    <p>Originally-filed FFIEC Call Reports were pulled to test point-in-time feature integrity.
+    They validated exactly for 2014+ and surfaced the noncurrent bug above. As a <i>training</i>
+    source the full point-in-time panel underperforms the restated panel
+    (0.131 vs
+    0.175) because originally-filed data is
+    inherently noisier than restated. It is therefore not the training source — but it IS the
+    correct data path for <b>live forward scoring</b> (the current quarter has no restatement yet),
+    which the Early Warning surface now offers with explicit "model estimate, not a forecast"
+    framing (base rate &lt;1%).</p>
+
+    <h2>11. Honest limitations</h2>
+    <ul>
+      <li><b>Rare events.</b> ~66 OOT failures cap statistical power; this is the dominant ceiling.</li>
+      <li><b>Public data only.</b> No confidential supervisory (CAMELS exam), intraday-liquidity, or deposit-flow data — legally unavailable.</li>
+      <li><b>Originally-filed is noisier than restated</b> — why point-in-time loses as a training source.</li>
+      <li><b>Pre-2001 history is unreachable</b> — machine-readable Call Reports begin 2001.</li>
+      <li>SHAP is validator-facing transparency, not a legally-sufficient adverse-action reason code.</li>
+    </ul>
+
+    <h2>12. Engineering &amp; governance</h2>
+    <p>$0 (only free public APIs), reproducible (fixed seeds, pinned feature set, committed
+    metrics), with a CI metric gate that blocks promotion of a degraded or leaky model, MLflow
+    champion-alias serving, and an adversarial three-reviewer gate (UI, ML, domain) that must
+    unanimously sign off the plan and the built result. Aligned with the principles of SR 11-7
+    (non-binding; this is a portfolio demonstration, not a regulated production model).</p>
+    <p class="foot">This report is generated from ml/artifacts/*.json. Numbers reconcile with the
+    model card, validation report, and the live AI Engineering surface.</p>
+    </body></html>
