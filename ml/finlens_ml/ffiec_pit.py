@@ -84,7 +84,8 @@ def _noncurrent(RCN: pd.DataFrame) -> pd.Series:
     codes (RCFD/RCON 1403+1407) where present (2014+); pre-2014 vintages lack them, so
     sum the per-category nonaccrual/90+ columns by LABEL (codes vary by year), picking
     one filer-domain per item to avoid RCFD/RCON double-counting. The category sum is
-    validated against the official total where both exist (see validate_noncurrent)."""
+    validated against the official total where both exist (see
+    ml/scripts/b1_noncurrent_audit.py, which writes the reconstruction stats)."""
     na = _num(RCN, "RCFD1403", "RCON1403")
     pd90 = _num(RCN, "RCFD1407", "RCON1407")
     official = na.add(pd90, fill_value=0)
