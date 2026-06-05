@@ -59,9 +59,11 @@
 
 ## Known gaps (honest, on the path to production)
 - Competing risks (merger vs failure) are handled by right-censoring, not a formal
-  Fine-Gray / cause-specific hazard model. Informative censoring (a stressed bank acquired
-  instead of failing) could bias the failure hazard down; a cause-specific treatment is the
-  next refinement.
+  Fine-Gray subdistribution model. The informative-censoring bias this could introduce is
+  now QUANTIFIED, not assumed (see docs/ml/COMPETING_RISKS.md): mergers are ~4x more
+  common than failures (Aalen-Johansen CIF 0.74 vs 0.18), but only 2.2% of merger-exit
+  banks were elevated-distress at exit, so the downward recall bias is small and bounded.
+  A full Fine-Gray model would move the estimate marginally; it remains the next refinement.
 - Features come from the FDIC `/financials` endpoint, which serves currently-restated
   values rather than the originally-filed Call Report. The leakage embargo handles label
   timing, not feature restatement; sourcing originally-filed FFIEC CDR data is the path to

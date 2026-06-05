@@ -1,0 +1,18 @@
+{
+  "horizon_q": 4,
+  "n_failure_events": 2138,
+  "n_merger_events": 14132,
+  "n_merger_certs": 3718,
+  "cumulative_incidence": {
+    "failure": 0.18478,
+    "merger": 0.73867,
+    "note": "Aalen-Johansen discrete-time cumulative incidence over the panel; mergers are ~4x more common than failures, which is why treating them as a competing risk matters."
+  },
+  "informative_censoring": {
+    "merger_exit_banks_scored": 3718,
+    "elevated_distress_at_exit": 81,
+    "distressed_merger_rate": 0.0218,
+    "interpretation": "81 of 3718 merger-exit banks (2.2%) were at or above the review threshold at their last filing - would-be positives removed from the labelable pool by censoring, biasing measured failure recall downward. This bounds the informative-censoring bug: the true recall is at most this fraction higher than measured."
+  },
+  "method": "cause-specific hazards (failure + merger) + Aalen-Johansen CIF, implemented from scratch (no new deps, $0). A full Fine-Gray subdistribution model is the next refinement; this quantifies the bias the current censoring introduces, which is the decision-relevant number."
+}

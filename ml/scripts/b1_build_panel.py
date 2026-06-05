@@ -50,6 +50,24 @@ def main() -> None:
         pit["repdte"] = pit["repdte_lbl"]
         pit = pit.drop(columns=[c for c in pit.columns if c.endswith("_lbl")])
 
+    # FFIEC has no total-noncurrent line before 2017Q1 and no ground truth to validate a
+    # per-category reconstruction (the category sum double-counts hierarchical sub-lien /
+    # memoranda items). So the noncurrent feature family for pre-2017 rows is filled from
+    # FDIC's published NCLNLS total (the only reliable total there); 2017+ keeps the
+    # originally-filed FFIEC official total. This is the one feature that is not pure
+    # point-in-time pre-2017, documented in docs/ml/B1_POINT_IN_TIME.md.
+    nc_cols = [c for c in FEATURE_COLUMNS if c.startswith("noncurrent_to_loans")]
+    pit["_yr"] = pit["quarter"].str.slice(0, 4).astype(int)
+    fdic_nc = fdic[["cert", "quarter"] + nc_cols].copy()
+    pit = pit.merge(fdic_nc, on=["cert", "quarter"], how="left", suffixes=("", "_fdic"))
+    pre = pit["_yr"] < 2017
+    for c in nc_cols:
+        if f"{c}_fdic" in pit:
+            pit.loc[pre, c] = pit.loc[pre, f"{c}_fdic"]
+    pit = pit.drop(columns=[c for c in pit.columns if c.endswith("_fdic")] + ["_yr"])
+    print(f"filled pre-2017 noncurrent family from FDIC NCLNLS for {int(pre.sum()):,} rows",
+          flush=True)
+
     out_cols = (["cert", "bank_name", "quarter", "repdte", "obs_qord", "fail_qord",
                  "state", "bank_class"] + FEATURE_COLUMNS
                 + ["label_4", "label_status_4", "labelable_4",

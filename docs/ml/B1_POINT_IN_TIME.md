@@ -57,29 +57,45 @@ Same recipe, same OOT protocol, only the data source differs
 (Same recipe with default params on both panels, to isolate the data-source effect;
 the served model is separately tuned to 0.273.)
 
+This was retested AFTER the noncurrent feature was made correct on BOTH panels (so the
+comparison is clean, not confounded by the field bug):
+
 | panel | OOT PR-AUC | 95% CI |
 |---|---|---|
 | FDIC restated (shipped, NCLNLS noncurrent) | 0.176 | [0.100, 0.281] |
-| point-in-time (full history) | 0.100 | [0.050, 0.174] |
+| point-in-time (corrected noncurrent) | 0.131 | [0.065, 0.230] |
 
-Two causes, both real:
-1. **Pre-2014 schema drift.** The Basel-III RC-R ratios and the RC-N total-noncurrent
-   codes only exist 2014+. Pre-2014 capital is recoverable (RCON fallback, now ~98%
-   filled), but pre-2014 noncurrent has NO total line; a label-based per-category sum
-   is rank-correct (corr 0.968 vs the 2014+ official total) but **magnitude-light
-   (~0.40x; `ml/artifacts/b1_compare.json` `noncurrent_reconstruction`)**, creating a
-   level shift across the 2014 boundary. Since 88% of the
-   failures are 2008-2012, training on a feature-sparse / level-shifted crisis era
-   collapses OOT performance.
+Fixing noncurrent narrowed the gap (point-in-time rose 0.10 -> 0.131) but did **not**
+close it. The CIs overlap heavily, so the difference is not itself significant, but the
+point estimate consistently favours restated. Two real causes remain:
+1. **Pre-2017 noncurrent has no originally-filed total.** The RC-N total-noncurrent
+   codes (1403 nonaccrual + 1407 90+) exist only from 2017Q1; a pre-2017 per-category
+   sum double-counts RC-N's hierarchical sub-lien and memoranda items (verified: it
+   over- or under-counts vs the 2017+ official total, corr ~0.93-0.97 but wrong scale,
+   with NO FFIEC ground truth to calibrate against). So pre-2017 noncurrent is filled
+   from FDIC's published `NCLNLS` total - the one feature that is not pure
+   point-in-time pre-2017 (see `noncurrent_field_audit` / `noncurrent_reconstruction`
+   in `b1_compare.json`). Forward (live) scoring is unaffected: the current quarter is
+   2017+ and uses the originally-filed FFIEC total.
 2. **Restated data is cleaner.** Restatements fix filing errors, so originally-filed
-   values are noisier and train a slightly worse model even where complete.
+   values are inherently noisier and train a slightly worse model even where complete.
+   This is a fundamental property, not a bug, and is why point-in-time may never beat
+   restated as a *training* source.
 
-## Decision and remaining work
-- The served model stays on the FDIC-restated panel + Tier A improvements.
-- B1 is a validated capability and the documented remaining lever. To realize it:
-  complete the pre-2014 noncurrent MAGNITUDE reconstruction (per-category MDRM mapping
-  across schema vintages, validated to the 2014+ official total within tolerance), and
-  re-run `b1_compare`. Until that closes the 2014 level shift, point-in-time does not
-  beat restated and is not shipped.
-- Independent of point-in-time, the FinLens noncurrent feature-mapping bug
-  (P9LNLS instead of NCLNLS) it surfaced has been fixed in the served model.
+## Decision (after a fair retest)
+- The served TRAINING model stays on the FDIC-restated panel + Tier A. The fair retest
+  (noncurrent corrected on both sides) shows point-in-time still underperforms as a
+  training source (0.131 vs 0.176), and the residual gap is the fundamental
+  originally-filed-is-noisier effect, which more ETL will not remove. So shipping the
+  point-in-time panel as the training source would knowingly ship a worse model.
+- **But B1 is not shelved - it is used where it is genuinely correct:** forward (live)
+  scoring of the current quarter MUST use originally-filed values (no restatement
+  exists yet), which is exactly the FFIEC point-in-time path. The Early Warning "Live
+  forward score" tab is the realisation of B1 for the one place point-in-time is not
+  optional.
+- B1 also already paid off once: it surfaced the noncurrent field bug (P9LNLS vs
+  NCLNLS), and fixing that lifted the shipped model 0.221 -> 0.273.
+- Genuinely remaining (honest): a pure originally-filed pre-2017 total-noncurrent does
+  not exist in FFIEC (no total line, no ground truth to validate a reconstruction);
+  pre-2017 noncurrent therefore uses FDIC's restated total. Closing that would require
+  an external originally-filed source we do not have at $0.

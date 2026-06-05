@@ -112,14 +112,15 @@ def _render_score(result: dict, actual: int | None = None, key: str = "score") -
         )
 
 
-status_ribbon("Historical model backtest")
+status_ribbon("Historical backtest + experimental live scoring")
 page_intro(
     "Business Surface",
     "Early Warning",
-    "Pick a bank and the model scores it as of a past quarter whose outcome is already "
-    "known, then shows the factors behind the score and what actually happened. This is a "
-    "historical check of how the model performs on public data, not a forecast about any "
-    "bank's future.",
+    "Pick a bank and the model scores its distress probability and the factors behind it. "
+    "Most tabs are a historical backtest (scored on past quarters whose outcome is already "
+    "known, so the prediction can be checked against reality); the 'Live forward score' tab "
+    "estimates a live bank's latest filing. A live score is a model estimate, not a forecast "
+    "that a bank will fail, and failure is rare (base rate under 1%).",
     wiki_slug="how-to-read-a-stress-score",
 )
 st.markdown(
@@ -144,8 +145,9 @@ if not _model_available():
     st.stop()
 
 scenario = _backend()
-tab_insert, tab_holdout, tab_what_if = st.tabs(
-    ["Backtest any bank (by name)", "Failed-bank backtests", "Hypothetical what-if"]
+tab_insert, tab_holdout, tab_live, tab_what_if = st.tabs(
+    ["Backtest any bank (by name)", "Failed-bank backtests",
+     "Live forward score (experimental)", "Hypothetical what-if"]
 )
 
 with tab_insert:
@@ -196,6 +198,46 @@ with tab_holdout:
         if row is not None:
             _render_score(scenario.score_features(row["features"]), row["actual_label_4"], key="holdout")
 
+with tab_live:
+    chart_note(
+        "Read this before you read the number",
+        "This is a MODEL ESTIMATE on a live bank's most recent public filing, not a "
+        "forecast that the bank will fail. Bank failure is rare (base rate under 1%), so "
+        "even a relatively high score means the bank is very probably fine. The number is "
+        "a calibrated probability from a backtested model, not advice, not a rating, and "
+        "not a basis for any deposit, investment, or business decision. For decisions "
+        "about a bank, rely only on official U.S. regulator sources.",
+    )
+    st.write(
+        "Score a live U.S. bank as of its **latest available quarter**, whose 4-quarter "
+        "outcome has not yet elapsed. The model's out-of-time track record (PR-AUC ~0.27 "
+        "on 66 real failures, with wide intervals) is on the AI Engineering surface; treat "
+        "this as a screening estimate, nothing more."
+    )
+    live = scenario.live_bank_directory()
+    llabels = live["label"].tolist()
+    lchoice = st.selectbox(
+        "Bank (live)", llabels, key="live_bank_pick",
+        help="Type to search. Scores the most recent available filing.",
+        placeholder="Start typing a bank name…",
+    )
+    if lchoice:
+        lpick = live[live["label"] == lchoice].iloc[0]
+        lrow = scenario.latest_row_for_cert(int(lpick["cert"]))
+        if lrow is None:
+            st.warning("No data for that bank.")
+        else:
+            tag = ("outcome already known" if lrow["outcome_known"]
+                   else "FORWARD estimate — outcome not yet elapsed")
+            st.info(
+                f"{lrow['bank_name']} ({lrow['state']}), scored as of {lrow['quarter']} "
+                f"· FDIC CERT {lrow['cert']} · {tag}"
+            )
+            _render_score(
+                scenario.score_features(lrow["features"]),
+                lrow["actual_label_4"], key="live",
+            )
+
 with tab_what_if:
     st.write(
         "Move the CAMELS levers to build a hypothetical bank and watch the live score. "
@@ -218,12 +260,14 @@ with tab_what_if:
 
 chart_note(
     "Please read this",
-    "These scores are a historical backtest on public FDIC data: the model is scored only "
-    "on past quarters whose outcome has already happened, so its prediction can be checked "
-    "against reality. Nothing here is a forecast, and it is not an indication that any bank "
-    "will fail. Forward-looking scoring of live banks is intentionally disabled to avoid "
-    "misinformation. This is not financial, investment, deposit, or supervisory advice; for "
-    "decisions about a bank rely only on official U.S. government and regulator sources.",
+    "Most tabs here are a historical backtest on public FDIC data (scored on past quarters "
+    "whose outcome has already elapsed, so the prediction can be checked against reality). "
+    "The 'Live forward score' tab additionally estimates a probability for a live bank's "
+    "latest filing; that is a MODEL ESTIMATE, not a forecast that a bank will fail. Bank "
+    "failure is rare (base rate under 1%), so even an elevated score almost always resolves "
+    "to survival. Nothing here is financial, investment, deposit, or supervisory advice, or "
+    "a rating; for decisions about a bank rely only on official U.S. government and "
+    "regulator sources.",
 )
 
 

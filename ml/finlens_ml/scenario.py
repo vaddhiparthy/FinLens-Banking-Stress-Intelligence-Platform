@@ -139,6 +139,44 @@ def latest_known_row_for_cert(cert: int) -> dict | None:
     }
 
 
+@lru_cache(maxsize=1)
+def live_bank_directory() -> pd.DataFrame:
+    """One row per bank at its MOST RECENT available quarter, for FORWARD (live) scoring
+    of institutions whose 4-quarter outcome has NOT yet elapsed. A forward score is a
+    model ESTIMATE on the latest public filing, not a forecast of certain failure; the
+    UI frames every such score with explicit disclaimers (base rate < 1%)."""
+    df = _dataset().copy()
+    latest = df.sort_values("obs_qord").drop_duplicates("cert", keep="last")
+    cols = [c for c in ["cert", "bank_name", "state", "quarter"] if c in latest.columns]
+    out = latest[cols].dropna(subset=["bank_name"]).copy()
+    out["cert"] = out["cert"].astype(int)
+    out["label"] = (out["bank_name"].astype(str)
+                    + " (" + out["state"].fillna("?").astype(str) + ")")
+    return out.sort_values("bank_name").reset_index(drop=True)
+
+
+def latest_row_for_cert(cert: int) -> dict | None:
+    """Most recent available bank-quarter for a CERT, for a FORWARD (live) score. The
+    4-quarter outcome may not have elapsed yet (``outcome_known`` False, actual None)."""
+    df = _dataset()
+    sub = df[df["cert"] == cert]
+    if sub.empty:
+        return None
+    row = sub.sort_values("obs_qord").iloc[-1]
+    feats = {c: (None if pd.isna(row[c]) else float(row[c])) for c in FEATURE_COLUMNS}
+    lbl = row.get("label_4")
+    known = not pd.isna(lbl)
+    return {
+        "cert": int(cert),
+        "bank_name": row.get("bank_name"),
+        "quarter": row.get("quarter"),
+        "state": row.get("state"),
+        "features": feats,
+        "actual_label_4": (int(lbl) if known else None),
+        "outcome_known": bool(known),
+    }
+
+
 def held_out_failed_banks(horizon_q: int = 4, limit: int = 25) -> pd.DataFrame:
     """Real banks that actually FAILED within the horizon (label==1), for the
     hold-out demo: pick one, score its pre-failure quarter, compare to the outcome."""

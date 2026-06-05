@@ -86,30 +86,16 @@ def _noncurrent(RCN: pd.DataFrame) -> pd.Series:
     one filer-domain per item to avoid RCFD/RCON double-counting. The category sum is
     validated against the official total where both exist (see
     ml/scripts/b1_noncurrent_audit.py, which writes the reconstruction stats)."""
+    # The official total-noncurrent lines (1403 nonaccrual + 1407 90+) exist only from
+    # 2017Q1 on. Use them where present; otherwise return NaN. A naive pre-2017
+    # per-category sum double-counts RC-N's hierarchical sub-lien and memoranda items
+    # (verified: it over- or under-counts vs the 2017+ official total with no FFIEC
+    # ground truth to calibrate against), so pre-2017 noncurrent is filled downstream
+    # from FDIC's published NCLNLS total (see b1_build_panel.py).
     na = _num(RCN, "RCFD1403", "RCON1403")
     pd90 = _num(RCN, "RCFD1407", "RCON1407")
     official = na.add(pd90, fill_value=0)
-    if official.notna().any():
-        return official
-    # pre-2014 category sum, deduped per 4-char item (prefer RCFD > RCON > RCFA)
-    by_item: dict[str, str] = {}
-    for c in RCN.columns:
-        if not _is_noncurrent_label(_LABELS.get(str(c).upper(), "")):
-            continue
-        item = str(c)[-4:]
-        cur = by_item.get(item)
-        if cur is None or (str(c).upper().startswith("RCFD") and not cur.upper().startswith("RCFD")):
-            by_item[item] = c
-    if not by_item:
-        return pd.Series(np.nan, index=RCN.index)
-    total = pd.Series(0.0, index=RCN.index)
-    any_val = pd.Series(False, index=RCN.index)
-    for col in by_item.values():
-        v = pd.to_numeric(RCN[col].astype(str).str.replace(",", "", regex=False),
-                          errors="coerce")
-        total = total.add(v, fill_value=0)
-        any_val = any_val | v.notna()
-    return total.where(any_val)  # NaN if the bank reported none of these columns
+    return official if official.notna().any() else pd.Series(np.nan, index=RCN.index)
 
 
 def _qnum(repdte: str) -> int:

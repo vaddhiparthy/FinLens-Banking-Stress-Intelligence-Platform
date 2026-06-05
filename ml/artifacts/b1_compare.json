@@ -17,10 +17,10 @@
   },
   "point_in_time": {
     "oot": {
-      "pr_auc": 0.1005,
+      "pr_auc": 0.1307,
       "ci": [
-        0.0497,
-        0.1738
+        0.0647,
+        0.2297
       ],
       "n_test": 118493,
       "pos": 66
@@ -33,7 +33,7 @@
   },
   "noncurrent_health": {
     "fdic_frac_zero": 0.092,
-    "pit_frac_zero": 0.148
+    "pit_frac_zero": 0.091
   },
   "noncurrent_field_audit": {
     "p9lnls_zero_rate": 0.497,
