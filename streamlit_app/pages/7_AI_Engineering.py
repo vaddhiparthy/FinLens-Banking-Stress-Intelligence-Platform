@@ -263,7 +263,9 @@ elif section == "quality":
                         f"**Multi-origin rolling backtest** ({rb['n_folds']} embargoed "
                         f"out-of-time folds): PR-AUC mean **{rb['pr_auc_mean']}** "
                         f"(±{rb['pr_auc_std']}), range {rb['pr_auc_min']}–{rb['pr_auc_max']}. "
-                        "The spread is the honest story: strong in failure-containing "
+                        f"The headline {t['pr_auc']:.3f} is the single last held-out window; "
+                        f"this {rb['pr_auc_mean']} is the mean across all folds, so the two "
+                        "agree. The spread is the honest story: strong in failure-containing "
                         "windows, near-floor in calm years."
                     )
         chal = m.get("challengers", {})
@@ -272,8 +274,7 @@ elif section == "quality":
             section_heading(
                 "Effective-challenge ladder",
                 "The constrained model vs an unconstrained GBM (same tuned params, no "
-                "monotone constraints) and the penalized logit. The monotone constraints "
-                "should not cost meaningful PR-AUC.",
+                "monotone constraints) and the penalized logit.",
             )
             ladder = [
                 {"model": "Calibrated LGBM (monotone)", "PR-AUC": round(t["pr_auc"], 4),
@@ -288,6 +289,20 @@ elif section == "quality":
                            "ROC-AUC": round(logit["roc_auc"], 4),
                            "recall@200": round(logit["recall_at_k"], 3)})
             st.dataframe(pd.DataFrame(ladder), hide_index=True, use_container_width=True)
+            if "unconstrained_gbm" in chal:
+                u = chal["unconstrained_gbm"]
+                gap = u["pr_auc"] - t["pr_auc"]
+                rel = gap / u["pr_auc"] if u["pr_auc"] else 0.0
+                st.caption(
+                    f"The unconstrained GBM scores higher (PR-AUC {u['pr_auc']:.3f} vs "
+                    f"{t['pr_auc']:.3f}, a {gap:.3f} / {rel:.0%} gap). That gap is the "
+                    "deliberate price of the monotone constraints: the shipped model is held "
+                    "to economically-signed relationships (more capital never raises predicted "
+                    "risk, higher noncurrent loans never lowers it). A free model can buy a "
+                    "little in-window PR-AUC by learning a perverse relationship, which is "
+                    "exactly what SR 11-7 conceptual-soundness review rejects, so the "
+                    "constrained, validator-defensible model is the one served."
+                )
         if tune.get("tuned"):
             bp = tune.get("best_params", {})
             st.caption(

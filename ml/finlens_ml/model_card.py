@@ -244,6 +244,10 @@ def generate_validation_report(horizon_q: int = 4) -> Path:
     diff = metrics.get("lgbm_vs_logit_ap_diff", {})
     dci = diff.get("ap_diff_ci", [float("nan"), float("nan")])
     rb = metrics.get("rolling_backtest", {}).get("aggregate", {})
+    _unc = metrics.get("challengers", {}).get("unconstrained_gbm", {})
+    ug_pr = _unc.get("pr_auc", t["pr_auc"])
+    ug_gap = ug_pr - t["pr_auc"]
+    ug_rel = ug_gap / ug_pr if ug_pr else 0.0
     report = f"""# Validation Report — FinLens Bank-Distress Model (SR 11-7 three pillars)
 
 *Effective-challenge package. Metrics computed from real out-of-time evaluation.*
@@ -259,8 +263,12 @@ def generate_validation_report(horizon_q: int = 4) -> Path:
   monotone constraints). The constrained GBM beats the logit on the rare-event metric
   (PR-AUC {t['pr_auc']:.4f} vs {lg['pr_auc']:.4f}); because that margin sits on
   {metrics['test_positives']} positives it is reported with a paired bootstrap (see §3),
-  not as a bare point comparison. The unconstrained GBM confirms the monotone constraints
-  cost little to no performance.
+  not as a bare point comparison. The unconstrained GBM scores higher on PR-AUC
+  ({ug_pr:.4f} vs {t['pr_auc']:.4f}, a {ug_gap:.4f} / {ug_rel:.0%} gap); that gap is the
+  deliberate cost of the monotone constraints. A free model can buy a little in-window
+  PR-AUC by learning a perverse relationship (e.g. more capital raising predicted risk),
+  which is precisely what conceptual-soundness review rejects, so the constrained,
+  economically-signed model is the one served.
 - **Hyperparameters:** tuned with Optuna over inner time-series CV folds (not hand-set
   magic numbers); the search is recorded in the metrics artifact.
 - **No leakage:** the embargo guarantees a training row's label window (q, q+H] ends

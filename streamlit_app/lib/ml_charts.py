@@ -205,8 +205,7 @@ def probability_gauge(prob: float, threshold: float, mode: str | None = None) ->
     green, amber, red = pal["teal"], pal.get("sand", "#c69026"), pal["rose"]
     amber = "#c69026"
     pct = prob * 100
-    cap = max(pct * 1.5, threshold * 100 * 2.5, 20)
-    cap = min(cap, 100)
+    cap = 100.0  # fixed, honest full scale: a 0-100% probability axis (no ambiguous max)
     bar = red if prob >= threshold else (amber if prob >= threshold / 2 else green)
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
@@ -214,6 +213,7 @@ def probability_gauge(prob: float, threshold: float, mode: str | None = None) ->
         number={"suffix": "%", "font": {"size": 30, "color": pal["text_main"]}},
         gauge={
             "axis": {"range": [0, cap], "tickcolor": pal["text_soft"],
+                     "tickvals": [0, 25, 50, 75, 100], "ticksuffix": "%",
                      "tickfont": {"size": 9, "color": pal["text_soft"]}},
             "bar": {"color": bar, "thickness": 0.7},
             "bgcolor": "rgba(0,0,0,0)",

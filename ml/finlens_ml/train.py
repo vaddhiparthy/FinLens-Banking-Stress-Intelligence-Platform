@@ -317,7 +317,7 @@ def train(horizon_q: int = 4, seed: int = 42) -> dict:
             "logit_benchmark": evaluate(y_te, p_logit, k=k).as_dict(),
         },
         # effective-challenge ladder: the constrained model vs an unconstrained GBM
-        # (monotone constraints should not cost meaningful PR-AUC) and the logit.
+        # (the gap quantifies what the monotone constraints cost) and the logit.
         "challengers": {
             "unconstrained_gbm": evaluate(y_te, p_unc, k=k).as_dict(),
             "logit": evaluate(y_te, p_logit, k=k).as_dict(),

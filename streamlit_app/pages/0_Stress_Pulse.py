@@ -50,13 +50,16 @@ def apply_readable_axes(figure: go.Figure) -> go.Figure:
 
 def earnings_chart(frame: pd.DataFrame) -> go.Figure:
     figure = go.Figure()
-    figure.add_bar(x=frame["quarter"], y=frame["net_income"], name="Net income ($B)")
+    figure.add_bar(x=frame["quarter"], y=frame["net_income"], name="Net income ($B)",
+                   marker_color="#7c93a8")
     figure.add_scatter(
         x=frame["quarter"],
         y=frame["roa"],
         name="ROA (%)",
         mode="lines+markers",
         yaxis="y2",
+        line=dict(color="#bf6d47", width=2.5),
+        marker=dict(color="#bf6d47", size=6),
     )
     figure.update_layout(
         margin=dict(l=10, r=10, t=40, b=10),

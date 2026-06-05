@@ -32,7 +32,10 @@ def test_generate_model_card_writes_real_metrics() -> None:
     report = generate_validation_report()
     text = " ".join(card.read_text(encoding="utf-8").lower().split())  # normalize wrapping
     assert "pr-auc" in text and "no protected class" in text
-    assert "sr 26-2" in text
+    # SR 11-7 is the real, established model-risk guidance; the card must not invent a
+    # fictitious successor (e.g. "SR 26-2"), which a validator would catch instantly.
+    assert "sr 11-7" in text
+    assert "sr 26-2" not in text
     assert "conceptual soundness" in report.read_text(encoding="utf-8").lower()
 
 

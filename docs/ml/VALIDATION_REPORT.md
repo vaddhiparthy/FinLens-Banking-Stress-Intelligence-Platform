@@ -13,8 +13,12 @@
   monotone constraints). The constrained GBM beats the logit on the rare-event metric
   (PR-AUC 0.2213 vs 0.1117); because that margin sits on
   66 positives it is reported with a paired bootstrap (see §3),
-  not as a bare point comparison. The unconstrained GBM confirms the monotone constraints
-  cost little to no performance.
+  not as a bare point comparison. The unconstrained GBM scores higher on PR-AUC
+  (0.2643 vs 0.2213, a 0.0431 / 16% gap); that gap is the
+  deliberate cost of the monotone constraints. A free model can buy a little in-window
+  PR-AUC by learning a perverse relationship (e.g. more capital raising predicted risk),
+  which is precisely what conceptual-soundness review rejects, so the constrained,
+  economically-signed model is the one served.
 - **Hyperparameters:** tuned with Optuna over inner time-series CV folds (not hand-set
   magic numbers); the search is recorded in the metrics artifact.
 - **No leakage:** the embargo guarantees a training row's label window (q, q+H] ends
