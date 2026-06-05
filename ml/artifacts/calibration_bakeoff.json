@@ -1,0 +1,25 @@
+{
+  "calibration_bakeoff": {
+    "isotonic": {
+      "ece": 0.00019,
+      "top_decile_gap": 0.001
+    },
+    "platt": {
+      "ece": 0.00027,
+      "top_decile_gap": 0.00038
+    },
+    "venn_abers(sample)": {
+      "ece": 0.00066,
+      "top_decile_gap": 0.00564
+    }
+  },
+  "winner": "isotonic",
+  "winner_stability": {
+    "bootstrap_flip_rate": 0.243,
+    "note": "fraction of resamples where the iso-vs-platt ECE winner flips"
+  },
+  "conformal_feasibility": {
+    "venn_abers_median_interval_width": 0.0,
+    "prediction_set_note": "Split-conformal prediction SETS for the binary label are vacuous at this ~0.055% base rate (almost always {survive}), so they are not shipped. The Venn-Abers probability interval [p0, p1] is the usable per-instance uncertainty; its median width is reported above."
+  }
+}

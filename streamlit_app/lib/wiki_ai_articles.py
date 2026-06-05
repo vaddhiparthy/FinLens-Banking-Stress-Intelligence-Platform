@@ -11,6 +11,62 @@ precise, third-person, no marketing.
 
 from __future__ import annotations
 
+import json as _json
+from pathlib import Path as _Path
+
+
+def _load_metric_values() -> dict:
+    """Read served-model numbers from the committed artifacts at import time so the
+    encyclopedia text auto-syncs on every retrain and can never go stale. Falls back to
+    em-dash placeholders if an artifact is missing (the prose still reads sensibly)."""
+    V: dict[str, str] = {}
+    try:
+        root = next(p for p in _Path(__file__).resolve().parents
+                    if (p / "pyproject.toml").exists())
+        art = root / "ml" / "artifacts"
+        m = _json.loads((art / "metrics_h4.json").read_text())
+        t = m["oot_test"]["calibrated_lgbm"]
+        lg = m["oot_test"]["logit_benchmark"]
+        ci = m.get("oot_test_ci", {})
+        d = m.get("lgbm_vs_logit_ap_diff", {})
+        rb = m.get("rolling_backtest", {}).get("aggregate", {})
+        unc = m.get("challengers", {}).get("unconstrained_gbm", {})
+
+        def _rng(x):
+            return f"[{x[0]:.3f}, {x[1]:.3f}]" if x and x[0] is not None else "[—]"
+
+        dci = d.get("ap_diff_ci", [None, None])
+        V.update(
+            pr=f"{t['pr_auc']:.3f}", roc=f"{t['roc_auc']:.3f}",
+            recall_pct=f"{t['recall_at_k'] * 100:.1f}%",
+            logit_pr=f"{lg['pr_auc']:.3f}", logit_roc=f"{lg['roc_auc']:.3f}",
+            boot_pr=_rng(ci.get("pr_auc_ci")), boot_roc=_rng(ci.get("roc_auc_ci")),
+            boot_recall=_rng(ci.get("recall_at_k_ci")),
+            paired_ci=(f"[{dci[0]:+.3f}, {dci[1]:+.3f}]" if dci[0] is not None else "[—]"),
+            p_beat=f"{d.get('prob_a_beats_b', 0) * 100:.1f}%",
+            roll_mean=str(rb.get("pr_auc_mean", "—")), roll_std=str(rb.get("pr_auc_std", "—")),
+            roll_min=str(rb.get("pr_auc_min", "—")), roll_max=str(rb.get("pr_auc_max", "—")),
+            n_est=str(m.get("final_model", {}).get("n_estimators", "—")),
+            unc_pr=f"{unc.get('pr_auc', 0):.3f}",
+        )
+        viz = _json.loads((art / "viz_pack.json").read_text())
+        si = viz.get("shap_importance", [])
+        for i in range(min(3, len(si))):
+            V[f"shap{i+1}"] = si[i]["feature"]
+            V[f"shap{i+1}_v"] = f"{si[i]['mean_abs_shap']:.3f}"
+    except Exception:
+        pass
+    # safe defaults so f-strings never KeyError
+    for k in ("pr", "roc", "recall_pct", "logit_pr", "logit_roc", "boot_pr", "boot_roc",
+              "boot_recall", "paired_ci", "p_beat", "roll_mean", "roll_std", "roll_min",
+              "roll_max", "n_est", "unc_pr", "shap1", "shap1_v", "shap2", "shap2_v",
+              "shap3", "shap3_v"):
+        V.setdefault(k, "—")
+    return V
+
+
+_V = _load_metric_values()
+
 AI_ARTICLES: dict[str, dict] = {
     "Problem Framing: Discrete-Time Hazard": {
         "cluster": "AI Engineering",
@@ -230,8 +286,8 @@ AI_ARTICLES: dict[str, dict] = {
             "deliberately because it contains real failures, including the 2023 cluster. "
             "Judging a rare-event model on a single calm holdout with zero positives is "
             "meaningless. The test set is 118,943 bank-quarters with 66 real failures. The "
-            "calibrated LightGBM scores PR-AUC 0.273, ROC-AUC 0.817, and recall at the top-200 "
-            "review budget of 54.5%.\n\n"
+            f"calibrated LightGBM scores PR-AUC {_V['pr']}, ROC-AUC {_V['roc']}, and recall at "
+            f"the top-200 review budget of {_V['recall_pct']}.\n\n"
             "## Why PR-AUC, not accuracy or ROC\n"
             "At a 0.00055 base rate, accuracy is trivially near-perfect for a model that flags "
             "nothing, so it is not reported. PR-AUC (average precision) is the headline because "
@@ -239,22 +295,24 @@ AI_ARTICLES: dict[str, dict] = {
             "exactly what off-site monitoring cares about. recall@k measures, of a fixed "
             "supervisory review budget of the k highest-scored banks, how many real failures "
             "are caught. ROC-AUC is reported only for comparability with the literature; "
-            "notably the logit benchmark posts a higher ROC-AUC (0.924) yet a much lower PR-AUC "
-            "(0.153), which is the textbook way ROC misleads under heavy imbalance.\n\n"
+            f"notably the logit benchmark posts a higher ROC-AUC ({_V['logit_roc']}) yet a much "
+            f"lower PR-AUC ({_V['logit_pr']}), which is the textbook way ROC misleads under heavy "
+            "imbalance.\n\n"
             "## Uncertainty, not point estimates\n"
             "With only 66 positives, a bare point estimate is not a defensible result. "
             "``bootstrap_metrics`` reports 95% bootstrap intervals (the G0 coverage simulation "
-            "selects BCa as the method that actually covers at this positive count): PR-AUC about "
-            "[0.163, 0.408], ROC-AUC about [0.749, 0.881], recall@k about [0.400, 0.636]. To "
-            "test whether the model genuinely beats the benchmark, ``paired_bootstrap_ap_diff`` "
-            "resamples both models on the same draws: the PR-AUC difference has a 95% CI of "
-            "about [+0.038, +0.195] and the model beats the logit in 99.8% of resamples. The "
-            "effective-challenge benchmark is detailed in [[Model Risk and Governance]].\n\n"
+            f"selects BCa as the method that actually covers at this positive count): PR-AUC about "
+            f"{_V['boot_pr']}, ROC-AUC about {_V['boot_roc']}, recall@k about {_V['boot_recall']}. "
+            f"To test whether the model genuinely beats the benchmark, ``paired_bootstrap_ap_diff`` "
+            f"resamples both models on the same draws: the PR-AUC difference has a 95% CI of "
+            f"about {_V['paired_ci']} and the model beats the logit in {_V['p_beat']} of resamples. "
+            "The effective-challenge benchmark is detailed in [[Model Risk and Governance]].\n\n"
             "## The rolling backtest and by-year cohorts\n"
             "One holdout cannot show variance. ``rolling_origin_folds`` builds expanding-window "
             "out-of-time folds at successive origins, and the model is refit and rescored on "
-            "each. Across 10 folds, PR-AUC averages 0.213 with a standard deviation of 0.213, "
-            "ranging from near 0.000 in near-failure-free calm years to 0.515 in a failure-rich "
+            f"each. Across 10 folds, PR-AUC averages {_V['roll_mean']} with a standard deviation "
+            f"of {_V['roll_std']}, ranging from near {_V['roll_min']} in near-failure-free calm "
+            f"years to {_V['roll_max']} in a failure-rich "
             "fold. The by-year cohort table tells the same story honestly: strong in "
             "failure-containing years such as 2019, 2020, and 2025, near the floor or undefined "
             "in calm years such as 2021 (zero failures). A model that scores well only when "
@@ -340,8 +398,9 @@ AI_ARTICLES: dict[str, dict] = {
             "Global importance is the mean absolute SHAP value per feature over a bounded "
             "reservoir sample of out-of-time-era rows. The ranking is dominated by capital and "
             "earnings and asset quality, consistent with the bank-failure literature. The top "
-            "driver by a wide margin is ``tier1_rwa_ratio`` (mean |SHAP| about 0.280), followed "
-            "by ``noncurrent_to_loans`` (about 0.140) and ``roe`` (about 0.060), then "
+            f"driver by a wide margin is ``{_V['shap1']}`` (mean |SHAP| about {_V['shap1_v']}), "
+            f"followed by ``{_V['shap2']}`` (about {_V['shap2_v']}) and ``{_V['shap3']}`` (about "
+            f"{_V['shap3_v']}), then "
             "``tier1_leverage`` and ``equity_to_assets``. After those come peer-relative and "
             "trend features such as ``equity_to_assets_peer_z``, ``equity_to_assets_yoy_delta``, "
             "and ``noncurrent_to_loans_peer_z``. The dominance of the risk-based tier-1 ratio, "
@@ -396,16 +455,18 @@ AI_ARTICLES: dict[str, dict] = {
             "prevent the perverse relationships a validator would reject (see [[Feature "
             "Engineering and the Monotone Contract]]). Leakage is controlled by the labelling "
             "rule and the embargoed split, enforced at runtime. The out-of-time ROC-AUC of "
-            "about 0.817 sits well below the level that would suggest leakage, which is itself "
+            f"about {_V['roc']} sits well below the level that would suggest leakage, which is "
+            "itself "
             "evidence the split is honest.\n\n"
             "## Effective challenge\n"
             "A model is only credible if something independent tries to beat it. The benchmark "
             "is a penalized logistic regression with median imputation, standardization, and "
             "balanced class weights, the standard regulatory-style linear reference. The "
-            "boosted model beats it on the rare-event metric (PR-AUC 0.273 versus 0.153) and on "
-            "recall@k. Because that margin rests on 66 positives, it is reported as a paired "
-            "bootstrap rather than a bare comparison: difference 95% CI about [+0.038, +0.195], "
-            "P(model beats logit) about 99.8%. The benchmark and the paired test live in "
+            f"boosted model beats it on the rare-event metric (PR-AUC {_V['pr']} versus "
+            f"{_V['logit_pr']}) and on recall@k. Because that margin rests on 66 positives, it is "
+            f"reported as a paired bootstrap rather than a bare comparison: difference 95% CI about "
+            f"{_V['paired_ci']}, P(model beats logit) about {_V['p_beat']}. The benchmark and the "
+            "paired test live in "
             "[[Out-of-Time Evaluation]].\n\n"
             "## Registry, champion alias, and the metric gate\n"
             "Promotion and rollback go through the MLflow model registry using aliases rather "
@@ -428,10 +489,11 @@ AI_ARTICLES: dict[str, dict] = {
             "## Honest known gaps\n"
             "The governance posture is candid about what remains. Hyperparameters ARE tuned "
             "with Optuna over inner time-series CV folds (the search is shown in the Model "
-            "Quality tab); the served tree count (n_estimators = 38) comes from out-of-time "
+            f"Quality tab); the served tree count (n_estimators = {_V['n_est']}) comes from "
+            "out-of-time "
             "early stopping on average precision. The effective-challenge ladder is built and "
-            "scored, not planned: a penalized logit, an unconstrained GBM (PR-AUC 0.270, which "
-            "the monotone model now matches), and bagged / stacked ensembles are all measured "
+            f"scored, not planned: a penalized logit, an unconstrained GBM (PR-AUC {_V['unc_pr']}, "
+            f"which the monotone model now matches), and bagged / stacked ensembles are all measured "
             "(the ablation forest), though at 66 "
             "out-of-time positives none of these point gains is statistically separable, so the "
             "monotone single model is served and the rest are reported as challengers. The "
