@@ -30,7 +30,7 @@ def main() -> None:
                 "n_trials": ht.get("n_trials"), "n_inner_folds": ht.get("n_inner_folds")}
 
     from finlens_ml.train import train
-    r = train(horizon_q=4, fixed_params=best, study_override=override)
+    r = train(horizon_q=4, fixed_params=best, study_override=override, bagged_k=12)
     t = r["oot_test"]["calibrated_lgbm"]
     o = r["hyperparameter_tuning"].get("study", {}).get("optimism", {})
     print(f"served (best tuned config): OOT PR-AUC={t['pr_auc']:.4f} "

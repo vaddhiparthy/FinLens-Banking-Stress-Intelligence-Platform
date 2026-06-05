@@ -5,16 +5,16 @@
   "n_test": 118943,
   "test_positives": 66,
   "scale_pos_weight": 18.4973,
-  "calibration_method": "isotonic",
+  "calibration_method": "isotonic (bagged x12)",
   "best_iteration": 38,
   "oot_test": {
     "calibrated_lgbm": {
       "n": 118943,
       "n_positive": 66,
       "base_rate": 0.0005548876352538611,
-      "pr_auc": 0.2727859577724162,
-      "roc_auc": 0.8170485485252009,
-      "brier": 0.00044964677328940625,
+      "pr_auc": 0.3013589183013256,
+      "roc_auc": 0.8552712747910305,
+      "brier": 0.0004474122527567104,
       "recall_at_k": 0.5454545454545454,
       "precision_at_k": 0.18,
       "k": 200
@@ -1410,34 +1410,34 @@
       "n_params_varied": 7,
       "optimism": {
         "inner_pr_auc": 0.5665,
-        "oot_pr_auc": 0.2728,
-        "gap": 0.2937,
-        "ratio": 2.08
+        "oot_pr_auc": 0.3014,
+        "gap": 0.2651,
+        "ratio": 1.88
       }
     }
   },
   "oot_test_ci": {
     "n_boot_effective": 2000,
     "pr_auc_ci": [
-      0.16328675382798802,
-      0.40818961852271796
+      0.19084418702981437,
+      0.4379720033589294
     ],
     "roc_auc_ci": [
-      0.7492943120617864,
-      0.8809074531691151
+      0.8029600875715747,
+      0.9053104405467389
     ],
     "recall_at_k_ci": [
-      0.3999315068493151,
-      0.6363636363636364
+      0.41891106222501573,
+      0.657203647416413
     ]
   },
   "lgbm_vs_logit_ap_diff": {
-    "ap_diff_median": 0.11326620355385017,
+    "ap_diff_median": 0.14199601941399892,
     "ap_diff_ci": [
-      0.03777285179803688,
-      0.19540843891437204
+      0.06964426238338985,
+      0.22234734015793486
     ],
-    "prob_a_beats_b": 0.9975
+    "prob_a_beats_b": 1.0
   },
   "rolling_backtest": {
     "aggregate": {
@@ -1526,20 +1526,20 @@
       "n": 20455,
       "n_positive": 19,
       "base_rate": 0.0009288682473722807,
-      "pr_auc": 0.47664743979456,
-      "roc_auc": 0.9692287088831886,
-      "brier": 0.0006484026007588058,
-      "recall_at_k": 0.6842105263157895,
-      "precision_at_k": 0.52,
+      "pr_auc": 0.49178286954920325,
+      "roc_auc": 0.9905095239566915,
+      "brier": 0.0006072781404400313,
+      "recall_at_k": 0.631578947368421,
+      "precision_at_k": 0.48,
       "k": 25
     },
     "2020": {
       "n": 19901,
       "n_positive": 7,
       "base_rate": 0.00035174111853675694,
-      "pr_auc": 0.7356532356532357,
-      "roc_auc": 0.9998599721380459,
-      "brier": 0.00017226368044167387,
+      "pr_auc": 0.7247474747474747,
+      "roc_auc": 0.999856381680047,
+      "brier": 0.00019197104619361036,
       "recall_at_k": 1.0,
       "precision_at_k": 0.28,
       "k": 25
@@ -1550,7 +1550,7 @@
       "base_rate": 0.0,
       "pr_auc": NaN,
       "roc_auc": NaN,
-      "brier": 2.7785643744901053e-05,
+      "brier": 3.3043535321457276e-05,
       "recall_at_k": NaN,
       "precision_at_k": 0.0,
       "k": 25
@@ -1559,9 +1559,9 @@
       "n": 18762,
       "n_positive": 14,
       "base_rate": 0.0007461891056390577,
-      "pr_auc": 0.0011132935026269806,
-      "roc_auc": 0.3710110030784236,
-      "brier": 0.0007504966059225286,
+      "pr_auc": 0.0013398083244167203,
+      "roc_auc": 0.43587506476881344,
+      "brier": 0.0007544413501740658,
       "recall_at_k": 0.0,
       "precision_at_k": 0.0,
       "k": 25
@@ -1570,20 +1570,20 @@
       "n": 18377,
       "n_positive": 9,
       "base_rate": 0.0004897426130489198,
-      "pr_auc": 0.14508224217293883,
-      "roc_auc": 0.886384533488192,
-      "brier": 0.00043599509449988465,
-      "recall_at_k": 0.1111111111111111,
-      "precision_at_k": 0.04,
+      "pr_auc": 0.22981526262971155,
+      "roc_auc": 0.9196579800619435,
+      "brier": 0.0004302362599432977,
+      "recall_at_k": 0.4444444444444444,
+      "precision_at_k": 0.16,
       "k": 25
     },
     "2024": {
       "n": 17868,
       "n_positive": 9,
       "base_rate": 0.0005036937541974479,
-      "pr_auc": 0.0014985887072343973,
-      "roc_auc": 0.7341552034144003,
-      "brier": 0.0005437424251035928,
+      "pr_auc": 0.0022927065883236956,
+      "roc_auc": 0.7455313536281116,
+      "brier": 0.0005293117298847873,
       "recall_at_k": 0.0,
       "precision_at_k": 0.0,
       "k": 25
@@ -1592,9 +1592,9 @@
       "n": 4354,
       "n_positive": 8,
       "base_rate": 0.0018373909049150207,
-      "pr_auc": 0.6744122597972462,
-      "roc_auc": 0.9580936493327197,
-      "brier": 0.0010216228392368877,
+      "pr_auc": 0.6969332455429498,
+      "roc_auc": 0.9820093189139438,
+      "brier": 0.0011070160923348647,
       "recall_at_k": 0.875,
       "precision_at_k": 0.28,
       "k": 25
@@ -1608,8 +1608,8 @@
     },
     {
       "k": 100,
-      "recall": 0.4242,
-      "precision": 0.28
+      "recall": 0.4394,
+      "precision": 0.29
     },
     {
       "k": 150,
@@ -1633,13 +1633,13 @@
     },
     {
       "k": 500,
-      "recall": 0.5455,
-      "precision": 0.072
+      "recall": 0.5758,
+      "precision": 0.076
     },
     {
       "k": 750,
-      "recall": 0.5909,
-      "precision": 0.052
+      "recall": 0.5758,
+      "precision": 0.0507
     },
     {
       "k": 1000,
@@ -1648,17 +1648,18 @@
     }
   ],
   "oot_calibration": {
-    "ece": 0.00011514936620991933,
-    "brier_overall": 0.00044964677328940625,
-    "brier_top_decile": 0.002311019713072095,
-    "top_decile_obs": 0.0033630401883302506,
-    "top_decile_pred": 0.0034140288622185617
+    "ece": 0.00012170565943379526,
+    "brier_overall": 0.0004474122527567104,
+    "brier_top_decile": 0.0024569664039392103,
+    "top_decile_obs": 0.0035311921977467632,
+    "top_decile_pred": 0.00347461690419046
   },
+  "bagged_k": 12,
   "final_model": {
     "n_train": 416095,
     "n_estimators": 38,
     "tree_count_source": "eval-model out-of-time early stopping (average_precision)",
-    "calibration_method": "isotonic",
+    "calibration_method": "isotonic (bagged x12)",
     "scale_pos_weight": 18.4973,
     "note": "served model; trained on all data via the identical _fit_calibrated pipeline, using the OOT-validated tree count from the eval model whose metrics are reported above"
   }

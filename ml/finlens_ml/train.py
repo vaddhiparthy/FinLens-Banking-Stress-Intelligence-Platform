@@ -300,7 +300,7 @@ def _fit_logit(X_tr: pd.DataFrame, y_tr: np.ndarray):
 
 
 def train(horizon_q: int = 4, seed: int = 42, fixed_params: dict | None = None,
-          study_override: dict | None = None) -> dict:
+          study_override: dict | None = None, bagged_k: int = 1) -> dict:
     settings = get_ml_settings()
     label = f"label_{horizon_q}"
     df = load_dataset()
@@ -340,6 +340,14 @@ def train(horizon_q: int = 4, seed: int = 42, fixed_params: dict | None = None,
     eval_model, eval_cal, method, spw, eval_best_it = _fit_calibrated(
         X_tr, y_tr, seed, params=best_params
     )
+    # Seed-bagged ensemble: average K calibrated members at the OOT-validated tree count.
+    # Bagging reduces estimator variance and had the highest ablation point estimate.
+    # The single eval_model is kept for raw/SHAP; the bagged ensemble drives the
+    # calibrated metrics and is the served artifact.
+    if bagged_k and bagged_k > 1:
+        from finlens_ml.ensemble import fit_bagged
+        eval_cal = fit_bagged(X_tr, y_tr, seed, bagged_k, best_params, eval_best_it)
+        method = f"isotonic (bagged x{bagged_k})"
     eval_logit = _fit_logit(X_tr, y_tr)
     # challenger: an UNCONSTRAINED GBM (same tuned params, no monotone) — proves the
     # economic constraints do not cost meaningful performance.
@@ -413,6 +421,11 @@ def train(horizon_q: int = 4, seed: int = 42, fixed_params: dict | None = None,
     final_model, final_cal, final_method, final_spw, final_it = _fit_calibrated(
         X, y, seed, fixed_rounds=eval_best_it, params=best_params
     )
+    if bagged_k and bagged_k > 1:
+        from finlens_ml.ensemble import fit_bagged
+        final_cal = fit_bagged(X, y, seed, bagged_k, best_params, final_it)
+        final_method = f"isotonic (bagged x{bagged_k})"
+        results["bagged_k"] = int(bagged_k)
     # provenance for the SERVED model (B3): identical pipeline + the tree count
     # discovered by the eval model's out-of-time early stopping.
     results["final_model"] = {

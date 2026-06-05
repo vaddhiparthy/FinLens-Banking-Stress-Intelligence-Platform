@@ -12,7 +12,7 @@ supervisory advice; **not** a consumer-credit decision (no ECOA/Reg-B adverse ac
 Calibrated, monotone-constrained LightGBM discrete-time hazard classifier on a
 per-bank-quarter panel. 34 CAMELS-aligned features. Served model trained on all
 data with the out-of-time-validated tree count (n_estimators=38),
-calibration=isotonic. Hyperparameters are tuned with Optuna over 39 trials on 3 inner time-series CV folds (best CV PR-AUC 0.5665), not hand-set. The effective-challenge ladder is a
+calibration=isotonic (bagged x12). Hyperparameters are tuned with Optuna over 39 trials on 3 inner time-series CV folds (best CV PR-AUC 0.5665), not hand-set. The effective-challenge ladder is a
 penalized logistic regression and an unconstrained GBM (same tuned params, no monotone
 constraints).
 
@@ -21,7 +21,7 @@ Lead metric is **PR-AUC** (rare-event); ROC-AUC is comparability-only; accuracy 
 
 | Model | PR-AUC | ROC-AUC | recall@200 | Brier |
 |---|---|---|---|---|
-| Calibrated LGBM | **0.2728** | 0.8170 | 0.545 | 0.00045 |
+| Calibrated LGBM | **0.3014** | 0.8553 | 0.545 | 0.00045 |
 | Unconstrained GBM | 0.2696 | 0.8332 | 0.515 | 0.00045 |
 | Logit benchmark | 0.1533 | 0.9241 | 0.379 | 0.00874 |
 
@@ -31,20 +31,20 @@ deprioritized here and shown only for comparability.
 
 ### Calibration
 All-rows Brier is dominated by true negatives, so we also report ECE and the flagged
-(top-decile) calibration: ECE=1.15e-04; in the top-scoring
-decile the model predicts 0.0034 vs observed
-0.0034.
+(top-decile) calibration: ECE=1.22e-04; in the top-scoring
+decile the model predicts 0.0035 vs observed
+0.0035.
 
 ### Performance by year (calibrated)
 |   year |     n |   n_positive |   pr_auc |   roc_auc |
 |-------:|------:|-------------:|---------:|----------:|
-|   2019 | 20455 |           19 |   0.4766 |    0.9692 |
-|   2020 | 19901 |            7 |   0.7357 |    0.9999 |
+|   2019 | 20455 |           19 |   0.4918 |    0.9905 |
+|   2020 | 19901 |            7 |   0.7247 |    0.9999 |
 |   2021 | 19226 |            0 | nan      |  nan      |
-|   2022 | 18762 |           14 |   0.0011 |    0.371  |
-|   2023 | 18377 |            9 |   0.1451 |    0.8864 |
-|   2024 | 17868 |            9 |   0.0015 |    0.7342 |
-|   2025 |  4354 |            8 |   0.6744 |    0.9581 |
+|   2022 | 18762 |           14 |   0.0013 |    0.4359 |
+|   2023 | 18377 |            9 |   0.2298 |    0.9197 |
+|   2024 | 17868 |            9 |   0.0023 |    0.7455 |
+|   2025 |  4354 |            8 |   0.6969 |    0.982  |
 
 In calm years with few or zero failures, PR-AUC is low or undefined — the expected
 behavior of a rare-event model.
@@ -78,28 +78,28 @@ and are deliberately not computed. We instead verify the model performs across s
 ### By asset-size tier
 | segment     |     n |   positives |   pr_auc |   roc_auc |   recall_at_k |
 |:------------|------:|------------:|---------:|----------:|--------------:|
-| Q1 smallest | 29736 |          31 |   0.2199 |    0.9297 |         0.419 |
-| Q2          | 29736 |          20 |   0.68   |    0.9893 |         0.85  |
-| Q4 largest  | 29736 |          15 |   0.0435 |    0.9165 |         0.2   |
+| Q1 smallest | 29736 |          31 |   0.2773 |    0.9389 |         0.419 |
+| Q2          | 29736 |          20 |   0.6638 |    0.992  |         0.85  |
+| Q4 largest  | 29736 |          15 |   0.0782 |    0.9632 |         0.2   |
 | Q3          | 29735 |           0 | nan      |  nan      |       nan     |
 
 ### By region
 | segment   |     n |   positives |   pr_auc |   roc_auc |   recall_at_k |
 |:----------|------:|------------:|---------:|----------:|--------------:|
-| Midwest   | 52454 |          25 |   0.3484 |    0.97   |         0.64  |
-| South     | 41899 |          23 |   0.3014 |    0.9383 |         0.609 |
-| Northeast | 13028 |          10 |   0.1953 |    0.9688 |         0.6   |
-| West      | 11337 |           8 |   0.0042 |    0.9006 |         0     |
+| Midwest   | 52454 |          25 |   0.439  |    0.9791 |         0.64  |
+| South     | 41899 |          23 |   0.3423 |    0.9437 |         0.609 |
+| Northeast | 13028 |          10 |   0.2453 |    0.9868 |         0.6   |
+| West      | 11337 |           8 |   0.0112 |    0.9497 |         0     |
 | Other     |   225 |           0 | nan      |  nan      |       nan     |
 
 ### By charter class
 | segment   |     n |   positives |   pr_auc |   roc_auc |   recall_at_k |
 |:----------|------:|------------:|---------:|----------:|--------------:|
-| NM        | 67918 |          42 |   0.3599 |    0.9799 |         0.5   |
-| N         | 18115 |          11 |   0.0617 |    0.8621 |         0.273 |
-| SM        | 17486 |           7 |   0.0027 |    0.9165 |         0     |
-| SI        |  6471 |           3 |   0.0023 |    0.8911 |         0     |
-| SB        |  6271 |           3 |   0.5    |    0.9997 |         1     |
+| NM        | 67918 |          42 |   0.4021 |    0.9888 |         0.5   |
+| N         | 18115 |          11 |   0.0953 |    0.8751 |         0.364 |
+| SM        | 17486 |           7 |   0.0056 |    0.9547 |         0     |
+| SI        |  6471 |           3 |   0.0058 |    0.9438 |         0     |
+| SB        |  6271 |           3 |   1      |    1      |         1     |
 | NC        |  1444 |           0 | nan      |  nan      |       nan     |
 | SL        |  1013 |           0 | nan      |  nan      |       nan     |
 | OI        |   225 |           0 | nan      |  nan      |       nan     |

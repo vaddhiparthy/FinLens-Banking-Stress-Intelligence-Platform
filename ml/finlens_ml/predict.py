@@ -34,8 +34,12 @@ class LoadedModel:
 # the pickle-equivalent of trusting whatever the file declares).
 TRUSTED_SKOPS_TYPES = (
     "collections.OrderedDict",
+    "builtins.list",
+    "finlens_ml.ensemble.BaggedCalibrated",
     "lightgbm.basic.Booster",
     "lightgbm.sklearn.LGBMClassifier",
+    "numpy.ndarray",
+    "sklearn.calibration.CalibratedClassifierCV",
     "sklearn.calibration._CalibratedClassifier",
     "sklearn.calibration._SigmoidCalibration",
     "sklearn.frozen.FrozenEstimator",

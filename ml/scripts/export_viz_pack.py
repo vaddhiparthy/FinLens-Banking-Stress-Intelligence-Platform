@@ -62,10 +62,15 @@ def _oot_predictions():
     X_te, y_te = X.iloc[te_idx], y[te_idx]
     year_te = (obs.iloc[te_idx].to_numpy() // 4).astype(int)
     # reuse the SAME tuned hyperparameters the shipped model was trained with, so the
-    # curves match the served model and the metrics table.
+    # curves match the served model and the metrics table. The served model is the
+    # seed-bagged ensemble, so reproduce it (bagged_k from metrics) for the curves.
     metrics = json.loads((ART / "metrics_h4.json").read_text())
     best_params = metrics.get("hyperparameter_tuning", {}).get("best_params") or None
-    eval_model, eval_cal, *_ = _fit_calibrated(X_tr, y_tr, 42, params=best_params)
+    bagged_k = int(metrics.get("bagged_k", 1) or 1)
+    eval_model, eval_cal, _, _, eval_best_it = _fit_calibrated(X_tr, y_tr, 42, params=best_params)
+    if bagged_k > 1:
+        from finlens_ml.ensemble import fit_bagged
+        eval_cal = fit_bagged(X_tr, y_tr, 42, bagged_k, best_params, eval_best_it)
     logit = _fit_logit(X_tr, y_tr)
     p_cal = eval_cal.predict_proba(X_te)[:, 1]
     p_logit = logit.predict_proba(X_te)[:, 1]
@@ -121,9 +126,10 @@ def _ablation_pack(metrics: dict) -> dict:
                   "p_better_vs_shipped": "benchmark", "status": "candidate"})
     if exp_path.exists():
         r = json.loads(exp_path.read_text())["results"]
+        bagged_served = int(metrics.get("bagged_k", 1) or 1) > 1
         nm = [("Single LGBM", "baseline_light", "candidate"),
-              ("Tuned LGBM", "heavy_tune", "shipped"),
-              ("Bagged LGBM", "bagged", "did_not_ship"),
+              ("Tuned LGBM", "heavy_tune", "candidate" if bagged_served else "shipped"),
+              ("Bagged LGBM", "bagged", "shipped" if bagged_served else "did_not_ship"),
               ("Stacked", "stack_logit", "did_not_ship")]
         served = metrics["oot_test"]["calibrated_lgbm"]
         served_ci = metrics.get("oot_test_ci", {}).get("pr_auc_ci")
@@ -258,10 +264,33 @@ def _correlation(sample, top_features):
     return {"features": top_features, "matrix": corr.values.tolist()}
 
 
+def _curves_h8():
+    """8-quarter horizon curves (multi-horizon overlay). Returns the curves dict only if
+    the 8q OOT positive count is headline-eligible (>=15); else None (honestly suppressed)."""
+    from finlens_ml.splits import final_holdout_split
+    from finlens_ml.train import EVAL_HOLDOUT_QUARTERS, _fit_calibrated, load_dataset
+    df = load_dataset()
+    df = df[df["label_8"].notna()].reset_index(drop=True).copy()
+    df["label_8"] = df["label_8"].astype(int)
+    X = df[FEATURE_COLUMNS].astype(float)
+    y = df["label_8"].to_numpy()
+    obs = df["obs_qord"]
+    tr, te = final_holdout_split(obs, horizon_q=8, holdout_quarters=EVAL_HOLDOUT_QUARTERS,
+                                 reporting_lag_q=get_ml_settings().reporting_lag_q)
+    if int(y[te].sum()) < 15:
+        return None, int(y[te].sum())
+    _, cal, *_ = _fit_calibrated(X.iloc[tr], y[tr], 42)
+    p = cal.predict_proba(X.iloc[te])[:, 1]
+    c = _curves(y[te], p)
+    c["n_oot_pos"] = int(y[te].sum())
+    return c, int(y[te].sum())
+
+
 def main() -> None:
     # Curves/calibration/distribution from the shipped calibrated OOT predictions.
     y, p_cal, p_logit, year_te = _oot_predictions()
     lc = _curves(y, p_logit)
+    curves_h8, n8 = _curves_h8()
 
     # SHAP + correlation on a bounded reproducible sample of the full panel.
     conn = _conn()
@@ -284,6 +313,8 @@ def main() -> None:
         "n_oot": int(len(y)),
         "n_oot_failures": int(y.sum()),
         "curves": _curves(y, p_cal),
+        **({"curves_h8": curves_h8} if curves_h8 else {}),
+        "multi_horizon_8q_n_pos": n8,
         "logit_curves": {"pr_auc": lc["pr_auc"], "roc_auc": lc["roc_auc"],
                          "pr_curve": lc["pr_curve"], "roc_curve": lc["roc_curve"]},
         "calibration": _calibration(y, p_cal),
