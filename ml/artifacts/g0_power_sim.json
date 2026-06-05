@@ -1,0 +1,56 @@
+{
+  "interval_coverage_sim": {
+    "nominal": 0.95,
+    "n_sims": 500,
+    "n_boot": 400,
+    "n_oot_pos": 66,
+    "sim_n_neg": 1200,
+    "sim_base_rate": 0.05213,
+    "note": "External-truth DGPs only; neither resamples the OOT realization. Negatives subsampled for tractability (BCa jackknife is O(n)); n_pos held at the OOT count, the dominant driver of AP CI width.",
+    "by_dgp": {
+      "surrogate_subsample": {
+        "dgp": "surrogate_subsample",
+        "true_ap": 0.8979,
+        "coverage": {
+          "percentile": 0.926,
+          "stratified": 0.904,
+          "bca": 0.944
+        },
+        "n_sims": 500
+      },
+      "parametric_planted": {
+        "dgp": "parametric_planted",
+        "true_ap": 0.899,
+        "coverage": {
+          "percentile": 0.946,
+          "stratified": 0.926,
+          "bca": 0.948
+        },
+        "n_sims": 500
+      }
+    },
+    "recall_jeffreys_coverage": null,
+    "chosen_method": "bca",
+    "recall_note": "Jeffreys is the standard closed-form binomial interval for recall@k (analytic ~95% coverage); a fixed-k bootstrap coverage test is non-comparable across sample sizes, so no simulated number is claimed."
+  },
+  "gate_power": {
+    "base_rate": 0.05213,
+    "baseline_true_ap": 0.22,
+    "P_star": 0.964,
+    "false_ship_rate": 0.055,
+    "power_at_delta": {
+      "0.0": 0.055,
+      "0.01": 0.03,
+      "0.02": 0.055,
+      "0.05": 0.175,
+      "0.1": 0.32
+    },
+    "n_oot_pos": 66,
+    "n_datasets": 200,
+    "D_star": -0.02,
+    "mde_statement": "At a true AP delta of 0.02, the paired OOT gate has power 6% (false-ship rate 6% under delta=0). No Tier A item is OOT-ship-validatable at n_pos=66; inner rolling-fold evidence is the only admissible Tier A shipping evidence.",
+    "tier_a_oot_shippable": false,
+    "method_note": "paired model = signal + independent noise (delta=0 -> P~50%); negatives subsampled for tractability, n_pos=66 binds the result."
+  },
+  "elapsed_sec": 3159.9
+}

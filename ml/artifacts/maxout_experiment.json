@@ -1,0 +1,90 @@
+{
+  "protocol": "final_holdout_split",
+  "holdout_quarters": 28,
+  "test_positives": 66,
+  "k": 200,
+  "results": {
+    "baseline_light": {
+      "pr_auc": 0.2213,
+      "ci": [
+        0.1266,
+        0.3429
+      ],
+      "roc_auc": 0.8153,
+      "recall_at_k": 0.4545,
+      "tune": {
+        "tuned": true,
+        "n_trials": 14,
+        "n_inner_folds": 3,
+        "cv_mean_pr_auc": 0.5205,
+        "best_params": {
+          "num_leaves": 47,
+          "min_child_samples": 45,
+          "learning_rate": 0.0102,
+          "reg_lambda": 3.8928,
+          "colsample_bytree": 0.7124,
+          "subsample": 0.6042,
+          "spw_cap": 40.2357
+        }
+      }
+    },
+    "heavy_tune": {
+      "pr_auc": 0.2404,
+      "ci": [
+        0.1393,
+        0.3715
+      ],
+      "roc_auc": 0.8052,
+      "recall_at_k": 0.4697,
+      "tune": {
+        "tuned": true,
+        "n_trials": 68,
+        "n_inner_folds": 3,
+        "cv_mean_pr_auc": 0.5314,
+        "best_params": {
+          "num_leaves": 43,
+          "min_child_samples": 248,
+          "learning_rate": 0.0111,
+          "reg_lambda": 0.738,
+          "colsample_bytree": 0.7292,
+          "subsample": 0.6225,
+          "spw_cap": 21.5354
+        }
+      }
+    },
+    "bagged": {
+      "pr_auc": 0.2515,
+      "ci": [
+        0.1494,
+        0.3851
+      ],
+      "roc_auc": 0.8727,
+      "recall_at_k": 0.4697,
+      "n_seeds": 12
+    },
+    "blend_avg": {
+      "pr_auc": 0.2721,
+      "ci": [
+        0.1648,
+        0.3979
+      ],
+      "roc_auc": 0.9215,
+      "recall_at_k": 0.3939
+    },
+    "stack_logit": {
+      "pr_auc": 0.2658,
+      "ci": [
+        0.1601,
+        0.3914
+      ],
+      "roc_auc": 0.9206,
+      "recall_at_k": 0.3939,
+      "meta_coef": [
+        4.795,
+        2.955,
+        7.08
+      ]
+    }
+  },
+  "elapsed_sec": 2456.0
+}

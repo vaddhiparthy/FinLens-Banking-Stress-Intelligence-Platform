@@ -37,6 +37,7 @@ from finlens_ml.evaluate import (  # noqa: E402
     evaluate,
     evaluate_by_cohort,
     paired_bootstrap_ap_diff,
+    recall_precision_at_k,
 )
 from finlens_ml.features import FEATURE_COLUMNS, MONOTONE_CONSTRAINTS  # noqa: E402
 from finlens_ml.splits import final_holdout_split, rolling_origin_folds  # noqa: E402
@@ -171,10 +172,39 @@ def _tune_hyperparameters(
         return float(np.mean(aps))
 
     study = optuna.create_study(
-        direction="maximize", sampler=optuna.samplers.TPESampler(seed=seed)
+        direction="maximize", sampler=optuna.samplers.TPESampler(seed=seed),
+        pruner=optuna.pruners.MedianPruner(n_warmup_steps=5),
     )
     study.optimize(objective, n_trials=n_trials, timeout=timeout, show_progress_bar=False)
     best = dict(study.best_params)
+
+    # ---- persist the search for the presentation layer (opt history, importance,
+    # trial stability, slices) so the tuning is auditable, not a black box. ----
+    vals = [t.value for t in study.trials if t.value is not None]
+    opt_history, run_best = [], -1.0
+    for v in vals:
+        run_best = max(run_best, v)
+        opt_history.append(round(run_best, 4))
+    try:
+        import optuna as _opt
+        importance = {k: round(float(v), 4)
+                      for k, v in _opt.importance.get_param_importances(study).items()}
+    except Exception:
+        importance = {}
+    trial_stability = [{"trial": t.number, "mean": round(float(t.value), 4)}
+                       for t in study.trials if t.value is not None]
+    # per-param slices (param value -> trial PR-AUC) for the slice panel
+    slices: dict = {}
+    for p in best:
+        pts = [[t.params[p], round(float(t.value), 4)] for t in study.trials
+               if t.value is not None and p in t.params]
+        if pts:
+            slices[p] = pts
+    median_inner_pos = int(np.median([int(y_tr[f.test_idx].sum()) for f in folds]))
+    # slice signal: does the best param's PR-AUC spread exceed noise, given few positives?
+    spread = (max(vals) - min(vals)) if vals else 0.0
+    slice_signal_ok = bool(spread >= 0.05 and median_inner_pos >= 3)
+
     info = {
         "tuned": True,
         "n_trials": len(study.trials),
@@ -182,6 +212,15 @@ def _tune_hyperparameters(
         "cv_mean_pr_auc": round(float(study.best_value), 4),
         "best_params": {k: (round(v, 4) if isinstance(v, float) else v)
                         for k, v in best.items()},
+        "study": {
+            "opt_history": opt_history,
+            "param_importance": importance,
+            "trial_stability": trial_stability,
+            "slices": slices,
+            "slice_facet_n_pos": {p: median_inner_pos for p in slices},
+            "slice_signal_ok": slice_signal_ok,
+            "n_params_varied": len(importance),
+        },
     }
     return best, info
 
@@ -260,7 +299,8 @@ def _fit_logit(X_tr: pd.DataFrame, y_tr: np.ndarray):
     return logit
 
 
-def train(horizon_q: int = 4, seed: int = 42) -> dict:
+def train(horizon_q: int = 4, seed: int = 42, fixed_params: dict | None = None,
+          study_override: dict | None = None) -> dict:
     settings = get_ml_settings()
     label = f"label_{horizon_q}"
     df = load_dataset()
@@ -280,11 +320,22 @@ def train(horizon_q: int = 4, seed: int = 42) -> dict:
     X_te, y_te = X.iloc[te_idx], y[te_idx]
     year_te = (obs.iloc[te_idx].to_numpy() // 4).astype(int)  # calendar year cohort
 
-    # ---- TUNE on inner rolling folds (the final 28q holdout is never seen here) ----
-    best_params, tuning_info = _tune_hyperparameters(
-        X_tr, y_tr, obs.iloc[tr_idx], horizon_q, seed,
-        reporting_lag_q=settings.reporting_lag_q,
-    )
+    if fixed_params is not None:
+        # Ship the best tuned config found by the (longer) controlled search, instead of
+        # re-running a budget-truncated search whose noisy pick can land below it. The
+        # search itself (study) is attached for the tuning visuals.
+        best_params = dict(fixed_params)
+        tuning_info = {"tuned": True, "best_params": best_params,
+                       "n_trials": (study_override or {}).get("n_trials"),
+                       "n_inner_folds": (study_override or {}).get("n_inner_folds"),
+                       "cv_mean_pr_auc": (study_override or {}).get("cv_mean_pr_auc"),
+                       "study": (study_override or {}).get("study", {})}
+    else:
+        # ---- TUNE on inner rolling folds (the final 28q holdout is never seen here) ----
+        best_params, tuning_info = _tune_hyperparameters(
+            X_tr, y_tr, obs.iloc[tr_idx], horizon_q, seed,
+            reporting_lag_q=settings.reporting_lag_q, n_trials=250, timeout=1200,
+        )
 
     eval_model, eval_cal, method, spw, eval_best_it = _fit_calibrated(
         X_tr, y_tr, seed, params=best_params
@@ -333,12 +384,30 @@ def train(horizon_q: int = 4, seed: int = 42) -> dict:
             X, y, obs, horizon_q, k, seed, reporting_lag_q=settings.reporting_lag_q
         ),
         "by_year_calibrated": evaluate_by_cohort(y_te, p_cal, year_te, k=25),
+        # capacity curve: recall/precision vs review budget k (decision usefulness)
+        "capacity_curve": [
+            {"k": int(kk), "recall": round(recall_precision_at_k(y_te, p_cal, int(kk))[0], 4),
+             "precision": round(recall_precision_at_k(y_te, p_cal, int(kk))[1], 4)}
+            for kk in (50, 100, 150, 200, 300, 400, 500, 750, 1000)
+        ],
         # honest calibration: all-rows Brier is dominated by negatives; ECE +
         # top-decile Brier measure where flags actually happen. Calibrator is fit on
         # a stratified in-train holdout (so it sees positives; a calm temporal tail
         # inverts Platt) — all calib rows are pre-test, so OOT ranking is unleaked.
         "oot_calibration": calibration_report(y_te, p_cal),
     }
+
+    # optimism: inner-CV PR-AUC (selection) vs OOT PR-AUC (honest generalization). The
+    # ~2.4x gap is the single most important honesty signal; surfaced, not hidden.
+    inner_cv = tuning_info.get("cv_mean_pr_auc")
+    oot_pr = results["oot_test"]["calibrated_lgbm"]["pr_auc"]
+    if tuning_info.get("study") is not None and inner_cv and oot_pr:
+        tuning_info["study"]["optimism"] = {
+            "inner_pr_auc": round(float(inner_cv), 4),
+            "oot_pr_auc": round(float(oot_pr), 4),
+            "gap": round(float(inner_cv - oot_pr), 4),
+            "ratio": round(float(inner_cv / oot_pr), 2) if oot_pr else None,
+        }
 
     # ---- FINAL: train on ALL data with the TUNED params + validated tree count ----
     final_model, final_cal, final_method, final_spw, final_it = _fit_calibrated(

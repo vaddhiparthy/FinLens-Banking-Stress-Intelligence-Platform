@@ -1,0 +1,38 @@
+{
+  "fdic_restated": {
+    "oot": {
+      "pr_auc": 0.1939,
+      "ci": [
+        0.1056,
+        0.3197
+      ],
+      "n_test": 118943,
+      "pos": 66
+    },
+    "rolling": {
+      "folds": 10,
+      "mean": NaN,
+      "std": NaN
+    }
+  },
+  "point_in_time": {
+    "oot": {
+      "pr_auc": 0.1005,
+      "ci": [
+        0.0497,
+        0.1738
+      ],
+      "n_test": 118493,
+      "pos": 66
+    },
+    "rolling": {
+      "folds": 10,
+      "mean": NaN,
+      "std": NaN
+    }
+  },
+  "noncurrent_health": {
+    "fdic_frac_zero": 0.481,
+    "pit_frac_zero": 0.148
+  }
+}

@@ -166,15 +166,34 @@ def correlation_fig(pack: dict, mode: str | None = None) -> go.Figure:
 
 
 def by_year_fig(pack_by_year: list, mode: str | None = None) -> go.Figure:
+    """ALL years on the x-axis (no silent drop of calm cohorts). Years with n_pos>=3
+    draw a real PR-AUC bar; calm years (n_pos<3) draw a muted floor/pooled bar with a
+    'low power' annotation, so the near-floor-in-calm-years story is VISIBLE."""
     pal = get_palette(mode)
-    rows = [r for r in pack_by_year if r.get("pr_auc") is not None]
+    rows = sorted(pack_by_year, key=lambda r: str(r.get("year")))
     fig = go.Figure()
-    fig.add_bar(x=[str(r["year"]) for r in rows], y=[r["pr_auc"] for r in rows],
-                name="PR-AUC", marker_color=pal["accent"])
-    fig.add_scatter(x=[str(r["year"]) for r in rows], y=[r.get("failures", 0) and r["pr_auc"] for r in rows],
-                    mode="markers", name="", showlegend=False, marker=dict(opacity=0))
+    real_x, real_y, calm_x, calm_y, notes = [], [], [], [], []
+    for r in rows:
+        yr = str(r.get("year"))
+        npos = r.get("n_pos", r.get("failures", 0)) or 0
+        pr = r.get("pr_auc")
+        low = r.get("low_power", npos < 3)
+        if not low and pr is not None and pr == pr:
+            real_x.append(yr); real_y.append(pr)
+        else:
+            val = r.get("pooled_pr_auc")
+            calm_x.append(yr); calm_y.append(val if (val is not None and val == val) else 0.0)
+            notes.append((yr, val))
+    if real_x:
+        fig.add_bar(x=real_x, y=real_y, name="PR-AUC (n_pos≥3)", marker_color=pal["accent"])
+    if calm_x:
+        fig.add_bar(x=calm_x, y=calm_y, name="calm year (n_pos<3, low power)",
+                    marker_color=pal["text_soft"], opacity=0.5)
+        for yr, val in notes:
+            fig.add_annotation(x=yr, y=(val or 0.0), yshift=10, text="low power",
+                               showarrow=False, font=dict(size=8, color=pal["text_soft"]))
     fig.update_yaxes(title="PR-AUC", range=[0, 1])
-    return _base(fig, pal, legend=False, title="Out-of-time PR-AUC by year")
+    return _base(fig, pal, legend=True, title="Out-of-time PR-AUC by year (all cohorts shown)")
 
 
 def psi_fig(pack: dict, mode: str | None = None) -> go.Figure | None:
@@ -251,3 +270,181 @@ def drift_fig(pack: dict, mode: str | None = None) -> go.Figure | None:
     fig.update_xaxes(title="drift score (PSI / statistical distance)", range=[0, max(scores) * 1.25])
     return _base(fig, pal, height=300, legend=False,
                  title="Most-drifted features (reference 2008-18 vs current)")
+
+
+# ---- Tier A presentation: tuning, optimism, ablation (read m['study'] / pack) ----
+
+def optuna_history_fig(study: dict, mode: str | None = None) -> go.Figure:
+    """Best-so-far inner-CV PR-AUC over Optuna trials. Reads study['opt_history']."""
+    pal = get_palette(mode)
+    hist = study.get("opt_history") or []
+    fig = go.Figure()
+    fig.add_scatter(x=list(range(1, len(hist) + 1)), y=hist, mode="lines",
+                    name="best inner-CV PR-AUC", line=dict(color=pal["accent"], width=2))
+    fig.update_xaxes(title="trial")
+    fig.update_yaxes(title="best inner-CV PR-AUC")
+    return _base(fig, pal, height=300, legend=False, title="Hyperparameter search progress")
+
+
+def optuna_importance_fig(study: dict, mode: str | None = None) -> go.Figure:
+    """Hyperparameter importance (fANOVA). Reads study['param_importance'] (dict).
+    Degenerate guard: <2 varied params -> single bar + note."""
+    pal = get_palette(mode)
+    imp = study.get("param_importance") or {}
+    items = sorted(imp.items(), key=lambda kv: kv[1])
+    fig = go.Figure()
+    if len(items) < 2:
+        lbl = items[0][0] if items else "n/a"
+        val = items[0][1] if items else 0.0
+        fig.add_bar(x=[val], y=[lbl], orientation="h", marker_color=pal["text_soft"])
+        fig.add_annotation(x=0, y=0, yshift=20, xref="paper", text="single dominant param",
+                           showarrow=False, font=dict(size=9, color=pal["text_soft"]))
+    else:
+        fig.add_bar(x=[v for _, v in items], y=[k.replace("_", " ") for k, v in items],
+                    orientation="h", marker_color=pal["accent"])
+    fig.update_xaxes(title="relative importance")
+    return _base(fig, pal, height=320, legend=False, title="Which hyperparameters mattered")
+
+
+def optuna_slice_fig(study: dict, mode: str | None = None, n: int = 4) -> go.Figure | None:
+    """Top-n param slice scatters (param value vs inner-fold PR-AUC). Returns None when
+    study['slice_signal_ok'] is False (noise-dominated at low n_pos -> suppress)."""
+    pal = get_palette(mode)
+    if not study.get("slice_signal_ok", True):
+        return None
+    slices = study.get("slices") or {}
+    facet_npos = study.get("slice_facet_n_pos") or {}
+    params = list(slices.keys())[:n]
+    if not params:
+        return None
+    from plotly.subplots import make_subplots
+    rows = (len(params) + 1) // 2
+    fig = make_subplots(rows=rows, cols=2, subplot_titles=[p.replace("_", " ") for p in params])
+    for i, p in enumerate(params):
+        r, c = i // 2 + 1, i % 2 + 1
+        pts = slices[p]
+        fig.add_scatter(x=[d[0] for d in pts], y=[d[1] for d in pts], mode="markers",
+                        marker=dict(color=pal["accent"], size=5), showlegend=False, row=r, col=c)
+        np_med = facet_npos.get(p)
+        if np_med is not None:
+            sfx = "" if i == 0 else str(i + 1)
+            fig.add_annotation(text=f"median n_pos≈{np_med}", showarrow=False,
+                               xref=f"x{sfx} domain", yref=f"y{sfx} domain", x=0.5, y=1.0,
+                               font=dict(size=8, color=pal["text_soft"]), row=r, col=c)
+    return _base(fig, pal, height=180 * rows + 60, legend=False,
+                 title="Param slices (inner-fold PR-AUC)")
+
+
+def trial_stability_fig(study: dict, mode: str | None = None) -> go.Figure:
+    """Per-trial inner-fold PR-AUC spread. Reads study['trial_stability'] = list of
+    {trial, mean, std} or per-fold arrays."""
+    pal = get_palette(mode)
+    ts = study.get("trial_stability") or []
+    fig = go.Figure()
+    x = [t.get("trial", i) for i, t in enumerate(ts)]
+    means = [t.get("mean") for t in ts]
+    stds = [t.get("std", 0) for t in ts]
+    fig.add_scatter(x=x, y=means, mode="markers", name="trial mean",
+                    marker=dict(color=pal["accent"], size=4),
+                    error_y=dict(type="data", array=stds, color=pal["text_soft"], thickness=0.6))
+    fig.update_xaxes(title="trial")
+    fig.update_yaxes(title="inner-fold PR-AUC (mean ± std)")
+    return _base(fig, pal, height=300, legend=False, title="Trial stability across inner folds")
+
+
+def optimism_fig(study: dict, mode: str | None = None) -> go.Figure:
+    """Inner-CV PR-AUC vs OOT PR-AUC (the optimism gap). Reads study['optimism'] =
+    {inner_pr_auc, oot_pr_auc, gap, ratio}."""
+    pal = get_palette(mode)
+    o = study.get("optimism") or {}
+    inner, oot = o.get("inner_pr_auc", 0), o.get("oot_pr_auc", 0)
+    fig = go.Figure()
+    fig.add_bar(x=["inner-CV", "out-of-time"], y=[inner, oot],
+                marker_color=[pal["text_soft"], pal["accent"]],
+                text=[f"{inner:.3f}", f"{oot:.3f}"], textposition="outside")
+    ratio = o.get("ratio")
+    if ratio:
+        fig.add_annotation(x=0.5, xref="paper", y=max(inner, oot), yshift=18,
+                           text=f"optimism ratio {ratio:.1f}× (expected, not a defect)",
+                           showarrow=False, font=dict(size=10, color=pal["text_muted"]))
+    fig.update_yaxes(title="PR-AUC", range=[0, max(inner, oot) * 1.25 or 1])
+    return _base(fig, pal, height=300, legend=False, title="Optimism: inner-CV vs out-of-time")
+
+
+def ablation_forest_fig(pack: dict, mode: str | None = None) -> go.Figure:
+    """Effective-challenge ladder as a point+interval forest on a FIXED [0,0.35] axis;
+    rungs ordered by point estimate. CIs overlap by construction at n_pos≈66 — the
+    subtitle states that so overlap reads as expected, not inconclusive."""
+    pal = get_palette(mode)
+    rungs = (pack.get("ablation") or {}).get("rungs") or []
+    rungs = sorted(rungs, key=lambda r: (r.get("ap_point") is not None, r.get("ap_point") or 0))
+    fig = go.Figure()
+    for r in rungs:
+        name = r["name"][:26]
+        pt = r.get("ap_point")
+        status = r.get("status", "shipped")
+        if pt is None:
+            fig.add_scatter(x=[0.01], y=[name], mode="markers",
+                            marker=dict(color=pal["text_soft"], size=8, symbol="x"),
+                            name=status, showlegend=False)
+            fig.add_annotation(x=0.01, y=name, text=f"  {status}", showarrow=False,
+                               xanchor="left", font=dict(size=9, color=pal["text_soft"]))
+            continue
+        ci = r.get("ap_ci") or [pt, pt]
+        grey = status in ("did_not_ship",) or "nconstrained" in r["name"]
+        color = pal["text_soft"] if grey else pal["accent"]
+        fig.add_scatter(x=[pt], y=[name], mode="markers",
+                        marker=dict(color=color, size=10),
+                        error_x=dict(type="data", symmetric=False,
+                                     array=[ci[1] - pt], arrayminus=[pt - ci[0]],
+                                     color=color, thickness=1.2),
+                        name=name, showlegend=False,
+                        hovertext=f"AP {pt:.3f} CI[{ci[0]:.3f},{ci[1]:.3f}] "
+                                  f"P(>shipped)={r.get('p_better_vs_shipped','-')}")
+    fig.add_vline(x=0.221, line=dict(color=pal["rose"], width=1.2, dash="dash"),
+                  annotation_text="shipped 0.221", annotation_font=dict(size=9, color=pal["rose"]))
+    fig.update_xaxes(title="OOT PR-AUC (average precision)", range=[0, 0.35])
+    fig.add_annotation(xref="paper", yref="paper", x=0, y=1.12, showarrow=False,
+                       xanchor="left", font=dict(size=9, color=pal["text_muted"]),
+                       text="CIs overlap by construction at n_pos≈66; rank by point estimate. "
+                            "Unconstrained GBM (grey) scores highest but isn't shipped: "
+                            "monotonicity is required for examiner-legibility.")
+    return _base(fig, pal, height=360, legend=False, title="Effective-challenge ladder")
+
+
+def multi_horizon_pr_fig(pack: dict, mode: str | None = None) -> go.Figure | None:
+    """4q vs 8q PR curves (different holdouts/base rates, labeled distinctly). Returns
+    None if pack['curves_h8'] is absent (8q not headline-eligible)."""
+    pal = get_palette(mode)
+    c4 = pack.get("curves"); c8 = pack.get("curves_h8")
+    if not c8:
+        return None
+    fig = go.Figure()
+    fig.add_scatter(x=[p[0] for p in c4["pr_curve"]], y=[p[1] for p in c4["pr_curve"]],
+                    mode="lines", name=f"4-quarter (AP {c4['pr_auc']})",
+                    line=dict(color=pal["accent"], width=2.2))
+    fig.add_scatter(x=[p[0] for p in c8["pr_curve"]], y=[p[1] for p in c8["pr_curve"]],
+                    mode="lines", name=f"8-quarter (AP {c8['pr_auc']})",
+                    line=dict(color=pal["teal"], width=2.2, dash="dot"))
+    fig.add_hline(y=c4["base_rate"], line=dict(color=pal["accent"], width=1, dash="dash"),
+                  annotation_text="4q base rate", annotation_font=dict(size=8, color=pal["accent"]))
+    fig.add_hline(y=c8["base_rate"], line=dict(color=pal["teal"], width=1, dash="dash"),
+                  annotation_text="8q base rate", annotation_font=dict(size=8, color=pal["teal"]))
+    fig.update_xaxes(title="Recall", range=[0, 1])
+    fig.update_yaxes(title="Precision", range=[0, 1])
+    return _base(fig, pal, height=340, title="Multi-horizon PR (different denominators)")
+
+
+def capacity_curve_fig(pack: dict, mode: str | None = None) -> go.Figure:
+    """Recall vs review budget k (banks flagged). Reads pack['capacity_curve'] =
+    list of {k, recall, precision}. No vague population-% anchor string."""
+    pal = get_palette(mode)
+    cc = pack.get("capacity_curve") or []
+    fig = go.Figure()
+    fig.add_scatter(x=[d["k"] for d in cc], y=[d["recall"] for d in cc], mode="lines",
+                    name="recall@k", line=dict(color=pal["accent"], width=2.2))
+    fig.add_scatter(x=[d["k"] for d in cc], y=[d.get("precision", 0) for d in cc], mode="lines",
+                    name="precision@k", line=dict(color=pal["teal"], width=1.8, dash="dot"))
+    fig.update_xaxes(title="review budget k (banks flagged)")
+    fig.update_yaxes(title="rate", range=[0, 1])
+    return _base(fig, pal, height=320, title="Capacity curve: recall vs review budget")

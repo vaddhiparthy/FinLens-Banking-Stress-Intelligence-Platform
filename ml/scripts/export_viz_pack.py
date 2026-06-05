@@ -99,6 +99,62 @@ def _psi_report(top_features: list[str], n_bins: int = 10) -> list[dict]:
     return sorted(rows, key=lambda x: -x["psi"])
 
 
+def _jeffreys(recall: float, n_pos: int) -> list:
+    from scipy import stats
+    if n_pos <= 0:
+        return [0.0, 0.0]
+    caught = round(recall * n_pos)
+    return [round(float(stats.beta.ppf(0.025, caught + 0.5, n_pos - caught + 0.5)), 3),
+            round(float(stats.beta.ppf(0.975, caught + 0.5, n_pos - caught + 0.5)), 3)]
+
+
+def _ablation_pack(metrics: dict) -> dict:
+    """Effective-challenge ladder from the measured experiment + the shipped logit/
+    unconstrained challengers. Point estimates are descriptive (selection is on inner
+    folds, G1 touch-once); the forest caption states CIs overlap by construction."""
+    exp_path = ART / "maxout_experiment.json"
+    n_pos = metrics.get("test_positives", 66)
+    rungs = []
+    logit = metrics["oot_test"]["logit_benchmark"]
+    rungs.append({"name": "Penalized logit", "ap_point": round(logit["pr_auc"], 4),
+                  "ap_ci": None, "recall_jeffreys": _jeffreys(logit.get("recall_at_k", 0), n_pos),
+                  "p_better_vs_shipped": "benchmark", "status": "candidate"})
+    if exp_path.exists():
+        r = json.loads(exp_path.read_text())["results"]
+        nm = [("Single LGBM", "baseline_light", "candidate"),
+              ("Tuned LGBM", "heavy_tune", "shipped"),
+              ("Bagged LGBM", "bagged", "did_not_ship"),
+              ("Stacked", "stack_logit", "did_not_ship")]
+        for label, key, status in nm:
+            if key in r:
+                d = r[key]
+                rungs.append({"name": label, "ap_point": round(d["pr_auc"], 4), "ap_ci": d["ci"],
+                              "recall_jeffreys": _jeffreys(d.get("recall_at_k", 0), n_pos),
+                              "p_better_vs_shipped": "descriptive", "status": status})
+    u = metrics.get("challengers", {}).get("unconstrained_gbm")
+    if u:
+        rungs.append({"name": "Unconstrained GBM", "ap_point": round(u["pr_auc"], 4),
+                      "ap_ci": None, "recall_jeffreys": _jeffreys(u.get("recall_at_k", 0), n_pos),
+                      "p_better_vs_shipped": "reference", "status": "did_not_ship"})
+    return {"rungs": rungs}
+
+
+def _by_year_pack(metrics: dict) -> list:
+    """All year cohorts incl. calm/null ones, with n_pos so the chart shows (not drops)
+    low-power years."""
+    by = metrics.get("by_year_calibrated", {})
+    out = []
+    for yr, v in by.items():
+        npos = int(v.get("n_positive", 0) or 0)
+        pr = v.get("pr_auc")
+        pr = None if (isinstance(pr, str) or pr is None or pr != pr) else round(float(pr), 4)
+        n = int(v.get("n", 0) or 0)
+        out.append({"year": yr, "pr_auc": pr, "n_pos": npos,
+                    "base_rate": round(npos / n, 5) if n else 0.0,
+                    "pooled_pr_auc": None, "low_power": npos < 3})
+    return out
+
+
 def _curves(y, p):
     from sklearn.metrics import (
         average_precision_score,
@@ -212,6 +268,9 @@ def main() -> None:
     if drift_path.exists():
         drift = json.loads(drift_path.read_text())
 
+    metrics = json.loads((ART / "metrics_h4.json").read_text())
+    study = metrics.get("hyperparameter_tuning", {}).get("study", {})
+
     pack = {
         "oot_window_start_year": OOT_YEAR,
         "n_oot": int(len(y)),
@@ -225,6 +284,12 @@ def main() -> None:
         "shap_importance": shap_imp,
         "correlation": _correlation(sample, top_feats),
         "psi": _psi_report(top_feats),
+        "ablation": _ablation_pack(metrics),
+        "by_year": _by_year_pack(metrics),
+        "capacity_curve": metrics.get("capacity_curve", []),
+        "study": study,
+        "g0": json.loads((ART / "g0_power_sim.json").read_text())
+        if (ART / "g0_power_sim.json").exists() else {},
         "drift_top_features": drift.get("top_drifted_features", []),
         "drift_summary": {
             "n_features_analyzed": drift.get("n_features_analyzed"),

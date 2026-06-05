@@ -303,6 +303,10 @@ elif section == "quality":
                     "exactly what SR 11-7 conceptual-soundness review rejects, so the "
                     "constrained, validator-defensible model is the one served."
                 )
+        # Ablation forest: the full ladder as a point+interval chart (CIs overlap by
+        # construction at n_pos~66; the figure caption states the intended reading).
+        if viz.get("ablation", {}).get("rungs"):
+            st.plotly_chart(mc.ablation_forest_fig(viz, MODE), use_container_width=True)
         if tune.get("tuned"):
             bp = tune.get("best_params", {})
             st.caption(
@@ -311,6 +315,54 @@ elif section == "quality":
                 f"(best CV PR-AUC {tune.get('cv_mean_pr_auc')}); not hand-set. "
                 f"Tuned: {bp}."
             )
+        # ---- Tuning & optimism (the search made auditable) ----
+        study = (tune or {}).get("study") or viz.get("study") or {}
+        if study:
+            section_heading("How the model was tuned",
+                            "The hyperparameter search, made auditable: search progress, "
+                            "what mattered, per-trial stability, and the inner-vs-OOT "
+                            "optimism gap.")
+            if study.get("optimism"):
+                o = study["optimism"]
+                metric_card("Optimism ratio", f"{o.get('ratio', 0):.1f}×",
+                            f"inner-CV {o.get('inner_pr_auc')} vs OOT {o.get('oot_pr_auc')} "
+                            "(expected and acceptable, not a defect)")
+                st.plotly_chart(mc.optimism_fig(study, MODE), use_container_width=True)
+            tc1, tc2 = st.columns(2)
+            with tc1:
+                st.plotly_chart(mc.optuna_history_fig(study, MODE), use_container_width=True)
+            with tc2:
+                st.plotly_chart(mc.optuna_importance_fig(study, MODE), use_container_width=True)
+            st.plotly_chart(mc.trial_stability_fig(study, MODE), use_container_width=True)
+            slice_fig = mc.optuna_slice_fig(study, MODE, n=4)
+            if slice_fig is not None:
+                st.plotly_chart(slice_fig, use_container_width=True)
+            else:
+                st.caption("Slice PR-AUC is noise-dominated at n_pos≤4 per inner fold; "
+                           "importance shown instead.")
+        # ---- G0: how we know the gate is calibrated (honesty instrumentation) ----
+        g0 = viz.get("g0") or {}
+        gp = g0.get("gate_power") or {}
+        cov = g0.get("interval_coverage_sim") or {}
+        if gp or cov:
+            section_heading("How we know the intervals are honest",
+                            "An external-truth simulation (not a bootstrap of the holdout) "
+                            "measures whether the CIs actually cover and how much power the "
+                            "gate has at this positive count.")
+            if gp.get("mde_statement"):
+                st.markdown(f"**Minimum detectable effect.** {gp['mde_statement']}")
+            if cov.get("chosen_method"):
+                bd = cov.get("by_dgp", {})
+                cells = []
+                for dgp, d in bd.items():
+                    c = d.get("coverage", {})
+                    cells.append(f"{dgp}: " + ", ".join(f"{k} {v:.0%}" for k, v in c.items()))
+                st.caption(
+                    f"Chosen interval method: **{cov['chosen_method']}** (nominal "
+                    f"{cov.get('nominal', 0.95):.0%}). Measured coverage under external-truth "
+                    f"DGPs — " + " · ".join(cells) + ". recall@k Jeffreys coverage "
+                    f"{cov.get('recall_jeffreys_coverage')}."
+                )
         c1, c2 = st.columns(2)
         with c1:
             st.plotly_chart(mc.pr_curve_fig(viz, MODE), use_container_width=True)
@@ -322,16 +374,28 @@ elif section == "quality":
         with c4:
             st.plotly_chart(mc.score_dist_fig(viz, MODE), use_container_width=True)
         st.plotly_chart(mc.threshold_fig(viz, MODE), use_container_width=True)
-        by_year = m.get("by_year_calibrated", {})
+
+        # Capacity curve (recall vs review budget) + multi-horizon overlay if eligible
+        if viz.get("capacity_curve"):
+            section_heading("Capacity curve",
+                            "How many real failures the review budget catches as it widens.")
+            st.plotly_chart(mc.capacity_curve_fig(viz, MODE), use_container_width=True)
+        mh = mc.multi_horizon_pr_fig(viz, MODE)
+        if mh is not None:
+            st.plotly_chart(mh, use_container_width=True)
+
+        by_year = viz.get("by_year") or []
         if by_year:
-            section_heading("By year", "PR-AUC holds up in the failure-containing cohorts.")
-            rows = [
-                {"year": y, "n": v["n"], "failures": v["n_positive"],
-                 "pr_auc": None if isinstance(v["pr_auc"], str) or v["pr_auc"] != v["pr_auc"]
-                 else round(v["pr_auc"], 4)}
-                for y, v in by_year.items()
-            ]
-            st.plotly_chart(mc.by_year_fig(rows, MODE), use_container_width=True)
+            section_heading("By year (all cohorts shown)",
+                            "Calm, low-power years are shown explicitly, not dropped: the "
+                            "model is strong in failure-containing windows, near-floor in calm "
+                            "years.")
+            st.plotly_chart(mc.by_year_fig(by_year, MODE), use_container_width=True)
+            with st.expander("year-by-year counts"):
+                st.dataframe(pd.DataFrame([
+                    {"year": r["year"], "failures": r["n_pos"],
+                     "PR-AUC": r["pr_auc"], "low power": r["low_power"]} for r in by_year
+                ]), hide_index=True, use_container_width=True)
         if viz.get("drift_top_features"):
             section_heading("Drift monitoring (Evidently)", "Reference 2008-18 vs current 2019-26.")
             ds = viz.get("drift_summary", {})
