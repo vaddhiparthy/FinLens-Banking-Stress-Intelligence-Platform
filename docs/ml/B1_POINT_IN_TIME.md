@@ -1,7 +1,8 @@
 # B1 - Originally-Filed Point-in-Time Features (findings)
 
-**Status: feasible and validated for 2014+, surfaced a real FDIC data bug, but the
-full-history point-in-time retrain currently UNDERPERFORMS the restated panel. The
+**Status: feasible and validated for 2014+, and it surfaced a FinLens feature-mapping
+bug (noncurrent built from the wrong field, now fixed), but the full-history
+point-in-time retrain currently UNDERPERFORMS the restated panel. The
 shipped model therefore stays on the FDIC-restated panel + Tier A; the point-in-time
 feed is a validated capability and the remaining accuracy lever, not yet integrated.**
 
@@ -80,4 +81,5 @@ Two causes, both real:
   across schema vintages, validated to the 2014+ official total within tolerance), and
   re-run `b1_compare`. Until that closes the 2014 level shift, point-in-time does not
   beat restated and is not shipped.
-- Independent of the model, the FDIC-noncurrent bug finding is reported as-is.
+- Independent of point-in-time, the FinLens noncurrent feature-mapping bug
+  (P9LNLS instead of NCLNLS) it surfaced has been fixed in the served model.

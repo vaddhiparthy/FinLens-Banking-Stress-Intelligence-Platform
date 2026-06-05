@@ -425,7 +425,7 @@ AI_ARTICLES: dict[str, dict] = {
             "## Honest known gaps\n"
             "The governance posture is candid about what remains. Hyperparameters ARE tuned "
             "with Optuna over inner time-series CV folds (the search is shown in the Model "
-            "Quality tab); the served tree count (n_estimators = 35) comes from out-of-time "
+            "Quality tab); the served tree count (n_estimators = 38) comes from out-of-time "
             "early stopping on average precision. The effective-challenge ladder is built and "
             "scored, not planned: a penalized logit, an unconstrained GBM (PR-AUC 0.270, which "
             "the monotone model now matches), and bagged / stacked ensembles are all measured "
