@@ -1,0 +1,27 @@
+{
+  "method": "discrete-time subdistribution (Fine-Gray) vs cause-specific",
+  "cause_specific": {
+    "n_train": 270357,
+    "n_test": 118943,
+    "test_pos": 66,
+    "pr_auc": 0.1755,
+    "pr_auc_ci": [
+      0.1004,
+      0.2813
+    ],
+    "mean_pred": 0.00044
+  },
+  "fine_gray": {
+    "n_train": 277658,
+    "n_test": 121419,
+    "test_pos": 66,
+    "pr_auc": 0.1824,
+    "pr_auc_ci": [
+      0.102,
+      0.2941
+    ],
+    "mean_pred": 0.0005
+  },
+  "merger_quarters_added_to_risk_set": 10702,
+  "interpretation": "The Fine-Gray model keeps 10,702 merger-window bank-quarters in the failure risk set (as guaranteed non-failures) that the cause-specific model drops. The two OOT PR-AUCs and mean predicted incidences are within noise of each other, confirming the competing-risks correction is small here - consistent with only 2.2% of merger exits being distressed (see COMPETING_RISKS.md). The cause-specific (censoring) model is therefore an adequate approximation; Fine-Gray is provided as the formal cross-check, not a material change to the served ranking."
+}

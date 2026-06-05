@@ -32,10 +32,25 @@ merger-exit bank's **last filing** with the failure model:
   censoring bias on measured failure recall is bounded by roughly this fraction - i.e.
   true recall is at most a few points higher than measured, not a large correction.
 
+## Fine-Gray subdistribution model (built, not just proposed)
+A discrete-time Fine-Gray subdistribution model was built from scratch
+(`ml/scripts/fine_gray.py`, `ml/artifacts/fine_gray.json`; lifelines/scikit-survival
+ship no Fine-Gray estimator, and this is a discrete-time panel, so the from-scratch
+subdistribution is the correct tool). It keeps **10,702** merger-window bank-quarters in
+the failure risk set as guaranteed non-events (the subdistribution treatment) that the
+cause-specific model drops. Same OOT protocol, default params on both:
+
+| model | OOT PR-AUC | 95% CI |
+|---|---|---|
+| Cause-specific (shipped censoring) | 0.176 | [0.100, 0.281] |
+| Fine-Gray subdistribution | 0.182 | [0.102, 0.294] |
+
+The two are within noise of each other (heavily overlapping CIs), which confirms
+empirically what the 2.2% distressed-merger rate implied: the competing-risks correction
+is immaterial to the served ranking.
+
 ## Conclusion
-The current right-censoring is **adequate and the bias it introduces is small and now
-measured**, not hand-waved. A full Fine-Gray subdistribution model is the textbook next
-refinement, but with only 2.2% of mergers distressed it would move the failure estimate
-marginally; the cause-specific hazards + the quantified bias above are the
-decision-relevant deliverable. This replaces the prior "handled by censoring, not a
-formal model" gap with a number.
+The current right-censoring is **adequate, and the bias it introduces is small, now
+measured, and now cross-checked against a built Fine-Gray model** rather than hand-waved.
+This replaces the prior "handled by censoring, not a formal model" gap with two numbers
+(2.2% distressed-merger rate; Fine-Gray 0.182 vs cause-specific 0.176, within noise).
