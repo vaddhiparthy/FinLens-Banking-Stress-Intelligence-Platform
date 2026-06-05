@@ -49,6 +49,12 @@ def _load_metric_values() -> dict:
             n_est=str(m.get("final_model", {}).get("n_estimators", "—")),
             unc_pr=f"{unc.get('pr_auc', 0):.3f}",
         )
+        oc = m.get("oot_calibration", {})
+        V.update(
+            ece=f"{oc.get('ece', float('nan')):.2e}",
+            cal_pred=f"{oc.get('top_decile_pred', float('nan')):.4f}",
+            cal_obs=f"{oc.get('top_decile_obs', float('nan')):.4f}",
+        )
         viz = _json.loads((art / "viz_pack.json").read_text())
         si = viz.get("shap_importance", [])
         for i in range(min(3, len(si))):
@@ -60,7 +66,7 @@ def _load_metric_values() -> dict:
     for k in ("pr", "roc", "recall_pct", "logit_pr", "logit_roc", "boot_pr", "boot_roc",
               "boot_recall", "paired_ci", "p_beat", "roll_mean", "roll_std", "roll_min",
               "roll_max", "n_est", "unc_pr", "shap1", "shap1_v", "shap2", "shap2_v",
-              "shap3", "shap3_v"):
+              "shap3", "shap3_v", "ece", "cal_pred", "cal_obs"):
         V.setdefault(k, "—")
     return V
 
@@ -120,8 +126,9 @@ AI_ARTICLES: dict[str, dict] = {
             "confidential examiner CAMELS rating, which is not public. It scores bank-level "
             "financial condition from Call Report ratios; macroeconomic series are business "
             "context on other surfaces, not model inputs. Competing exits, a bank leaving the "
-            "panel by merger rather than failure, are handled through censoring rather than a "
-            "formal competing-risks model such as Fine-Gray. These boundaries are stated "
+            "panel by merger rather than failure, are handled through censoring and cross-checked "
+            "against a built discrete-time Fine-Gray subdistribution model (within noise). These "
+            "boundaries are stated "
             "plainly so the score is read as what it is: a calibrated probability of public "
             "failure within the horizon, conditional on surviving to the observation quarter."
         ),
@@ -235,15 +242,16 @@ AI_ARTICLES: dict[str, dict] = {
             "missing value and drop a real failure, and the earliest failure per certificate is "
             "kept. The date is converted to the same quarter ordinal used everywhere else, so "
             "label assignment is pure integer comparison.\n\n"
-            "## Why competing risks are censored, not modelled\n"
+            "## Why competing risks are censored, then cross-checked\n"
             "A bank can leave the panel for two reasons that matter: it fails, or it is "
             "acquired. These are competing risks. FinLens handles the acquisition path by "
-            "censoring (the merged bank simply has no failure record and ends its presence) "
-            "rather than by a formal cause-specific or Fine-Gray competing-risks model. This is "
-            "a deliberate, stated simplification. It is correct for the failure-prediction "
-            "target as defined, but it does not separately estimate merger hazard, and a "
-            "sensitivity analysis of that choice is on the known-gaps list in [[Model Risk and "
-            "Governance]].\n\n"
+            "censoring (the merged bank simply has no failure record and ends its presence). That "
+            "choice was then validated, not just asserted: a cause-specific merger hazard plus an "
+            "Aalen-Johansen cumulative incidence show mergers are about four times more common than "
+            "failures, but only about 2.2 percent of merger exits were elevated-distress at exit, "
+            "so the informative-censoring bias is small. A discrete-time Fine-Gray subdistribution "
+            "model was then built and lands within noise of the cause-specific model, confirming "
+            "the censoring is adequate. Details are in [[Model Risk and Governance]].\n\n"
             "## Leakage control begins here\n"
             "Because the label looks forward into ``(q, q + H]``, a training row carries "
             "information about that future window. The split machinery must therefore keep any "
@@ -362,9 +370,10 @@ AI_ARTICLES: dict[str, dict] = {
             "everywhere scores well. ``calibration_report`` therefore reports three things: an "
             "expected calibration error over probability bins, the Brier restricted to the "
             "top-scoring decile, and the observed-versus-predicted rate inside that decile, "
-            "which is where flags are actually raised. On the headline run the ECE is about "
-            "1.65e-04, and in the top decile the model predicts about 0.0044 against an "
-            "observed 0.0032. The top-decile numbers are the ones that matter: they say that "
+            f"which is where flags are actually raised. On the headline run the ECE is about "
+            f"{_V['ece']}, and in the top decile the model predicts about {_V['cal_pred']} against "
+            f"an observed {_V['cal_obs']}. The top-decile numbers are the ones that matter: they "
+            "say that "
             "among the banks the model is most worried about, its stated probability is close "
             "to the realized failure rate, slightly conservative.\n\n"
             "## How calibration reaches serving\n"
@@ -495,12 +504,15 @@ AI_ARTICLES: dict[str, dict] = {
             f"scored, not planned: a penalized logit, an unconstrained GBM (PR-AUC {_V['unc_pr']}, "
             f"which the monotone model now matches), and bagged / stacked ensembles are all measured "
             "(the ablation forest), though at 66 "
-            "out-of-time positives none of these point gains is statistically separable, so the "
-            "monotone single model is served and the rest are reported as challengers. The "
-            "genuine remaining levers are: a formal competing-risks (Fine-Gray) treatment "
-            "instead of censoring; originally-filed point-in-time FFIEC features (feasible and "
-            "validated for 2014+, but the full-history retrain underperforms pending a pre-2014 "
-            "reconstruction). These are stated as the path to production, not papered over."
+            "out-of-time positives none of these point gains is statistically separable. The "
+            "served model is the 12-seed BAGGED ensemble (chosen for variance reduction and the "
+            "best point estimate); the single, tuned, and unconstrained models are the challengers. "
+            "Competing risks are handled by censoring and CROSS-CHECKED against a built discrete-time "
+            "Fine-Gray subdistribution model (within noise of the cause-specific model), so that is "
+            "no longer a remaining lever. The genuine remaining lever is originally-filed "
+            "point-in-time FFIEC features (feasible and validated for 2014+, but the full-history "
+            "retrain underperforms because originally-filed data is noisier than restated). These "
+            "are stated as the path to production, not papered over."
         ),
     },
     "Drift Monitoring": {

@@ -414,8 +414,8 @@ def ablation_forest_fig(pack: dict, mode: str | None = None) -> go.Figure:
     fig.add_annotation(xref="paper", yref="paper", x=0, y=1.20, showarrow=False,
                        xanchor="left", font=dict(size=9, color=pal["text_muted"]),
                        text="CIs overlap by construction at n_pos≈66; rank by point estimate, "
-                            "not CI separation. The served model is the monotone single LGBM; "
-                            "ensemble and unconstrained variants are reported as challengers, "
+                            "not CI separation. The served model is the 12-seed BAGGED ensemble; "
+                            "the single, tuned, and unconstrained models are challengers, "
                             "none statistically separable at this positive count.")
     fig = _base(fig, pal, height=380, legend=False)
     fig.update_layout(margin=dict(l=10, r=12, t=72, b=14),

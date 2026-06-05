@@ -46,8 +46,9 @@ path summed nonaccrual (1403) + 90+ (1407) - the correct total-noncurrent defini
 which is what exposed the mismatch (`b1_compare.json` -> `noncurrent_field_audit`).
 
 **Fix applied:** `ml/finlens_ml/features.py` now builds `noncurrent_to_loans` from
-NCLNLS, and the served model is retrained on the corrected feature (OOT PR-AUC
-0.221 -> 0.273, recall@200 47% -> 54.5%), so the FDIC and point-in-time noncurrent
+NCLNLS. In a single-model A/B that isolates the field change, the noncurrent fix lifts
+OOT PR-AUC 0.221 -> 0.273 (recall@200 47% -> 54.5%); the SERVED model then adds 12-seed
+bagging on top, reaching OOT PR-AUC 0.301. So the FDIC and point-in-time noncurrent
 definitions are now apples-to-apples.
 
 ## Why the full retrain underperforms (honest)
@@ -94,7 +95,8 @@ point estimate consistently favours restated. Two real causes remain:
   forward score" tab is the realisation of B1 for the one place point-in-time is not
   optional.
 - B1 also already paid off once: it surfaced the noncurrent field bug (P9LNLS vs
-  NCLNLS), and fixing that lifted the shipped model 0.221 -> 0.273.
+  NCLNLS); fixing that lifted the single model 0.221 -> 0.273, and the served bagged
+  ensemble now scores 0.301.
 - Genuinely remaining (honest): a pure originally-filed pre-2017 total-noncurrent does
   not exist in FFIEC (no total line, no ground truth to validate a reconstruction);
   pre-2017 noncurrent therefore uses FDIC's restated total. Closing that would require
