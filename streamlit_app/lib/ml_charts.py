@@ -28,15 +28,19 @@ def load_viz_pack() -> dict | None:
     return json.loads(_VIZ_PATH.read_text())
 
 
-def _base(fig: go.Figure, pal: dict, *, height: int = 320, title: str = "") -> go.Figure:
+def _base(fig: go.Figure, pal: dict, *, height: int = 340, title: str = "",
+          legend: bool = True) -> go.Figure:
+    # Title pinned at the very top; legend sits at the BOTTOM so the two never collide.
     fig.update_layout(
-        title=dict(text=title, font=dict(size=13, color=pal["text_main"])) if title else None,
+        title=dict(text=title, font=dict(size=13, color=pal["text_main"]),
+                   x=0, xanchor="left", y=0.97, yanchor="top") if title else None,
         height=height,
-        margin=dict(l=8, r=8, t=34 if title else 12, b=8),
+        margin=dict(l=10, r=12, t=38 if title else 12, b=54 if legend else 14),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color=pal["text_muted"], size=11),
-        legend=dict(orientation="h", yanchor="bottom", y=1.0, xanchor="left", x=0,
+        showlegend=legend,
+        legend=dict(orientation="h", yanchor="top", y=-0.22, xanchor="left", x=0,
                     font=dict(color=pal["text_muted"], size=10), bgcolor="rgba(0,0,0,0)"),
         xaxis=dict(gridcolor=pal["border"], zerolinecolor=pal["border"]),
         yaxis=dict(gridcolor=pal["border"], zerolinecolor=pal["border"]),
@@ -143,7 +147,7 @@ def shap_importance_fig(pack: dict, mode: str | None = None) -> go.Figure:
     fig.add_bar(x=[r["mean_abs_shap"] for r in rows], y=labels, orientation="h",
                 marker_color=pal["accent"])
     fig.update_xaxes(title="mean |SHAP| (impact on model output)")
-    return _base(fig, pal, height=420, title="Global feature importance (SHAP)")
+    return _base(fig, pal, height=420, legend=False, title="Global feature importance (SHAP)")
 
 
 def correlation_fig(pack: dict, mode: str | None = None) -> go.Figure:
@@ -158,7 +162,7 @@ def correlation_fig(pack: dict, mode: str | None = None) -> go.Figure:
     ))
     fig.update_xaxes(tickangle=45, tickfont=dict(size=9))
     fig.update_yaxes(tickfont=dict(size=9))
-    return _base(fig, pal, height=460, title="Feature correlation (top SHAP features)")
+    return _base(fig, pal, height=460, legend=False, title="Feature correlation (top SHAP features)")
 
 
 def by_year_fig(pack_by_year: list, mode: str | None = None) -> go.Figure:
@@ -170,7 +174,40 @@ def by_year_fig(pack_by_year: list, mode: str | None = None) -> go.Figure:
     fig.add_scatter(x=[str(r["year"]) for r in rows], y=[r.get("failures", 0) and r["pr_auc"] for r in rows],
                     mode="markers", name="", showlegend=False, marker=dict(opacity=0))
     fig.update_yaxes(title="PR-AUC", range=[0, 1])
-    return _base(fig, pal, title="Out-of-time PR-AUC by year")
+    return _base(fig, pal, legend=False, title="Out-of-time PR-AUC by year")
+
+
+def probability_gauge(prob: float, threshold: float, mode: str | None = None) -> go.Figure:
+    """A calibrated-probability gauge for one bank, banded green / amber / red."""
+    pal = get_palette(mode)
+    green, amber, red = pal["teal"], pal.get("sand", "#c69026"), pal["rose"]
+    amber = "#c69026"
+    pct = prob * 100
+    cap = max(pct * 1.5, threshold * 100 * 2.5, 20)
+    cap = min(cap, 100)
+    bar = red if prob >= threshold else (amber if prob >= threshold / 2 else green)
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=round(pct, 2),
+        number={"suffix": "%", "font": {"size": 30, "color": pal["text_main"]}},
+        gauge={
+            "axis": {"range": [0, cap], "tickcolor": pal["text_soft"],
+                     "tickfont": {"size": 9, "color": pal["text_soft"]}},
+            "bar": {"color": bar, "thickness": 0.7},
+            "bgcolor": "rgba(0,0,0,0)",
+            "borderwidth": 0,
+            "steps": [
+                {"range": [0, threshold * 100 / 2], "color": "rgba(87,171,90,0.12)"},
+                {"range": [threshold * 100 / 2, threshold * 100], "color": "rgba(198,144,38,0.14)"},
+                {"range": [threshold * 100, cap], "color": "rgba(229,83,75,0.12)"},
+            ],
+            "threshold": {"line": {"color": pal["text_soft"], "width": 2}, "thickness": 0.8,
+                          "value": threshold * 100},
+        },
+    ))
+    fig.update_layout(height=200, margin=dict(l=20, r=20, t=10, b=0),
+                      paper_bgcolor="rgba(0,0,0,0)", font=dict(color=pal["text_muted"]))
+    return fig
 
 
 def drift_fig(pack: dict, mode: str | None = None) -> go.Figure | None:
@@ -178,15 +215,17 @@ def drift_fig(pack: dict, mode: str | None = None) -> go.Figure | None:
     feats = pack.get("drift_top_features") or []
     if not feats:
         return None
-    # top_drifted_features may be list[str] or list[{feature,score}]
+    # top_drifted_features is list[{feature, drift}] (or list[str] fallback)
     if isinstance(feats[0], dict):
         labels = [f.get("feature", "") for f in feats]
-        scores = [f.get("score", f.get("drift_score", 0)) for f in feats]
+        scores = [f.get("drift", f.get("score", f.get("drift_score", 0))) for f in feats]
     else:
         labels = list(feats)
         scores = [1] * len(feats)
     labels = [str(label).replace("_", " ") for label in labels]
     fig = go.Figure()
-    fig.add_bar(x=scores[::-1], y=labels[::-1], orientation="h", marker_color=pal["teal"])
-    fig.update_xaxes(title="drift score")
-    return _base(fig, pal, height=300, title="Most-drifted features (reference vs current)")
+    fig.add_bar(x=scores[::-1], y=labels[::-1], orientation="h", marker_color=pal["teal"],
+                text=[f"{s:.2f}" for s in scores[::-1]], textposition="outside")
+    fig.update_xaxes(title="drift score (PSI / statistical distance)", range=[0, max(scores) * 1.25])
+    return _base(fig, pal, height=300, legend=False,
+                 title="Most-drifted features (reference 2008-18 vs current)")

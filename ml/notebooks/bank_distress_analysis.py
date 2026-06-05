@@ -11,7 +11,7 @@
 # ---
 
 # %% [markdown]
-# # Bank-Distress Early-Warning — analysis notebook
+# # Bank-Distress Early-Warning: analysis notebook
 #
 # This is the working notebook behind the FinLens AI surface. I build a discrete-time
 # hazard model on a per-bank-quarter FDIC Call Report panel, evaluate it strictly
@@ -153,7 +153,7 @@ plt.xlabel("predicted probability"); plt.ylabel("observed failure rate")
 plt.legend(); plt.tight_layout(); plt.show()
 
 # %% [markdown]
-# ## 5. What drives it — SHAP
+# ## 5. What drives it: SHAP
 # Global attribution over a sample of the panel, using the served booster.
 
 # %%
@@ -177,6 +177,6 @@ plt.tight_layout(); plt.show()
 # ## 6. Takeaways
 # - Discrete-time hazard on a bank-quarter panel, evaluated strictly out-of-time.
 # - Calibrated probabilities, monotone-constrained, benchmarked against a penalized logit.
-# - Honest about the rate-risk blind spot: a purely credit-driven model under-weights a
+# - The rate-risk blind spot: a purely credit-driven model under-weights a
 #   2023-style liquidity run, which is why HTM/uninsured-deposit features are in the set.
 # - Everything here is reproducible from the public FDIC panel at $0.

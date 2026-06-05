@@ -61,7 +61,9 @@ def _code(obj) -> str | None:
         return None
 
 
-def _show_code(obj, label: str, expanded: bool = False) -> None:
+def _show_code(obj, label: str, explain: str | None = None, expanded: bool = False) -> None:
+    if explain:
+        st.markdown(explain)
     src = _code(obj)
     if src:
         with st.expander(label, expanded=expanded):
@@ -134,28 +136,41 @@ if section == "pipeline":
         )
     section_heading("The real code behind each step", "Pulled live from the source, not retyped.")
     from finlens_ml import labels, splits, train
-    _show_code(labels.attach_labels, "Leakage-safe labelling (labels.attach_labels)", expanded=True)
-    _show_code(splits.final_holdout_split, "Out-of-time split with embargo (splits.final_holdout_split)")
-    _show_code(train._fit_calibrated, "Model + probability calibration (train._fit_calibrated)")
+    _show_code(
+        labels.attach_labels,
+        "Show the labelling code (labels.attach_labels)",
+        explain="**Labelling.** Each bank-quarter is marked 1 if that bank fails within the "
+        "next four quarters, else 0. The hard part is not leaking the future: a bank that "
+        "merges or simply runs out of data is *censored* (dropped), not recorded as a "
+        "survivor, because we cannot know its four-quarter outcome. The exact rule:",
+    )
+    _show_code(
+        splits.final_holdout_split,
+        "Show the split code (splits.final_holdout_split)",
+        explain="**Out-of-time split.** Train on the past, test on the future, never a random "
+        "shuffle. An embargo (the label horizon plus the call-report reporting lag) ensures a "
+        "training row's outcome window closes before the test period starts, so no information "
+        "crosses the boundary:",
+    )
+    _show_code(
+        train._fit_calibrated,
+        "Show the training code (train._fit_calibrated)",
+        explain="**Model and calibration.** A gradient-boosted hazard model with monotone "
+        "constraints produces a ranking; its raw scores are then calibrated on a stratified "
+        "slice that contains real failures, so a reported probability means what it says:",
+    )
 
 elif section == "notebook":
     import streamlit.components.v1 as components
 
     nb_html = PROJECT_ROOT / "ml" / "notebooks" / "bank_distress_analysis.html"
-    nb_src = PROJECT_ROOT / "ml" / "notebooks" / "bank_distress_analysis.py"
     section_heading(
         "Analysis notebook",
         "Executed on the real FDIC panel. Same protocol as the shipped metrics.",
     )
     if nb_html.exists():
         components.html(nb_html.read_text(encoding="utf-8"), height=900, scrolling=True)
-        st.caption(
-            "Rendered from the executed notebook "
-            "(ml/notebooks/bank_distress_analysis.ipynb). Re-run with jupytext + nbconvert."
-        )
-        if nb_src.exists():
-            with st.expander("Notebook source (jupytext)"):
-                st.code(nb_src.read_text(encoding="utf-8"), language="python")
+        st.caption("Executed on the real panel (ml/notebooks/bank_distress_analysis.ipynb).")
     else:
         st.info("Run ml/notebooks build (jupytext + nbconvert) to render the notebook.")
 
@@ -285,18 +300,28 @@ elif section == "quality":
                 st.plotly_chart(dfig, use_container_width=True)
 
 elif section == "decisions":
-    section_heading("Key model decisions", "")
+    section_heading(
+        "Key model decisions",
+        "The choices that shape the model, and why each one was made.",
+    )
     mcard = PROJECT_ROOT / "docs" / "ml" / "MODEL_CARD.md"
     st.markdown(
-        "- **Discrete-time hazard** on a bank-quarter panel (not a next-quarter logit)\n"
-        "- **Monotone constraints** for regulator-defensible, perverse-free relationships\n"
-        "- **Calibration** so served probabilities are real, not raw scores\n"
-        "- **PR-AUC / recall@k** as the headline (accuracy is meaningless at <1% base rate)\n"
-        "- **Aligned with SR 11-7 model-risk principles** (non-binding here); fairness "
-        "scoped as cross-segment equity, no protected class for an institution-level model"
+        "- **A hazard model on a bank-quarter panel**, not a one-shot classifier. Distress "
+        "builds over time, so the model scores each bank every quarter against what happens "
+        "next.\n"
+        "- **Monotone constraints** on every feature. More capital can never raise predicted "
+        "risk, more bad loans can never lower it. This rules out relationships a reviewer "
+        "would reject.\n"
+        "- **Calibrated probabilities**, so a 5% score really corresponds to about a 5% "
+        "historical failure rate, rather than an arbitrary ranking number.\n"
+        "- **Judged on PR-AUC and recall at a review budget**, because at a sub-1% failure "
+        "rate accuracy is meaningless.\n"
+        "- **Aligned with SR 11-7 model-risk principles** (non-binding here). Because this "
+        "scores institutions, not people, there is no protected class; fairness is checked as "
+        "consistent performance across size, region, and charter."
     )
     if mcard.exists():
-        with st.expander("Full model card"):
+        with st.expander("Full model card (generated from the real metrics)"):
             st.markdown(mcard.read_text(encoding="utf-8"))
 
 elif section == "administration":
@@ -312,24 +337,6 @@ elif section == "administration":
     )
     _show_code(registry.set_champion, "Champion promotion via alias (registry.set_champion)")
     _show_code(registry.promote_latest_to_champion, "Promote latest (registry.promote_latest_to_champion)")
-
-elif section == "wiki":
-    section_heading("AI concepts", "Quick reference for the modeling choices.")
-    for term, body in {
-        "Discrete-time hazard": "Predict P(fail within H quarters) on a bank-quarter panel; "
-        "uses time-varying covariates and reduces to binary classification a GBM can fit.",
-        "Calibration": "Map raw model scores to true probabilities (isotonic/Platt) on a "
-        "held-out set, so a 5% score really means ~5% failure rate.",
-        "PR-AUC vs ROC-AUC": "At <1% base rate, ROC looks great while the model is useless; "
-        "PR-AUC (precision-recall) exposes real rare-event performance.",
-        "SHAP": "Per-prediction attribution of each feature's contribution; used here for "
-        "validator-facing transparency (not consumer adverse-action).",
-        "Drift": "Distribution shift in inputs (data drift) or scores (prediction drift); "
-        "the earliest warning since true failure labels arrive late.",
-    }.items():
-        with st.expander(term):
-            st.write(body)
-
 
 from streamlit_app.lib.page_shell import page_footer  # noqa: E402
 

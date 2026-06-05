@@ -31,3 +31,5 @@ ml/artifacts/*
 !ml/artifacts/drift_report.json
 audit/
 audit_crawl*.py
+qa/
+qa_interactive.py

@@ -38,7 +38,7 @@ def _wikilinks(body: str) -> str:
     def repl(m: re.Match) -> str:
         title = m.group(1).strip()
         if title in ws.ARTICLES:
-            return f"[{title}](?article={ws.slug(title)})"
+            return f'<a target="_self" href="?article={ws.slug(title)}">{title}</a>'
         return title
     return _LINK.sub(repl, body)
 
@@ -69,7 +69,7 @@ left, main = st.columns([0.92, 3.08], gap="large")
 # ---- left: section tree ----
 with left:
     nav = ['<nav class="wiki-tree-nav">']
-    nav.append('<a class="wiki-tree-home" href="?article=">FinLens Wiki — home</a>')
+    nav.append('<a class="wiki-tree-home" target="_self" href="?article=">FinLens Wiki: home</a>')
     for _sid, stitle, groups in ws.SECTIONS:
         sec_titles = [t for _s, ts in groups for t in ts if t in ws.ARTICLES
                       and (hits is None or t in hits)]
@@ -84,7 +84,7 @@ with left:
                 nav.append(f'<div class="wiki-tree-sub">{sub}</div>')
             for t in shown:
                 cls = "wiki-tree-art active" if t == current else "wiki-tree-art"
-                nav.append(f'<a class="{cls}" href="?article={ws.slug(t)}">{t}</a>')
+                nav.append(f'<a class="{cls}" target="_self" href="?article={ws.slug(t)}">{t}</a>')
     nav.append("</nav>")
     st.markdown("\n".join(nav), unsafe_allow_html=True)
 
@@ -98,14 +98,14 @@ with main:
         crumb = sec_title
         if branch and branch != sec_title:
             crumb = f"{sec_title} / {branch}"
-        home = '<a class="wiki-crumb-home" href="?article=">Wiki</a>'
+        home = '<a class="wiki-crumb-home" target="_self" href="?article=">Wiki</a>'
         st.markdown(
             f'<div class="wiki-art-crumb">{home} › {crumb}</div>'
             f'<div class="wiki-art-title">{current}</div>'
             f'<div class="wiki-art-lead">{a.get("summary", "")}</div>',
             unsafe_allow_html=True,
         )
-        st.markdown(_wikilinks(a["body"]))
+        st.markdown(_wikilinks(a["body"]), unsafe_allow_html=True)
         # contextual index tables retained from the legacy wiki
         if current == "How This Wiki Is Organized":
             rows = [{"Section": s, "Articles": len([t for _x, ts in g for t in ts if t in ws.ARTICLES])}
@@ -114,9 +114,9 @@ with main:
         prev, nxt = ws.neighbours(current)
         nav_html = '<div class="wiki-art-nav">'
         if prev:
-            nav_html += f'<a class="wiki-prev" href="?article={ws.slug(prev)}">‹ {prev}</a>'
+            nav_html += f'<a class="wiki-prev" target="_self" href="?article={ws.slug(prev)}">‹ {prev}</a>'
         if nxt:
-            nav_html += f'<a class="wiki-next" href="?article={ws.slug(nxt)}">{nxt} ›</a>'
+            nav_html += f'<a class="wiki-next" target="_self" href="?article={ws.slug(nxt)}">{nxt} ›</a>'
         nav_html += "</div>"
         st.markdown(nav_html, unsafe_allow_html=True)
     else:
@@ -140,13 +140,13 @@ with main:
                 continue
             first = titles[0]
             cards = "".join(
-                f'<a class="wiki-browse-card" href="?article={ws.slug(t)}">'
+                f'<a class="wiki-browse-card" target="_self" href="?article={ws.slug(t)}">'
                 f'<span class="wiki-browse-t">{t}</span>'
                 f'<span class="wiki-browse-s">{ws.ARTICLES[t].get("summary", "")}</span></a>'
                 for t in titles
             )
             st.markdown(
-                f'<a class="wiki-home-section" href="?article={ws.slug(first)}">{stitle}</a>'
+                f'<a class="wiki-home-section" target="_self" href="?article={ws.slug(first)}">{stitle}</a>'
                 f'<div class="wiki-browse-grid">{cards}</div>',
                 unsafe_allow_html=True,
             )

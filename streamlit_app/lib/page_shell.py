@@ -39,7 +39,7 @@ def _business_pages() -> list[tuple[str, str, str, str]]:
         (
             "predictive",
             "pages/3_Predictive_Analytics.py",
-            "Predictive Analytics",
+            "Early Warning",
             ":material/neurology:",
         ),
         ("wiki", "pages/6_Wiki.py", "Wiki", ":material/menu_book:"),
@@ -52,7 +52,7 @@ def _business_sections() -> list[tuple[str, str]]:
         ("overview", "Stress Pulse"),
         ("banks", "Failure Forensics"),
         ("metrics", "Macro Transmission"),
-        ("predictive", "Predictive Analytics"),
+        ("predictive", "Early Warning"),
         ("wiki", "Wiki"),
     ]
     return sections
@@ -239,8 +239,11 @@ def _navigate_section(mode: str, key: str) -> None:
         st.switch_page(_page_path("home"))
         return
     if mode == AI_PAGE:
-        st.session_state["ai_section"] = key
-        st.rerun()
+        if key == "wiki":  # one encyclopedia, not a per-surface copy
+            st.switch_page(_page_path("wiki"))
+        else:
+            st.session_state["ai_section"] = key
+            st.rerun()
     elif mode == TECHNICAL_PAGE:
         if key == "wiki":
             st.switch_page(_page_path("wiki"))

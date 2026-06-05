@@ -21,18 +21,20 @@ for sub in ("", "src", "ml"):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from streamlit_app.lib import ml_charts as mc
 from streamlit_app.lib.page_shell import BUSINESS_PAGE, page_intro, status_ribbon, top_navigation
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
 from streamlit_app.lib.ui_components import chart_note, inject_styles, section_heading
 
 st.set_page_config(
-    page_title="FinLens | Predictive Analytics", layout="wide", initial_sidebar_state="collapsed"
+    page_title="FinLens | Early Warning", layout="wide", initial_sidebar_state="collapsed"
 )
 ensure_theme_state()
 inject_styles(app_css(get_theme_mode(), sidebar_open=True))
 top_navigation("predictive", BUSINESS_PAGE)
 record_page_view("predictive_analytics", BUSINESS_PAGE)
+MODE = get_theme_mode()
 
 
 @st.cache_resource(show_spinner=False)
@@ -48,14 +50,37 @@ def _model_available() -> bool:
     ).exists()
 
 
+def _tier(prob: float, threshold: float) -> tuple[str, str]:
+    if prob >= threshold:
+        return "HIGH RISK", "danger"
+    if prob >= threshold / 2:
+        return "ELEVATED", "warn"
+    return "LOW RISK", "ok"
+
+
 def _render_score(result: dict, actual: int | None = None) -> None:
     prob = result["probability"]
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Distress probability (4q)", f"{prob * 100:.2f}%")
-    c2.metric("Decision", "FLAGGED for review" if result["flagged"] else "not flagged")
-    if actual is not None:
-        c3.metric("Actual outcome", "FAILED" if actual == 1 else "survived")
-    st.caption(f"Flag threshold: {result['threshold'] * 100:.0f}% (calibrated probability)")
+    thr = result["threshold"]
+    tier, cls = _tier(prob, thr)
+    g, info = st.columns([1, 1.15], vertical_alignment="center")
+    with g:
+        st.plotly_chart(mc.probability_gauge(prob, thr, MODE), use_container_width=True)
+    with info:
+        st.markdown(
+            f'<div class="ew-badge ew-{cls}">{tier}</div>'
+            f'<div class="ew-sub">Calibrated probability of financial distress within four '
+            f'quarters. Review threshold is {thr * 100:.0f}%: at or above it, the bank is '
+            f'flagged for a closer look.</div>',
+            unsafe_allow_html=True,
+        )
+        if actual is not None:
+            ao = "FAILED" if actual == 1 else "Survived"
+            aocls = "danger" if actual == 1 else "ok"
+            st.markdown(
+                f'<div class="ew-actual">What actually happened: '
+                f'<span class="ew-pill ew-{aocls}">{ao}</span></div>',
+                unsafe_allow_html=True,
+            )
     reasons = pd.DataFrame(result["reasons"])
     if not reasons.empty:
         reasons["impact"] = reasons["shap"].abs().round(3)
@@ -86,14 +111,27 @@ def _render_score(result: dict, actual: int | None = None) -> None:
         )
 
 
-status_ribbon("Live model-backed predictive surface")
+status_ribbon("Live model-backed early-warning surface")
 page_intro(
     "Business Surface",
-    "Predictive Analytics",
-    "Interactive bank financial-distress early-warning, scored live by the calibrated "
-    "gradient-boosted hazard model. Ranks observable public-data stress; it is not "
-    "investment, deposit, or supervisory advice.",
+    "Early Warning",
+    "Pick a bank and see its calibrated probability of financial distress within four "
+    "quarters, with the factors driving the score. It ranks observable public-data "
+    "stress; it is not investment, deposit, or supervisory advice.",
     wiki_slug="how-to-read-a-stress-score",
+)
+st.markdown(
+    '<div class="ew-flow">'
+    '<span class="ew-flow-step"><b>1. Inputs</b><br>34 CAMELS-style Call Report ratios '
+    'for the chosen bank-quarter</span>'
+    '<span class="ew-flow-arrow">&rarr;</span>'
+    '<span class="ew-flow-step"><b>2. Model</b><br>calibrated, monotone-constrained '
+    'gradient-boosted hazard model</span>'
+    '<span class="ew-flow-arrow">&rarr;</span>'
+    '<span class="ew-flow-step"><b>3. Output</b><br>a probability, a colour-coded risk '
+    'tier, and the SHAP drivers behind it</span>'
+    '</div>',
+    unsafe_allow_html=True,
 )
 
 if not _model_available():

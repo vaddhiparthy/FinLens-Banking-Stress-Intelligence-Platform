@@ -557,6 +557,41 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         font-weight: 800;
         margin-bottom: .35rem;
     }}
+    /* Dropdown panel: a distinct elevated card, not a flat cream square on cream */
+    [data-testid="stPopover"] [data-baseweb="popover"] > div,
+    [data-testid="stPopoverBody"] {{
+        background: {palette["sidebar_bg"]} !important;
+        border: 1px solid {palette["accent"]} !important;
+        border-radius: 14px !important;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22) !important;
+        padding: .55rem !important;
+    }}
+    /* Dropdown option buttons: clear, separated list items */
+    div[class*="st-key-pop_"] button {{
+        width: 100%;
+        text-align: left;
+        justify-content: flex-start;
+        border-radius: 9px !important;
+        border: 1px solid transparent !important;
+        background: {palette["content_bg"]} !important;
+        color: {palette["text_main"]} !important;
+        font-weight: 700 !important;
+        min-height: 2.2rem !important;
+        box-shadow: none !important;
+        margin-bottom: .25rem;
+    }}
+    div[class*="st-key-pop_"] button:hover {{
+        border-color: {palette["accent"]} !important;
+        background: {palette["accent_soft"]} !important;
+        color: {palette["accent"]} !important;
+    }}
+    div[class*="st-key-pop_"] button:disabled {{
+        background: {palette["accent_soft"]} !important;
+        border-color: {palette["accent"]} !important;
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+        opacity: 1 !important;
+    }}
     .brandbar {{
         display: flex;
         flex-direction: column;
@@ -595,32 +630,32 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     .landing-hero {{
         text-align: center;
         max-width: 50rem;
-        margin: 2.4rem auto 1.4rem;
+        margin: .6rem auto .9rem;
         padding: 0 1rem;
     }}
     .landing-eyebrow {{
         color: {palette["accent"]};
         text-transform: uppercase;
         letter-spacing: .18em;
-        font-size: .72rem;
+        font-size: .7rem;
         font-weight: 800;
-        margin-bottom: 1rem;
+        margin-bottom: .55rem;
     }}
     .landing-h1 {{
         font-family: "Inter", system-ui, -apple-system, sans-serif;
-        font-size: clamp(2.6rem, 5.5vw, 4.2rem);
-        line-height: 1.04;
+        font-size: clamp(2.1rem, 4.2vw, 3.2rem);
+        line-height: 1.05;
         font-weight: 800;
         letter-spacing: -.03em;
         color: {palette["text_main"]};
-        margin: 0 0 1.1rem;
+        margin: 0 0 .7rem;
     }}
     .landing-sub {{
         max-width: 42rem;
         margin: 0 auto;
         color: {palette["text_muted"]};
-        font-size: 1.05rem;
-        line-height: 1.65;
+        font-size: .98rem;
+        line-height: 1.55;
     }}
     .landing-pick {{
         text-align: center;
@@ -629,7 +664,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         letter-spacing: .16em;
         font-size: .72rem;
         font-weight: 800;
-        margin: 1.6rem 0 .9rem;
+        margin: 1rem 0 .7rem;
     }}
     .surface-card {{
         border: 1px solid {palette["border"]};
@@ -1832,6 +1867,65 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         line-height: 1.05;
         color: {palette["text_main"]};
         margin-bottom: .38rem;
+    }}
+    .ew-badge {{
+        display: inline-block;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-size: 1.35rem;
+        font-weight: 900;
+        letter-spacing: .02em;
+        padding: .3rem .9rem;
+        border-radius: 12px;
+        border: 1px solid transparent;
+    }}
+    .ew-sub {{
+        color: {palette["text_muted"]};
+        font-size: .9rem;
+        line-height: 1.55;
+        margin-top: .55rem;
+        max-width: 30rem;
+    }}
+    .ew-actual {{
+        margin-top: .7rem;
+        color: {palette["text_soft"]};
+        font-size: .9rem;
+        font-weight: 600;
+    }}
+    .ew-pill {{
+        display: inline-block;
+        padding: .12rem .55rem;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: .82rem;
+        margin-left: .3rem;
+    }}
+    .ew-ok {{ background: rgba(87,171,90,.16); color: #3fa34d; border-color: rgba(87,171,90,.5); }}
+    .ew-warn {{ background: rgba(198,144,38,.16); color: #b67d10; border-color: rgba(198,144,38,.5); }}
+    .ew-danger {{ background: rgba(229,83,75,.16); color: #d64f45; border-color: rgba(229,83,75,.5); }}
+    .ew-flow {{
+        display: flex;
+        align-items: stretch;
+        gap: .5rem;
+        margin: .2rem 0 1rem;
+        flex-wrap: wrap;
+    }}
+    .ew-flow-step {{
+        flex: 1 1 0;
+        min-width: 11rem;
+        border: 1px solid {palette["border"]};
+        border-radius: 10px;
+        padding: .55rem .7rem;
+        background: {palette["content_bg"]};
+        color: {palette["text_muted"]};
+        font-size: .8rem;
+        line-height: 1.4;
+    }}
+    .ew-flow-step b {{ color: {palette["text_main"]}; }}
+    .ew-flow-arrow {{
+        align-self: center;
+        color: {palette["accent"]};
+        font-size: 1.2rem;
+        font-weight: 800;
     }}
     .page-wiki-link {{
         display: inline-block;
