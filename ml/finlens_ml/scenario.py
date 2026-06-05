@@ -96,17 +96,19 @@ def _dataset() -> pd.DataFrame:
 
 @lru_cache(maxsize=1)
 def bank_directory() -> pd.DataFrame:
-    """One row per bank (latest quarter) for a searchable name picker, so users
-    never have to know an FDIC CERT. Sorted by name; failed banks flagged."""
+    """One row per bank for a searchable name picker (no CERT needed), restricted to
+    banks that have at least one quarter whose 4-quarter outcome is ALREADY KNOWN.
+
+    Forward-looking scoring is intentionally disabled: every bank shown here can only be
+    scored as of a past quarter whose actual outcome has elapsed (a backtest), so the
+    tool can never imply a live bank will fail in the future."""
     df = _dataset().copy()
-    latest = df.sort_values("obs_qord").drop_duplicates("cert", keep="last")
+    known = df[df["label_4"].notna()]  # outcome window has elapsed = a real backtest
+    latest = known.sort_values("obs_qord").drop_duplicates("cert", keep="last")
     cols = [c for c in ["cert", "bank_name", "state", "quarter"] if c in latest.columns]
     out = latest[cols].dropna(subset=["bank_name"]).copy()
-    if "label_4" in latest.columns:
-        ever_failed = df.groupby("cert")["label_4"].max()
-        out["ever_failed"] = out["cert"].map(ever_failed).fillna(0).astype(int)
-    else:
-        out["ever_failed"] = 0
+    ever_failed = known.groupby("cert")["label_4"].max()
+    out["ever_failed"] = out["cert"].map(ever_failed).fillna(0).astype(int)
     out["cert"] = out["cert"].astype(int)
     out["label"] = (
         out["bank_name"].astype(str)
@@ -115,10 +117,14 @@ def bank_directory() -> pd.DataFrame:
     return out.sort_values("bank_name").reset_index(drop=True)
 
 
-def latest_row_for_cert(cert: int) -> dict | None:
-    """Most recent bank-quarter feature row for a CERT (for 'insert test bank')."""
+def latest_known_row_for_cert(cert: int) -> dict | None:
+    """Most recent bank-quarter for a CERT whose 4-quarter outcome is already KNOWN.
+
+    This is a backtest only. Quarters whose outcome window has not yet elapsed (i.e. a
+    forward-looking prediction about a live bank) are deliberately excluded so the
+    surface never produces a claim about the future."""
     df = _dataset()
-    sub = df[df["cert"] == cert]
+    sub = df[(df["cert"] == cert) & (df["label_4"].notna())]
     if sub.empty:
         return None
     row = sub.sort_values("obs_qord").iloc[-1]
@@ -129,7 +135,7 @@ def latest_row_for_cert(cert: int) -> dict | None:
         "quarter": row.get("quarter"),
         "state": row.get("state"),
         "features": feats,
-        "actual_label_4": (None if pd.isna(row.get("label_4")) else int(row["label_4"])),
+        "actual_label_4": int(row["label_4"]),
     }
 
 

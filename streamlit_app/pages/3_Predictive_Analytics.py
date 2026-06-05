@@ -115,9 +115,10 @@ status_ribbon("Live model-backed early-warning surface")
 page_intro(
     "Business Surface",
     "Early Warning",
-    "Pick a bank and see its calibrated probability of financial distress within four "
-    "quarters, with the factors driving the score. It ranks observable public-data "
-    "stress; it is not investment, deposit, or supervisory advice.",
+    "Pick a bank and the model scores it as of a past quarter whose outcome is already "
+    "known, then shows the factors behind the score and what actually happened. This is a "
+    "historical check of how the model performs on public data, not a forecast about any "
+    "bank's future.",
     wiki_slug="how-to-read-a-stress-score",
 )
 st.markdown(
@@ -143,13 +144,15 @@ if not _model_available():
 
 scenario = _backend()
 tab_insert, tab_holdout, tab_what_if = st.tabs(
-    ["Score any bank (by name)", "Hold-out test (real failures)", "Hypothetical what-if"]
+    ["Backtest any bank (by name)", "Failed-bank backtests", "Hypothetical what-if"]
 )
 
 with tab_insert:
     st.write(
-        "Search for any U.S. bank by name and score its most recent quarter in the panel "
-        "from real FDIC Call Report data. (No need to know any code, just start typing.)"
+        "Pick a U.S. bank and the model scores it **as of a past quarter whose outcome is "
+        "already known**, then compares its prediction to what actually happened. This is a "
+        "historical check of the model, not a forecast: forward-looking scoring is "
+        "deliberately turned off."
     )
     directory = scenario.bank_directory()
     labels = directory["label"].tolist()
@@ -161,35 +164,34 @@ with tab_insert:
         labels,
         index=default_idx,
         key="insert_bank_pick",
-        help="Type to search across every bank in the panel.",
+        help="Type to search. Only banks with a known, elapsed outcome are listed.",
         placeholder="Start typing a bank name…",
     )
     if choice:
         pick = directory[directory["label"] == choice].iloc[0]
-        row = scenario.latest_row_for_cert(int(pick["cert"]))
+        row = scenario.latest_known_row_for_cert(int(pick["cert"]))
         if row is None:
-            st.warning("That bank has no scoreable quarter in the panel.")
+            st.warning("That bank has no quarter with a known outcome to backtest.")
         else:
-            note = "most recent quarter in panel"
             st.success(
-                f"{row['bank_name']} ({row['state']}), {note}: {row['quarter']} "
-                f"· FDIC CERT {row['cert']}"
+                f"{row['bank_name']} ({row['state']}), scored as of {row['quarter']} "
+                f"(outcome known) · FDIC CERT {row['cert']}"
             )
             _render_score(scenario.score_features(row["features"]), row["actual_label_4"])
 
 with tab_holdout:
     st.write(
-        "Pick a bank that **actually failed**. The model scores its pre-failure quarter "
-        "so you can compare the predicted distress probability against the real outcome."
+        "Pick a bank that **actually failed**. The model scores a quarter ahead of the "
+        "failure so you can compare its distress probability against the real, known outcome."
     )
     failed = scenario.held_out_failed_banks(limit=25)
     if failed.empty:
         st.info("No labeled failures in the panel.")
     else:
         failed["label"] = failed["bank_name"] + " (" + failed["state"].fillna("?") + ", " + failed["quarter"] + ")"
-        choice = st.selectbox("Held-out failed bank", failed["label"].tolist(), key="holdout_pick")
+        choice = st.selectbox("Failed bank", failed["label"].tolist(), key="holdout_pick")
         pick = failed[failed["label"] == choice].iloc[0]
-        row = scenario.latest_row_for_cert(int(pick["cert"]))
+        row = scenario.latest_known_row_for_cert(int(pick["cert"]))
         if row is not None:
             _render_score(scenario.score_features(row["features"]), row["actual_label_4"])
 
@@ -209,9 +211,19 @@ with tab_what_if:
             )
     _render_score(scenario.score_hypothetical(vals))
     st.caption(
-        "Monotone constraints are enforced in the model: more capital never increases "
-        "predicted risk; higher noncurrent loans never decreases it."
+        "This is a made-up bank, not a real institution. Monotone constraints are enforced: "
+        "more capital never increases predicted risk; higher noncurrent loans never decreases it."
     )
+
+chart_note(
+    "Please read this",
+    "These scores are a historical backtest on public FDIC data: the model is scored only "
+    "on past quarters whose outcome has already happened, so its prediction can be checked "
+    "against reality. Nothing here is a forecast, and it is not an indication that any bank "
+    "will fail. Forward-looking scoring of live banks is intentionally disabled to avoid "
+    "misinformation. This is not financial, investment, deposit, or supervisory advice; for "
+    "decisions about a bank rely only on official U.S. government and regulator sources.",
+)
 
 
 from streamlit_app.lib.page_shell import page_footer  # noqa: E402

@@ -288,8 +288,7 @@ def _render_section_tabs(active_page: str, mode: str) -> None:
 
 def _render_top_bar(active_page: str, mode: str) -> None:
     """The single persistent chrome used on every page: surface dropdown (left),
-    centred FinLens wordmark + credit (fills the otherwise-empty header), theme
-    toggle (right). Identical placement everywhere so navigation never moves."""
+    centred FinLens wordmark, credit (right). Identical placement everywhere."""
     is_home = mode == "home"
     trigger = "Explore surfaces" if is_home else _SURFACE_META.get(mode, _SURFACE_META[BUSINESS_PAGE])[0]
 
@@ -321,18 +320,10 @@ def _render_top_bar(active_page: str, mode: str) -> None:
         )
     with bar_right:
         st.markdown(
-            '<a class="topbar-credit" href="https://surya.vaddhiparthy.com" '
-            'target="_blank">Built by Surya Vaddhiparthy</a>'
-            '<div class="theme-toggle-anchor"></div>',
+            '<a class="topbar-credit topbar-credit-solo" href="https://surya.vaddhiparthy.com" '
+            'target="_blank">Built by Surya Vaddhiparthy</a>',
             unsafe_allow_html=True,
         )
-        dark = st.toggle(
-            "Dark", value=st.session_state.get("theme_dark", False),
-            key=f"theme_toggle_{active_page}",
-        )
-        if dark != st.session_state.get("theme_dark", False):
-            st.session_state["theme_dark"] = dark
-            st.rerun()
 
 
 def top_navigation(active_page: str, mode: str) -> None:

@@ -626,6 +626,7 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
     .topbar-credit:hover {{
         color: {palette["accent"]} !important;
     }}
+    .topbar-credit-solo {{ margin-bottom: 0; line-height: 2.4rem; }}
     /* ---- Landing page (full-bleed, scrollable) ---- */
     .landing-hero {{
         text-align: center;

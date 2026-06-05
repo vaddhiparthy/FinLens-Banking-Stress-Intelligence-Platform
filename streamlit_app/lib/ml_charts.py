@@ -205,7 +205,7 @@ def probability_gauge(prob: float, threshold: float, mode: str | None = None) ->
                           "value": threshold * 100},
         },
     ))
-    fig.update_layout(height=200, margin=dict(l=20, r=20, t=10, b=0),
+    fig.update_layout(height=240, margin=dict(l=24, r=24, t=28, b=28),
                       paper_bgcolor="rgba(0,0,0,0)", font=dict(color=pal["text_muted"]))
     return fig
 
