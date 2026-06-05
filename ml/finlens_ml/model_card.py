@@ -115,9 +115,17 @@ def _md_table(df: pd.DataFrame) -> str:
 def generate_model_card(horizon_q: int = 4) -> Path:
     settings = get_ml_settings()
     metrics = json.loads((settings.artifact_dir / f"metrics_h{horizon_q}.json").read_text())
-    from finlens_ml.explain import global_importance
-
-    gi = global_importance(n=1500).head(12)
+    # Read SHAP from the committed viz_pack so the model card and the rendered SHAP chart
+    # show identical magnitudes (they previously diverged because each recomputed SHAP on
+    # a different reservoir draw). Fall back to a fresh computation only if absent.
+    import pandas as _pd
+    _viz = settings.artifact_dir / "viz_pack.json"
+    if _viz.exists():
+        _si = json.loads(_viz.read_text()).get("shap_importance", [])
+        gi = _pd.DataFrame(_si)[["feature", "mean_abs_shap"]].head(12)
+    else:
+        from finlens_ml.explain import global_importance
+        gi = global_importance(n=1500).head(12)
     seg = cross_segment_equity(horizon_q)
     t = metrics["oot_test"]["calibrated_lgbm"]
     logit = metrics["oot_test"]["logit_benchmark"]
@@ -188,8 +196,9 @@ behavior of a rare-event model.
 ## Top global drivers (SHAP)
 {_md_table(gi.rename(columns={'mean_abs_shap': 'mean_|SHAP|'}))}
 
-Capital (tier-1) and earnings (ROA) dominate, consistent with the bank-failure
-literature. Computed as mean |SHAP| over a fixed reservoir sample (n=1500, seed 42)
+Capital (tier-1) and asset quality (noncurrent loans) dominate, consistent with the
+bank-failure literature. These values are the SAME committed SHAP block the Model Quality
+chart renders (viz_pack.json), computed over a fixed sample (n=3000, seed 42)
 of OOT-era rows. Local per-bank SHAP reason codes are available via the serving API.
 
 ## Cross-segment performance equity (NOT protected-class fairness)

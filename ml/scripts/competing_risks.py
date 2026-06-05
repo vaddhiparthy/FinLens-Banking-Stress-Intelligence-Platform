@@ -153,7 +153,8 @@ def main() -> None:
         },
         "method": ("cause-specific hazards (failure + merger) + Aalen-Johansen CIF, "
                    "implemented from scratch (no new deps, $0). A full Fine-Gray "
-                   "subdistribution model is the next refinement; this quantifies the "
+                   "subdistribution model has since been BUILT (ml/scripts/fine_gray.py, "
+                   "within noise of cause-specific); this quantifies the "
                    "bias the current censoring introduces, which is the decision-relevant "
                    "number."),
     }

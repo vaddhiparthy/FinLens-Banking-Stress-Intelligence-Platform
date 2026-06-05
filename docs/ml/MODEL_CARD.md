@@ -50,23 +50,24 @@ In calm years with few or zero failures, PR-AUC is low or undefined — the expe
 behavior of a rare-event model.
 
 ## Top global drivers (SHAP)
-| feature                       |   mean_|SHAP| |
-|:------------------------------|--------------:|
-| tier1_rwa_ratio               |     0.279822  |
-| noncurrent_to_loans           |     0.139644  |
-| roe                           |     0.0598917 |
-| tier1_leverage                |     0.0476549 |
-| equity_to_assets              |     0.0384824 |
-| equity_to_assets_peer_z       |     0.034269  |
-| equity_to_assets_yoy_delta    |     0.0315959 |
-| roa                           |     0.0308507 |
-| noncurrent_to_loans_peer_z    |     0.0249119 |
-| asset_growth_yoy              |     0.0223168 |
-| allowance_to_loans            |     0.0145932 |
-| noncurrent_to_loans_yoy_delta |     0.0142737 |
+| feature                    |   mean_|SHAP| |
+|:---------------------------|--------------:|
+| tier1_rwa_ratio            |       0.25218 |
+| noncurrent_to_loans        |       0.13353 |
+| roe                        |       0.05974 |
+| tier1_leverage             |       0.04393 |
+| equity_to_assets           |       0.03727 |
+| equity_to_assets_peer_z    |       0.03277 |
+| roa                        |       0.03117 |
+| equity_to_assets_yoy_delta |       0.03041 |
+| noncurrent_to_loans_peer_z |       0.0242  |
+| asset_growth_yoy           |       0.02304 |
+| brokered_to_deposits       |       0.01637 |
+| allowance_to_loans         |       0.01288 |
 
-Capital (tier-1) and earnings (ROA) dominate, consistent with the bank-failure
-literature. Computed as mean |SHAP| over a fixed reservoir sample (n=1500, seed 42)
+Capital (tier-1) and asset quality (noncurrent loans) dominate, consistent with the
+bank-failure literature. These values are the SAME committed SHAP block the Model Quality
+chart renders (viz_pack.json), computed over a fixed sample (n=3000, seed 42)
 of OOT-era rows. Local per-bank SHAP reason codes are available via the serving API.
 
 ## Cross-segment performance equity (NOT protected-class fairness)
