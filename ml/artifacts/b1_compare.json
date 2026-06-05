@@ -1,10 +1,10 @@
 {
   "fdic_restated": {
     "oot": {
-      "pr_auc": 0.1939,
+      "pr_auc": 0.1755,
       "ci": [
-        0.1056,
-        0.3197
+        0.1004,
+        0.2813
       ],
       "n_test": 118943,
       "pos": 66
@@ -32,14 +32,18 @@
     }
   },
   "noncurrent_health": {
-    "fdic_frac_zero": 0.481,
+    "fdic_frac_zero": 0.092,
     "pit_frac_zero": 0.148
+  },
+  "noncurrent_field_audit": {
+    "p9lnls_zero_rate": 0.497,
+    "nclns_zero_rate": 0.108,
+    "note": "P9LNLS = 90+-days-past-due-and-still-accruing only (normal to be zero); NCLNLS = total noncurrent (nonaccrual+90+). FinLens originally used P9LNLS; fixed to NCLNLS."
   },
   "noncurrent_reconstruction": {
     "validation_quarter": "2018Q1",
     "category_sum_vs_official_corr": 0.968,
     "category_sum_over_official_median_ratio": 0.403,
-    "n_banks_both_nonzero": 4334,
-    "note": "pre-2014 RC-N has no total line; the label-based category sum is validated against the 2014+ official total (1403+1407) where both exist. Rank-correct but magnitude-light, hence a 2014 boundary level shift."
+    "n_banks_both_nonzero": 4334
   }
 }

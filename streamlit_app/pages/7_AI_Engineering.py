@@ -292,17 +292,26 @@ elif section == "quality":
             if "unconstrained_gbm" in chal:
                 u = chal["unconstrained_gbm"]
                 gap = u["pr_auc"] - t["pr_auc"]
-                rel = gap / u["pr_auc"] if u["pr_auc"] else 0.0
-                st.caption(
-                    f"The unconstrained GBM scores higher (PR-AUC {u['pr_auc']:.3f} vs "
-                    f"{t['pr_auc']:.3f}, a {gap:.3f} / {rel:.0%} gap). That gap is the "
-                    "deliberate price of the monotone constraints: the shipped model is held "
-                    "to economically-signed relationships (more capital never raises predicted "
-                    "risk, higher noncurrent loans never lowers it). A free model can buy a "
-                    "little in-window PR-AUC by learning a perverse relationship, which is "
-                    "exactly what SR 11-7 conceptual-soundness review rejects, so the "
-                    "constrained, validator-defensible model is the one served."
-                )
+                base = ("The shipped model is held to economically-signed monotone "
+                        "relationships (more capital never raises predicted risk, higher "
+                        "noncurrent loans never lowers it) - what SR 11-7 conceptual-soundness "
+                        "review requires.")
+                if gap > 0.01:
+                    rel = gap / u["pr_auc"] if u["pr_auc"] else 0.0
+                    st.caption(
+                        f"The unconstrained GBM scores higher (PR-AUC {u['pr_auc']:.3f} vs "
+                        f"{t['pr_auc']:.3f}, a {gap:.3f} / {rel:.0%} gap) - the deliberate "
+                        f"price of those constraints. {base} At 66 OOT positives that gap is "
+                        "not statistically separable (see G0), and the validator-defensible "
+                        "model is the one served."
+                    )
+                else:
+                    st.caption(
+                        f"Here the monotone model ({t['pr_auc']:.3f}) matches or beats the "
+                        f"unconstrained GBM ({u['pr_auc']:.3f}), so the economic constraints "
+                        f"cost nothing measurable. {base} The regulator-defensible model is "
+                        "also the strongest, and it is the one served."
+                    )
         # Ablation forest: the full ladder as a point+interval chart (CIs overlap by
         # construction at n_pos~66; the figure caption states the intended reading).
         if viz.get("ablation", {}).get("rungs"):

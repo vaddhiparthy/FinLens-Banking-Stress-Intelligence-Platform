@@ -248,6 +248,23 @@ def generate_validation_report(horizon_q: int = 4) -> Path:
     ug_pr = _unc.get("pr_auc", t["pr_auc"])
     ug_gap = ug_pr - t["pr_auc"]
     ug_rel = ug_gap / ug_pr if ug_pr else 0.0
+    if ug_gap > 0.01:
+        ug_clause = (
+            f"The unconstrained GBM scores higher on PR-AUC ({ug_pr:.4f} vs {t['pr_auc']:.4f}, "
+            f"a {ug_gap:.4f} / {ug_rel:.0%} gap); that gap is the deliberate cost of the "
+            "monotone constraints. A free model can buy a little in-window PR-AUC by learning a "
+            "perverse relationship (e.g. more capital raising predicted risk), which is precisely "
+            "what conceptual-soundness review rejects, so the constrained, economically-signed "
+            "model is the one served. At this positive count the gap is not statistically "
+            "separable (see §3)."
+        )
+    else:
+        ug_clause = (
+            f"The monotone constraints cost nothing measurable here: the constrained model "
+            f"({t['pr_auc']:.4f}) matches or beats the unconstrained GBM ({ug_pr:.4f}), so the "
+            "economically-signed, validator-defensible model is also the strongest and is the one "
+            "served."
+        )
     report = f"""# Validation Report — FinLens Bank-Distress Model (SR 11-7 three pillars)
 
 *Effective-challenge package. Metrics computed from real out-of-time evaluation.*
@@ -263,12 +280,7 @@ def generate_validation_report(horizon_q: int = 4) -> Path:
   monotone constraints). The constrained GBM beats the logit on the rare-event metric
   (PR-AUC {t['pr_auc']:.4f} vs {lg['pr_auc']:.4f}); because that margin sits on
   {metrics['test_positives']} positives it is reported with a paired bootstrap (see §3),
-  not as a bare point comparison. The unconstrained GBM scores higher on PR-AUC
-  ({ug_pr:.4f} vs {t['pr_auc']:.4f}, a {ug_gap:.4f} / {ug_rel:.0%} gap); that gap is the
-  deliberate cost of the monotone constraints. A free model can buy a little in-window
-  PR-AUC by learning a perverse relationship (e.g. more capital raising predicted risk),
-  which is precisely what conceptual-soundness review rejects, so the constrained,
-  economically-signed model is the one served.
+  not as a bare point comparison. {ug_clause}
 - **Hyperparameters:** tuned with Optuna over inner time-series CV folds (not hand-set
   magic numbers); the search is recorded in the metrics artifact.
 - **No leakage:** the embargo guarantees a training row's label window (q, q+H] ends

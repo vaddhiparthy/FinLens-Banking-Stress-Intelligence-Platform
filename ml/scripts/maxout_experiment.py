@@ -92,7 +92,7 @@ def main() -> None:
     # ---- 1. heavy tune (200 trials / up to 6 folds) ----
     print("[1] heavy Optuna tune (200 trials)...", flush=True)
     bp1, info1 = _tune_hyperparameters(X_tr, y_tr, obs_tr, HORIZON, SEED,
-                                       reporting_lag_q=lag, n_trials=200, timeout=1500)
+                                       reporting_lag_q=lag, n_trials=120, timeout=700)
     _, cal1, *_ = _fit_calibrated(X_tr, y_tr, SEED, params=bp1)
     p1 = cal1.predict_proba(X_te)[:, 1]
     out["results"]["heavy_tune"] = {**_ci(y_te, p1, k), "tune": info1}

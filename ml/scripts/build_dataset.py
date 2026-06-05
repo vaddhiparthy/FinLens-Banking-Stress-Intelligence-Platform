@@ -61,7 +61,7 @@ def main() -> None:
     # and silently drop a column. Materialize a clean, collision-free column set:
     # ids/meta + derived features + labels + a few raw $ amounts for display.
     id_meta = ["cert", "bank_name", "quarter", "repdte", "obs_qord", "fail_qord"]
-    raw_display = ["ASSET", "DEP", "EQ", "NETINC", "LNLSGR", "P9LNLS"]
+    raw_display = ["ASSET", "DEP", "EQ", "NETINC", "LNLSGR", "P9LNLS", "NCLNLS"]
     label_cols = [c for c in feats.columns if c.startswith(("label_", "labelable_"))]
     keep = [c for c in id_meta + ["state", "bank_class"] if c in feats.columns]
     keep += [c for c in FEATURE_COLUMNS if c in feats.columns]

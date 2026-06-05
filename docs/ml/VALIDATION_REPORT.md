@@ -11,20 +11,15 @@
 - **Benchmark / effective challenge:** a ladder of a penalized logistic regression (a
   regulatory-style linear reference) and an unconstrained GBM (same tuned params, no
   monotone constraints). The constrained GBM beats the logit on the rare-event metric
-  (PR-AUC 0.2393 vs 0.1117); because that margin sits on
+  (PR-AUC 0.2728 vs 0.1533); because that margin sits on
   66 positives it is reported with a paired bootstrap (see §3),
-  not as a bare point comparison. The unconstrained GBM scores higher on PR-AUC
-  (0.2727 vs 0.2393, a 0.0333 / 12% gap); that gap is the
-  deliberate cost of the monotone constraints. A free model can buy a little in-window
-  PR-AUC by learning a perverse relationship (e.g. more capital raising predicted risk),
-  which is precisely what conceptual-soundness review rejects, so the constrained,
-  economically-signed model is the one served.
+  not as a bare point comparison. The monotone constraints cost nothing measurable here: the constrained model (0.2728) matches or beats the unconstrained GBM (0.2696), so the economically-signed, validator-defensible model is also the strongest and is the one served.
 - **Hyperparameters:** tuned with Optuna over inner time-series CV folds (not hand-set
   magic numbers); the search is recorded in the metrics artifact.
 - **No leakage:** the embargo guarantees a training row's label window (q, q+H] ends
   strictly before the test start (train q <= test_start - H - reporting_lag - 1),
   enforced at runtime (`assert_no_temporal_overlap`); labels are strictly forward-looking
-  with merger / end-of-data censoring. OOT ROC-AUC 0.8056 is well below the
+  with merger / end-of-data censoring. OOT ROC-AUC 0.8170 is well below the
   >0.98 leakage-suspicion threshold.
 - **Honest data caveats:** the bank-level model does **not** join macro series (FRED is
   business-surface context, not a model input), so no macro-vintage question arises here.
@@ -49,12 +44,12 @@
 - **Headline holdout:** 118,943 bank-quarters / 66 real
   failures (2019-2026, includes the 2023 SVB/Signature/First-Republic cluster).
 - **Uncertainty (the point estimates are not the result):** 95% stratified-bootstrap CIs —
-  PR-AUC [0.141, 0.370], recall@k [0.344, 0.581]. The PR-AUC
+  PR-AUC [0.163, 0.408], recall@k [0.400, 0.636]. The PR-AUC
   edge over the logit is a paired bootstrap: difference 95% CI
-  [+0.060, +0.205], P(LGBM > logit) = 100.0%.
+  [+0.038, +0.195], P(LGBM > logit) = 99.8%.
 - **Multi-origin rolling backtest:** 10 embargoed out-of-time folds,
-  PR-AUC mean 0.2332 (std 0.2384, range
-  0.0008-0.6707); strong in failure-containing windows,
+  PR-AUC mean 0.2128 (std 0.2128, range
+  0.0002-0.5152); strong in failure-containing windows,
   near-floor in calm years.
 - Reported by-year cohorts (crisis vs calm) — the model is not a single-period fit.
 - Calibration verified on the OOT set (ECE + top-decile observed-vs-predicted), not just

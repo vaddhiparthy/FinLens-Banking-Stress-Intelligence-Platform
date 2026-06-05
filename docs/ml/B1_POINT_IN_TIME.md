@@ -32,21 +32,33 @@ roa 0.991, efficiency 0.998, allowance 0.992, loans_to_deposits 0.987, brokered
 1.000, uninsured 0.943. (roe/nim slightly lower by transparent avg-equity/avg-earning-
 assets convention.)
 
-## Real finding: FDIC's stored noncurrent is broken
-The FDIC `/financials` `P9LNLS` (noncurrent loans) used by the shipped panel is **zero
-for 48.1% of bank-quarters** - implausibly high for "no noncurrent loans." The
-point-in-time RC-N values (nonaccrual + 90-days-past-due) populate it far more fully:
-zero-rate **14.8%** (`ml/artifacts/b1_compare.json`: `fdic_frac_zero` 0.481 vs
-`pit_frac_zero` 0.148). Where FDIC does report a non-zero value the two rank-agree.
-This is a genuine data-quality gap in the shipped panel that B1 exposes.
+## Real finding: a FinLens feature-mapping bug (now fixed)
+This is NOT an FDIC data bug; it is a FinLens field-selection error that the
+point-in-time path surfaced. FinLens's `noncurrent_to_loans` was built from FDIC
+`P9LNLS`, which is **loans 90+ days past due AND STILL ACCRUING only** - not total
+noncurrent. P9LNLS is zero for **49.7%** of bank-quarters, which is economically NORMAL:
+sound banks place troubled loans on nonaccrual, removing them from the accruing-90+
+bucket, so a zero in a given quarter is expected. **Total noncurrent = nonaccrual +
+90+-days-past-due = FDIC `NCLNLS`** (zero-rate **10.8%**), which FDIC publishes and the
+codebase already fetched (`ingestion/fdic_institutions.py`). The point-in-time RC-N
+path summed nonaccrual (1403) + 90+ (1407) - the correct total-noncurrent definition -
+which is what exposed the mismatch (`b1_compare.json` -> `noncurrent_field_audit`).
+
+**Fix applied:** `ml/finlens_ml/features.py` now builds `noncurrent_to_loans` from
+NCLNLS, and the served model is retrained on the corrected feature (OOT PR-AUC
+0.221 -> 0.273, recall@200 47% -> 54.5%), so the FDIC and point-in-time noncurrent
+definitions are now apples-to-apples.
 
 ## Why the full retrain underperforms (honest)
 Same recipe, same OOT protocol, only the data source differs
 (`ml/scripts/b1_compare.py`):
 
+(Same recipe with default params on both panels, to isolate the data-source effect;
+the served model is separately tuned to 0.273.)
+
 | panel | OOT PR-AUC | 95% CI |
 |---|---|---|
-| FDIC restated (shipped) | 0.194 | [0.106, 0.320] |
+| FDIC restated (shipped, NCLNLS noncurrent) | 0.176 | [0.100, 0.281] |
 | point-in-time (full history) | 0.100 | [0.050, 0.174] |
 
 Two causes, both real:

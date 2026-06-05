@@ -23,10 +23,9 @@ def main() -> None:
     exp = json.loads((ART / "maxout_experiment.json").read_text())
     ht = exp["results"]["heavy_tune"]["tune"]
     best = ht["best_params"]
-    # the real Optuna search captured by the production retrain (opt_history, importance,
-    # trial_stability, slices) - a representative search for the tuning visuals.
-    cur = json.loads((ART / "metrics_h4.json").read_text())
-    study = cur.get("hyperparameter_tuning", {}).get("study", {})
+    # the Optuna search captured by THIS experiment (same features as the served model),
+    # for the tuning visuals (opt_history, importance, trial_stability, slices).
+    study = ht.get("study", {})
     override = {"study": study, "cv_mean_pr_auc": ht.get("cv_mean_pr_auc"),
                 "n_trials": ht.get("n_trials"), "n_inner_folds": ht.get("n_inner_folds")}
 

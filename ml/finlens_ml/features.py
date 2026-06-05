@@ -34,7 +34,13 @@ def add_level_features(df: pd.DataFrame) -> pd.DataFrame:
     out["tier1_rwa_ratio"] = pd.to_numeric(out.get("RBC1RWAJ"), errors="coerce")
     out["tier1_leverage"] = _safe_ratio(out.get("RBCT1J"), out["ASSET"])
     # Asset quality
-    out["noncurrent_to_loans"] = _safe_ratio(out.get("P9LNLS"), out.get("LNLSGR"))
+    # noncurrent = TOTAL noncurrent loans (nonaccrual + 90+ days past due) = FDIC NCLNLS.
+    # NOT P9LNLS, which is 90+-days-past-due-AND-STILL-ACCRUING only (~54% zero, because
+    # sound banks move troubled loans to nonaccrual); using it understated asset-quality
+    # stress. Fall back to P9LNLS only if NCLNLS is unavailable in a vintage.
+    out["noncurrent_to_loans"] = _safe_ratio(
+        out.get("NCLNLS", out.get("P9LNLS")), out.get("LNLSGR")
+    )
     out["nco_to_loans"] = pd.to_numeric(out.get("NTLNLSR"), errors="coerce")
     out["allowance_to_loans"] = _safe_ratio(out.get("LNATRES"), out.get("LNLSGR"))
     # Earnings
