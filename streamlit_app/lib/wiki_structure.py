@@ -26,7 +26,13 @@ except Exception:
     _AI = {}
 
 # Merged corpus. Extra/deepened articles override base entries with the same title.
-ARTICLES: dict[str, dict] = {**_BASE, **_EXTRA, **_DE, **_AI}
+# Drop superseded "(Coming Soon)" stubs: the predictive surface model now exists and the
+# real articles live under their clean titles.
+ARTICLES: dict[str, dict] = {
+    t: a
+    for t, a in {**_BASE, **_EXTRA, **_DE, **_AI}.items()
+    if "(Coming Soon)" not in t
+}
 
 # section_id, section title, [(subsection title or None, [article titles in order])]
 SECTIONS: list[tuple[str, str, list[tuple[str | None, list[str]]]]] = [

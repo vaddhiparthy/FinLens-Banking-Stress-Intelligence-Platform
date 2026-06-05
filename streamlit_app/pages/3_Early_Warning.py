@@ -111,7 +111,7 @@ def _render_score(result: dict, actual: int | None = None) -> None:
         )
 
 
-status_ribbon("Live model-backed early-warning surface")
+status_ribbon("Historical model backtest")
 page_intro(
     "Business Surface",
     "Early Warning",

@@ -534,7 +534,7 @@ def _render_quality(query: str) -> None:
                     },
                     {
                         "Check type": "Aggregate reconciliation",
-                        "Owner": "Gold / Control Room",
+                        "Owner": "Gold / Serving",
                         "Example": "QBP totals compared against Gold stress-pulse aggregates.",
                     },
                     {
@@ -581,7 +581,7 @@ def _render_decisions(query: str) -> None:
         with st.expander("Removed scope", expanded=not query):
             st.markdown(
                 """
-                SEC filings, FR Y-9C, SLOOS, UBPR, active Stress Lab modeling, and filing surveillance
+                SEC filings, FR Y-9C, SLOOS, UBPR, live stress-test modeling, and filing surveillance
                 are not part of the active build. They were removed because they add schema ambiguity,
                 access friction, or maintenance cost before they add enough value to the core portfolio
                 demonstration.

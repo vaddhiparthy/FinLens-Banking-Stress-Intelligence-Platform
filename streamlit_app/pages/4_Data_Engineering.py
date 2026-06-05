@@ -1129,7 +1129,7 @@ section_titles = {
     "administration": "Administration",
     "decisions": "Architecture Decisions",
 }
-intro_title = section_titles.get(active_section, "Control Room")
+intro_title = section_titles.get(active_section, "Live Pipeline")
 intro_copy = (
     "Internal data architecture handbook for the platform stack, source contracts, modeling "
     "standards, warehouse design, and activation path."
