@@ -24,8 +24,8 @@ predictability result; we provide the measurement nuance its pooled framing leav
 Call Reports via WRDS, FDIC Failed Bank List labels, four-quarter horizon; logit / ridge /
 lasso / RF / XGBoost trained on 2001-2010 and tested out-of-sample, ROC-AUC > 0.97 with
 screening lift > 200x the base rate. Notably it **drops two risk-weighted capital ratios for
-the post-2020 Community Bank Leverage Ratio reporting change** — the same break we address in
-C4. Our differentiation is twofold: (1) we do not add another prediction model; we change the
+the post-2020 Community Bank Leverage Ratio reporting change** (the same break we address in C4).
+Our differentiation is twofold: (1) we do not add another prediction model; we change the
 evaluation; and (2) our C4 robustness shows that *dropping* the disrupted risk-weighted ratio
 (the thesis's choice) is harmful (a large addressable-PR-AUC loss), whereas retaining it with
 native-null handling plus an election indicator is neutral and strictly better. So we both
@@ -69,7 +69,7 @@ on an aggregate score against a single failure label. Our contribution:
    out-of-time failures, not author-defined thresholds (C1).
 2. A pooled-vs-addressable evaluation that, on five model families including the published RF
    and XGBoost, shows a consistent positive lift when the structurally-invisible (fraud)
-   failures are removed (C3) — i.e. the gap is a property of the evaluation, not any model.
+   failures are removed (C3), i.e. the gap is a property of the evaluation, not any model.
 3. The honest consequence: pooled rare-event metrics understate performance by a roughly
    constant amount and hide an irreducible ceiling set by failures with no financial signal.
 
