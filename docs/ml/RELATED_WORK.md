@@ -70,7 +70,7 @@ on an aggregate score against a single failure label. Our contribution:
 2. A pooled-vs-addressable evaluation that, on five model families including the published RF
    and XGBoost, shows a consistent positive lift when the structurally-invisible (fraud)
    failures are removed (C3), i.e. the gap is a property of the evaluation, not any model.
-3. The honest consequence: pooled rare-event metrics understate performance by a roughly
+3. The consequence: pooled rare-event metrics understate performance by a roughly
    constant amount and hide an irreducible ceiling set by failures with no financial signal.
 
 We frame this as the measurement complement to Correia et al.: fundamentals predict the

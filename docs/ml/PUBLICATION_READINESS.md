@@ -20,17 +20,17 @@ result is established for the financially-visible cohort but is silent on the in
 
 ## Competitive landscape (verification status)
 
-- [x] Correia, Luck & Verner, "Failing Banks" (2025) — VERIFIED real: NY Fed Staff Report
+- [x] Correia, Luck & Verner, "Failing Banks" (2025), VERIFIED real: NY Fed Staff Report
   1117 / Richmond WP 25-04 / NBER w32907 / arXiv 2506.06082. 1863-2024 panel; failures highly
   predictable from public accounting metrics; ROC-AUC 80-85% (NOT PR-AUC); fundamentals over
   runs. Does not decompose by failure type or report addressable-vs-pooled. The elephant.
 - [x] Shakiba, CMC Senior Thesis (2026, NOT 2024) "Explaining and Predicting U.S. Bank
-  Failures, 2001-2024" — VERIFIED. 632,764 obs, ROC-AUC>0.97, 200x lift; drops two RWA ratios
+  Failures, 2001-2024", VERIFIED. 632,764 obs, ROC-AUC>0.97, 200x lift; drops two RWA ratios
   for the post-2020 CBLR break (our C4 shows dropping is harmful). Near-twin on prediction.
-- [x] Hu, Shao & Zhang, Finance Research Letters 75 (2025) — VERIFIED. RF 98.4% ACCURACY on
+- [x] Hu, Shao & Zhang, Finance Research Letters 75 (2025), VERIFIED. RF 98.4% ACCURACY on
   2001-2023Q3 (accuracy is a weak metric at <1% base rate; motivates our PR-AUC/addressable
   framing). Plus Vallarino JEA 3(1) 2024 (survival) and Citterio et al. SEPS 92 (2024) survey.
-- [x] Cole & Gunther JFSR 13(2) 1998 (off-site vs CAMEL) + JBF 19(6) 1995 (timing) — VERIFIED.
+- [x] Cole & Gunther JFSR 13(2) 1998 (off-site vs CAMEL) + JBF 19(6) 1995 (timing), VERIFIED.
 - [x] Novelty check: no published work does failure-cause-decomposed or addressable-vs-pooled
   evaluation (state as "we are not aware of"). See docs/ml/RELATED_WORK.md.
 
@@ -63,11 +63,11 @@ result is established for the financially-visible cohort but is silent on the in
 Each item, when built, is reviewed by a panel of independent subagents before it is marked
 done. Panel adapted to a publication bar:
 
-- **Methodologist / peer reviewer** — would a competent referee accept the method? Leakage,
+- **Methodologist / peer reviewer**, would a competent referee accept the method? Leakage,
   power, CI correctness, baseline fairness, overclaiming.
-- **Banking-domain examiner** — are the failure-cause labels, CBLR mechanics, and PCA terms
+- **Banking-domain examiner**, are the failure-cause labels, CBLR mechanics, and PCA terms
   correct and consistent with the cited sources and the FDIC record?
-- **Reproducibility / honesty reviewer** — do numbers reconcile across code, artifact, doc, and
+- **Reproducibility / honesty reviewer**, do numbers reconcile across code, artifact, doc, and
   manuscript; no honesty-boast or unverifiable claims; auto-synced not hardcoded.
 
 Pass requires UNANIMOUS, zero blocking issues. Blockers are fixed and the panel re-run until

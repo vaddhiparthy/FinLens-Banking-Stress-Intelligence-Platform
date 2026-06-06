@@ -43,7 +43,7 @@ pooled metrics hide this, so the field's standard evaluation understates and mis
 rare-event failure prediction. The fix is to report addressable-subset performance with
 externally-grounded failure-cause labels.
 
-## Honest tier expectation
+## Tier expectation
 
 The 66-failure wall is real and bounds the achievable venue: a strong applied-ML or
 financial-stability journal plus a citable preprint, not a top-three finance journal. The

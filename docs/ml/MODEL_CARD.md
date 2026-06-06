@@ -1,6 +1,6 @@
-# Model Card — FinLens Bank Financial-Distress Early-Warning Model
+# Model Card: FinLens Bank Financial-Distress Early-Warning Model
 
-*Generated from real artifacts (ml/artifacts/metrics_h4.json) — no hand-entered metrics.*
+*Generated from real artifacts (ml/artifacts/metrics_h4.json); no hand-entered metrics.*
 
 ## Intended use
 Rank US FDIC-insured institutions by probability of **financial distress / failure
@@ -46,7 +46,7 @@ decile the model predicts 0.0035 vs observed
 |   2024 | 17868 |            9 |   0.0023 |    0.7455 |
 |   2025 |  4354 |            8 |   0.6969 |    0.982  |
 
-In calm years with few or zero failures, PR-AUC is low or undefined — the expected
+In calm years with few or zero failures, PR-AUC is low or undefined, the expected
 behavior of a rare-event model.
 
 ## Top global drivers (SHAP)
@@ -71,7 +71,7 @@ chart renders (viz_pack.json), computed over a fixed sample (n=3000, seed 42)
 of OOT-era rows. Local per-bank SHAP reason codes are available via the serving API.
 
 ## Cross-segment performance equity (NOT protected-class fairness)
-A bank-distress model predicts on institutions, not consumers — there is **no protected
+A bank-distress model predicts on institutions, not consumers, there is **no protected
 class**, so demographic parity / disparate impact / the four-fifths rule do not apply
 and are deliberately not computed. We instead verify the model performs across segments
 (SR 11-7 outcomes analysis). Fairlearn `MetricFrame` is used only as a slicing tool.
@@ -119,9 +119,9 @@ and are deliberately not computed. We instead verify the model performs across s
 - Rare-event metrics are noisy in calm cohorts; judge on failure-containing windows.
 
 ## Governance
-Aligned with the **principles** of SR 11-7 (Fed/OCC, 2011 — the established model-risk
+Aligned with the **principles** of SR 11-7 (Fed/OCC, 2011, the established model-risk
 management guidance; primary source:
-https://www.federalreserve.gov/supervisionreg/srletters/sr1107.htm) — **non-binding**
+https://www.federalreserve.gov/supervisionreg/srletters/sr1107.htm), **non-binding**
 here; a GBM is in scope (non-generative, non-agentic). This is a portfolio demonstration,
 not a regulated production model. The substantive validation rests on the SR 11-7 three
 pillars (see the validation report).

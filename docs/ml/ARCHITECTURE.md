@@ -1,6 +1,6 @@
-# FinLens ML Subsystem — Architecture (v1, for architect review)
+# FinLens ML Subsystem: Architecture (v1, for architect review)
 
-Status: SIGNED OFF — adversarial architect review 100/100 (2 rejections resolved). Cleared to build P1.
+Status: SIGNED OFF, adversarial architect review 100/100 (2 rejections resolved). Cleared to build P1.
 Branch: `machine-learning-portfolio`
 Deploy target (now): **local** (full stack runs on workstation). VPS deploy deferred to explicit approval.
 
@@ -8,17 +8,17 @@ Deploy target (now): **local** (full stack runs on workstation). VPS deploy defe
 
 1. **$0 cost. Zero money-touching.** No paid APIs, no new cloud spend, no billable activity on the VPS. FDIC +
    FRED data are free/no-key. All libraries OSS (LightGBM, MLflow, FastAPI, Evidently, scikit-learn, DuckDB,
-   Postgres). The ML subsystem writes **nothing to AWS S3 / Snowflake / any billable service** — it must not add a
+   Postgres). The ML subsystem writes **nothing to AWS S3 / Snowflake / any billable service**, it must not add a
    single PUT/credit. It reuses the resources already running on the VPS; no new paid instance, volume, or managed
    service.
-2. **Total visibility — nothing invisible.** Every layer (ingestion → panel → features → splits → model → calibration
+2. **Total visibility, nothing invisible.** Every layer (ingestion → panel → features → splits → model → calibration
    → evaluation → explainability → serving → monitoring → governance) must be inspectable in the UI. No black boxes:
    the user can see the data, the SQL, the feature definitions, the split logic, the metrics from real runs, the SHAP
    drivers, the model card, and the live serving/monitoring state.
 3. **Efficient reuse of existing VPS resources.** Bounded memory, `OMP_NUM_THREADS=1`, no GPU, coexist with Airflow/
    DuckDB/Postgres/FastAPI/Streamlit already running. Lightweight by design.
 
-## 0.1 Site information architecture — grounded in the REAL current structure
+## 0.1 Site information architecture: grounded in the REAL current structure
 
 Current site (verified in `streamlit_app/app.py` `_surface_summary` and `streamlit_app/lib/page_shell.py`) has **two
 surfaces**:
@@ -28,7 +28,7 @@ surfaces**:
   Contracts, Engineering Stack, Data Quality, Architecture Decisions, Administration, Wiki.
 - Note: `STRESS_LAB_ENABLED=False` and `SIDEBAR_ENABLED=False`; the old `pages/3_Stress_Lab.py` is disabled but present.
 
-**Target IA — three surfaces, two of them MIRRORED engineering pillars:**
+**Target IA, three surfaces, two of them MIRRORED engineering pillars:**
 
 1. **Business surface** (retained, upgraded): the banking/exec audience view. Predictive Analytics becomes REAL
    (per-bank distress score + SHAP reason codes), and a real **Scenario / Stress Lab** replaces the decommissioned
@@ -51,17 +51,17 @@ DE-surface section → AI-surface mirror (same flow, same UX shell):
 | Data Quality | Model Quality (PR-AUC/recall@k/Brier/calibration, by-cohort, by-segment, drift) |
 | Architecture Decisions (ADRs) | Model Decisions (hazard framing, monotonic, calibration, SR 11-7) |
 | Administration | Model Administration (registry aliases, champion/challenger, retrain triggers) |
-| Wiki | AI Wiki (hazard, calibration, SHAP, drift) — same fixed mini-wiki UX |
+| Wiki | AI Wiki (hazard, calibration, SHAP, drift), same fixed mini-wiki UX |
 
 The top navigation switches between Business / Data Engineering / AI. Every section in both engineering surfaces
 exposes the underlying real artifact (SQL, feature defs, run metrics, SHAP, registry state) so **no layer is
-invisible** — maximum visibility is a hard final-QA criterion. The Wiki UX is fixed (no full reload per click) and
+invisible**, maximum visibility is a hard final-QA criterion. The Wiki UX is fixed (no full reload per click) and
 shared by all three surfaces.
 
 ## 0. Goal
 
 Add a production-grade, regulator-defensible **bank financial-distress early-warning model** to FinLens, surfaced
-in the Streamlit app, served by FastAPI, tracked in MLflow, monitored by Evidently, and orchestrated by Airflow —
+in the Streamlit app, served by FastAPI, tracked in MLflow, monitored by Evidently, and orchestrated by Airflow , 
 running robustly alongside the existing DuckDB + Postgres + dbt stack. It must support: train/test by time,
 held-out banks, "insert a test bank", and hypothetical-scenario scoring.
 
@@ -70,10 +70,10 @@ held-out banks, "insert a test bank", and hypothetical-scenario scoring.
 The existing `ingestion/qbp.py` aggregates all banks into ONE row per quarter (system totals). That cannot support a
 per-bank model. **Resolution:** add a new institution-level source.
 
-- **FDIC BankFind Suite financials API** `https://api.fdic.gov/banks/financials` — public, no key. Per-CERT quarterly
+- **FDIC BankFind Suite financials API** `https://api.fdic.gov/banks/financials`, public, no key. Per-CERT quarterly
   rows. Verified: 8,024 institutions for 2010Q1 with `CERT, REPDTE, ASSET, NETINC, ROA, EQ, P9LNLS (noncurrent),
   DRLNLS (charge-offs), DEP`, plus many more fields available.
-- **FDIC institutions API** `https://api.fdic.gov/banks/institutions` — `CERT, NAME, STALP, ACTIVE, ESTYMD, ENDEFYMD,
+- **FDIC institutions API** `https://api.fdic.gov/banks/institutions`, `CERT, NAME, STALP, ACTIVE, ESTYMD, ENDEFYMD,
   charter/class` for entity metadata + size/region/charter segments.
 - **FDIC failed banks** (already ingested) → failure labels by `CERT` + `closing_date`. **Staging extension required:**
   `stg_fdic_failed_banks.sql` currently projects only 9 columns; it must additionally expose closing date +
@@ -111,7 +111,7 @@ Derived per bank-quarter, then enriched:
 - **Management/Growth:** efficiency ratio; YoY asset growth (abnormal growth is a classic precursor).
 - **Earnings:** ROA, ROE, NIM, net income margin.
 - **Liquidity:** loans/deposits, funding cost, brokered/wholesale share where available.
-- **Sensitivity (the SVB lesson):** (AFS+HTM unrealized losses)/Tier-1 where fields exist — highest-value 2023-regime
+- **Sensitivity (the SVB lesson):** (AFS+HTM unrealized losses)/Tier-1 where fields exist, highest-value 2023-regime
   signal. **Coverage caveat:** these fields are sparse/uneven in public Call Report data pre-2020; treat as a
   post-2020 enhancement feature with explicit null-handling, and do NOT oversell the 2023-regime claim for earlier
   cohorts. Gracefully degrade (missing-indicator) where unavailable.
@@ -124,7 +124,7 @@ Derived per bank-quarter, then enriched:
 - Call Reports file ~30 days after quarter-end → features for scoring date must lag by ≥1 filing cycle (reporting-lag
   embargo).
 - Label window strictly in the future relative to features.
-- Macro: use as-released vintage (ALFRED) from v1 (free, no key) — no latest-vintage fallback, eliminating the macro
+- Macro: use as-released vintage (ALFRED) from v1 (free, no key), no latest-vintage fallback, eliminating the macro
   look-ahead leak by construction.
 - Group by `CERT` so the same bank never straddles train/test for an event window.
 
@@ -149,10 +149,10 @@ Derived per bank-quarter, then enriched:
   reliability curve; ROC-AUC reported for comparability only; **accuracy is never the headline**.
 - **By-cohort reporting:** crisis vs calm years separately (a model that only works in 2009-2010 is not production
   ready). **Pre-stated expectation:** in calm cohorts (e.g., 2015-2022, near-zero failures) PR-AUC may be very low or
-  undefined simply because positives are absent — this is expected, not a broken model, and is reported honestly
+  undefined simply because positives are absent, this is expected, not a broken model, and is reported honestly
   rather than hidden.
 - **Realistic bar (anti-fantasy):** out-of-time ROC-AUC ≈ 0.92-0.97 at 1y horizon is credible; >0.98 OOT → suspect
-  leakage. PR-AUC much lower than ROC-AUC (0.2-0.6 typical) and that is normal. No fabricated metrics — every number
+  leakage. PR-AUC much lower than ROC-AUC (0.2-0.6 typical) and that is normal. No fabricated metrics, every number
   comes from a real run logged to MLflow.
 
 ## 6. MLOps stack (2026-current, local-first)
@@ -171,11 +171,11 @@ Derived per bank-quarter, then enriched:
 - **Monitoring:** **Evidently 0.7.x** (`Report`/`Dataset`/`DataDefinition` API, not deprecated `ColumnMapping`/
   `Dashboard`). Data drift (PSI/Wasserstein), **prediction drift** (earliest signal), feature freshness/null-rate;
   scheduled report + alert; drift- or schedule-triggered retrain.
-- **CI/CD:** GitHub Actions — code tests (incl. serving: schema-reject, batch==single, health); data-validation gate;
+- **CI/CD:** GitHub Actions, code tests (incl. serving: schema-reject, batch==single, health); data-validation gate;
   **model metric gate** (PR-AUC/recall@k/Brier thresholds + champion-vs-challenger regression gate + calibration
   gate); manual promotion to champion alias.
 
-## 6.1 Resource budget (against the REAL VPS allocation — $0, bounded memory)
+## 6.1 Resource budget (against the REAL VPS allocation: $0, bounded memory)
 
 Existing `docker-compose.prod.yml` hard caps already commit ~6 GB: web/public/api/finlens-db 512m×4, airflow-web 2g,
 scheduler 1.5g, airflow-db 512m. The ML subsystem must add minimal RESIDENT memory and zero billable activity.
@@ -189,7 +189,7 @@ scheduler 1.5g, airflow-db 512m. The ML subsystem must add minimal RESIDENT memo
   bounded; full-dataset SHAP is forbidden.
 - **Serving:** model is tens of MB; loaded once at startup; fits inside the existing api container budget or a small
   dedicated `ml-api` container at `mem_limit: 512m`.
-- **$0 enforcement (by construction, not by promise):** no S3 PUT, no Snowflake, no paid API — enforced structurally:
+- **$0 enforcement (by construction, not by promise):** no S3 PUT, no Snowflake, no paid API, enforced structurally:
   1. **Dedicated ML settings** `ml/finlens_ml/config.py` exposes only ML fields (paths, horizons, thresholds, MLflow
      URI, DuckDB path). It does **not** expose AWS credentials, buckets, or `aws_s3_mirror_enabled`. ML code cannot
      reach an S3 config because it isn't in its settings object.
@@ -201,16 +201,16 @@ scheduler 1.5g, airflow-db 512m. The ML subsystem must add minimal RESIDENT memo
 
 Net new resident footprint: ~512m (MLflow) + optional ~512m (ml-api) ≈ ≤1 GB, within headroom; training is transient.
 
-## 7. Governance (honest, SR-aligned)
+## 7. Governance (SR-aligned)
 
-- **SR 11-7** (Fed/OCC, 2011) — the established model-risk management guidance and the
+- **SR 11-7** (Fed/OCC, 2011), the established model-risk management guidance and the
   reference this project aligns to. Principles-based; this is a portfolio demonstration, so we
   claim **"aligned with SR 11-7 principles"**, never "compliant"/"a rule".
 - **SR 11-7 three pillars** (the substance): conceptual soundness, ongoing monitoring, outcomes analysis;
   effective challenge; documentation + model inventory.
 - **Explainability:** SHAP + monotonic constraints; reason codes framed as validator/supervisor-facing (NOT ECOA/Reg B
-  adverse-action — no consumer applicant exists; claiming otherwise is misapplication).
-- **Fairness — anti-theater:** an institution-level model has **no protected class**. We do **cross-segment performance
+  adverse-action, no consumer applicant exists; claiming otherwise is misapplication).
+- **Fairness, anti-theater:** an institution-level model has **no protected class**. We do **cross-segment performance
   equity** (recall/precision/calibration across asset-size tiers, regions, charter types) as a *model-soundness*
   check (SR 11-7 outcomes analysis), using Fairlearn `MetricFrame` purely as a slicing convenience, and we state
   explicitly that demographic-parity/disparate-impact/four-fifths do NOT apply. No fake fair-lending claims.
@@ -222,7 +222,7 @@ Net new resident footprint: ~512m (MLflow) + optional ~512m (ml-api) ≈ ≤1 GB
 ml/
   finlens_ml/
     __init__.py
-    config.py            # ML settings (paths, horizons, thresholds, MLflow URI, DuckDB) — NO AWS fields
+    config.py            # ML settings (paths, horizons, thresholds, MLflow URI, DuckDB), NO AWS fields
     data.py              # build bank-quarter panel from DuckDB
     labels.py            # failure labeling + censoring + horizon windows
     features.py          # CAMELS ratios, deltas, peer z-scores, macro joins, PIT
@@ -245,13 +245,13 @@ ml/tests/                         # unit + model + serving tests
 docker-compose additions: mlflow service (local)
 ```
 
-**Decommission (remove fabricated assets — Constraint 4):**
+**Decommission (remove fabricated assets, Constraint 4):**
 - Delete `src/finlens/stress_lab.py` (hardcoded "Washington Mutual Bank" demo records, random `train_test_split`/
-  `StratifiedKFold`, accuracy/ROC-AUC headline — fabricated and leakage-prone).
+  `StratifiedKFold`, accuracy/ROC-AUC headline, fabricated and leakage-prone).
 - Delete `streamlit_app/pages/3_Stress_Lab.py` and `tests/streamlit/test_stress_lab.py`; remove `STRESS_LAB_ENABLED`
   references in `page_shell.py`.
 - Reconcile the duplicate `pages/3_*` numbering: the new real Scenario/Stress Lab lives in the Business surface as a
-  properly-numbered page (no two `pages/3_*` files). The hardcoded demo dataset is **removed, not migrated** — the new
+  properly-numbered page (no two `pages/3_*` files). The hardcoded demo dataset is **removed, not migrated**, the new
   lab scores against the real trained model only.
 - Refactor `api/main.py` from module-level model init to a FastAPI **lifespan** loader (current code uses module-level
   init; the new serving path must not copy that pattern).

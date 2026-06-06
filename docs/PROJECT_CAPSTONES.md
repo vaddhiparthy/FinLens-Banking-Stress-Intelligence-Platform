@@ -21,7 +21,7 @@ they are. The capstones wrap around them.
 | Langfuse cloud | Langfuse self-host / OSS, or local trace JSONL |
 | Hosted LLM API | local Ollama model (no paid API; $0) |
 
-## Capstone 1 — FullLens Data Platform (DE). Status: PARTIAL (audited)
+## Capstone 1: FullLens Data Platform (DE). Status: PARTIAL (audited)
 
 Audit (D1) found two real gaps; both now CLOSED:
 - **Gold mart built:** `dbt/models/marts/bank_quarterly_risk_facts.sql` at the (cert, quarter)
@@ -49,7 +49,7 @@ DE gaps to confirm/close: (a) the gold mart is literally named `bank_quarterly_r
 (b) a GX suite asserts schema + freshness + null-rate on the key ratios; (c) medallion layers
 are documented. These are verification/polish, not new builds.
 
-## Capstone 2 — FullLens Risk Model (ML). Status: PARTIAL (audited) + research depth
+## Capstone 2: FullLens Risk Model (ML). Status: PARTIAL (audited) + research depth
 
 Audit (D2): the full ML stack EXISTS (train, MLflow registry+alias promotion, Evidently drift,
 SHAP, calibrated served artifact) and the serving app already returns probability + SHAP.
@@ -74,7 +74,7 @@ ML gaps to confirm/close: (a) the serving route is exposed as `/predict-failure-
 returning probability + SHAP; (b) the Docker/kind deploy is current. The publication track is
 the analytical over-delivery that distinguishes this from every other capstone.
 
-## Capstone 3 — FullLens Analyst Assistant (RAG/Agent). Status: NEW BUILD
+## Capstone 3: FullLens Analyst Assistant (RAG/Agent). Status: NEW BUILD
 
 The genuinely new track. Reuses the C1 FDIC/OIG failure-report corpus already gathered.
 
@@ -114,7 +114,7 @@ parallel reviewers (methodologist, domain, reproducibility/honesty), unanimous p
 blockers, then commit. RAG items add a faithfulness/citation check (no uncited claims; answers
 grounded in retrieved docs).
 
-## Honest scope notes
+## Scope notes
 
 - $0 is non-negotiable; every paid service is substituted with a local/OSS equivalent above.
 - The 66-out-of-time-failure wall still bounds the *model/paper* tier; it does not affect the

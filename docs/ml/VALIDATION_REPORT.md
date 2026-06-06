@@ -1,4 +1,4 @@
-# Validation Report — FinLens Bank-Distress Model (SR 11-7 three pillars)
+# Validation Report: FinLens Bank-Distress Model (SR 11-7 three pillars)
 
 *Effective-challenge package. Metrics computed from real out-of-time evaluation.*
 
@@ -43,7 +43,7 @@
 ## 3. Outcomes analysis (back-testing)
 - **Headline holdout:** 118,943 bank-quarters / 66 real
   failures (2019-2026, includes the 2023 SVB/Signature/First-Republic cluster).
-- **Uncertainty (the point estimates are not the result):** 95% percentile-bootstrap CIs —
+- **Uncertainty (the point estimates are not the result):** 95% percentile-bootstrap CIs:
   PR-AUC [0.191, 0.438], recall@k [0.419, 0.657]. The PR-AUC
   edge over the logit is a paired bootstrap: difference 95% CI
   [+0.070, +0.222], P(LGBM > logit) = 100.0%.
@@ -51,13 +51,13 @@
   PR-AUC mean 0.2128 (std 0.2128, range
   0.0002-0.5152); strong in failure-containing windows,
   near-floor in calm years.
-- Reported by-year cohorts (crisis vs calm) — the model is not a single-period fit.
+- Reported by-year cohorts (crisis vs calm), the model is not a single-period fit.
 - Calibration verified on the OOT set (ECE + top-decile observed-vs-predicted), not just
   an uninformative all-rows Brier.
 - Served-model provenance recorded; reproducible (fixed seed, pinned feature set, $0 CI
   import-guard).
 
-## Known gaps (honest, on the path to production)
+## Known gaps (on the path to production)
 - Competing risks (merger vs failure): the shipped model uses right-censoring, and the
   informative-censoring bias is now QUANTIFIED and CROSS-CHECKED, not assumed (see
   docs/ml/COMPETING_RISKS.md). Mergers are ~4x more common than failures (Aalen-Johansen

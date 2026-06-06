@@ -51,7 +51,7 @@ OOT PR-AUC 0.221 -> 0.273 (recall@200 47% -> 54.5%); the SERVED model then adds 
 bagging on top, reaching OOT PR-AUC 0.301. So the FDIC and point-in-time noncurrent
 definitions are now apples-to-apples.
 
-## Why the full retrain underperforms (honest)
+## Why the full retrain underperforms
 Same recipe, same OOT protocol, only the data source differs
 (`ml/scripts/b1_compare.py`):
 
@@ -97,7 +97,7 @@ point estimate consistently favours restated. Two real causes remain:
 - B1 also already paid off once: it surfaced the noncurrent field bug (P9LNLS vs
   NCLNLS); fixing that lifted the single model 0.221 -> 0.273, and the served bagged
   ensemble now scores 0.301.
-- Genuinely remaining (honest): a pure originally-filed pre-2017 total-noncurrent does
+- Genuinely remaining: a pure originally-filed pre-2017 total-noncurrent does
   not exist in FFIEC (no total line, no ground truth to validate a reconstruction);
   pre-2017 noncurrent therefore uses FDIC's restated total. Closing that would require
   an external originally-filed source we do not have at $0.

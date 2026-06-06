@@ -151,9 +151,9 @@ def generate_model_card(horizon_q: int = 4) -> Path:
          for y, m in metrics.get("by_year_calibrated", {}).items()]
     )
 
-    card = f"""# Model Card — FinLens Bank Financial-Distress Early-Warning Model
+    card = f"""# Model Card: FinLens Bank Financial-Distress Early-Warning Model
 
-*Generated from real artifacts (ml/artifacts/metrics_h{horizon_q}.json) — no hand-entered metrics.*
+*Generated from real artifacts (ml/artifacts/metrics_h{horizon_q}.json); no hand-entered metrics.*
 
 ## Intended use
 Rank US FDIC-insured institutions by probability of **financial distress / failure
@@ -190,7 +190,7 @@ decile the model predicts {cal.get('top_decile_pred', float('nan')):.4f} vs obse
 ### Performance by year (calibrated)
 {_md_table(by_year) if not by_year.empty else "(see metrics.json)"}
 
-In calm years with few or zero failures, PR-AUC is low or undefined — the expected
+In calm years with few or zero failures, PR-AUC is low or undefined, the expected
 behavior of a rare-event model.
 
 ## Top global drivers (SHAP)
@@ -202,7 +202,7 @@ chart renders (viz_pack.json), computed over a fixed sample (n=3000, seed 42)
 of OOT-era rows. Local per-bank SHAP reason codes are available via the serving API.
 
 ## Cross-segment performance equity (NOT protected-class fairness)
-A bank-distress model predicts on institutions, not consumers — there is **no protected
+A bank-distress model predicts on institutions, not consumers, there is **no protected
 class**, so demographic parity / disparate impact / the four-fifths rule do not apply
 and are deliberately not computed. We instead verify the model performs across segments
 (SR 11-7 outcomes analysis). Fairlearn `MetricFrame` is used only as a slicing tool.
@@ -230,9 +230,9 @@ and are deliberately not computed. We instead verify the model performs across s
 - Rare-event metrics are noisy in calm cohorts; judge on failure-containing windows.
 
 ## Governance
-Aligned with the **principles** of SR 11-7 (Fed/OCC, 2011 — the established model-risk
+Aligned with the **principles** of SR 11-7 (Fed/OCC, 2011, the established model-risk
 management guidance; primary source:
-https://www.federalreserve.gov/supervisionreg/srletters/sr1107.htm) — **non-binding**
+https://www.federalreserve.gov/supervisionreg/srletters/sr1107.htm), **non-binding**
 here; a GBM is in scope (non-generative, non-agentic). This is a portfolio demonstration,
 not a regulated production model. The substantive validation rests on the SR 11-7 three
 pillars (see the validation report).
@@ -274,7 +274,7 @@ def generate_validation_report(horizon_q: int = 4) -> Path:
             "economically-signed, validator-defensible model is also the strongest and is the one "
             "served."
         )
-    report = f"""# Validation Report — FinLens Bank-Distress Model (SR 11-7 three pillars)
+    report = f"""# Validation Report: FinLens Bank-Distress Model (SR 11-7 three pillars)
 
 *Effective-challenge package. Metrics computed from real out-of-time evaluation.*
 
@@ -319,7 +319,7 @@ def generate_validation_report(horizon_q: int = 4) -> Path:
 ## 3. Outcomes analysis (back-testing)
 - **Headline holdout:** {metrics['n_test']:,} bank-quarters / {metrics['test_positives']} real
   failures (2019-2026, includes the 2023 SVB/Signature/First-Republic cluster).
-- **Uncertainty (the point estimates are not the result):** 95% percentile-bootstrap CIs —
+- **Uncertainty (the point estimates are not the result):** 95% percentile-bootstrap CIs:
   PR-AUC [{prci[0]:.3f}, {prci[1]:.3f}], recall@k [{rci[0]:.3f}, {rci[1]:.3f}]. The PR-AUC
   edge over the logit is a paired bootstrap: difference 95% CI
   [{dci[0]:+.3f}, {dci[1]:+.3f}], P(LGBM > logit) = {diff.get('prob_a_beats_b', float('nan')):.1%}.
@@ -327,13 +327,13 @@ def generate_validation_report(horizon_q: int = 4) -> Path:
   PR-AUC mean {rb.get('pr_auc_mean')} (std {rb.get('pr_auc_std')}, range
   {rb.get('pr_auc_min')}-{rb.get('pr_auc_max')}); strong in failure-containing windows,
   near-floor in calm years.
-- Reported by-year cohorts (crisis vs calm) — the model is not a single-period fit.
+- Reported by-year cohorts (crisis vs calm), the model is not a single-period fit.
 - Calibration verified on the OOT set (ECE + top-decile observed-vs-predicted), not just
   an uninformative all-rows Brier.
 - Served-model provenance recorded; reproducible (fixed seed, pinned feature set, $0 CI
   import-guard).
 
-## Known gaps (honest, on the path to production)
+## Known gaps (on the path to production)
 - Competing risks (merger vs failure): the shipped model uses right-censoring, and the
   informative-censoring bias is now QUANTIFIED and CROSS-CHECKED, not assumed (see
   docs/ml/COMPETING_RISKS.md). Mergers are ~4x more common than failures (Aalen-Johansen
