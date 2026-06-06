@@ -113,6 +113,27 @@
     0.262,
     0.5272
   ],
+  "external_labels": {
+    "source": "ml/finlens_ml/failure_cause_labels.py (regulator-sourced, 18/19 primary-regulator; fraud cause -> invisible)",
+    "pr_auc_addressable_external": 0.3885,
+    "pr_auc_addressable_external_ci": [
+      0.2459,
+      0.5491
+    ],
+    "invisible_positives_external": 19,
+    "label_agreement_rate_on_positives": 0.9242,
+    "disagreements": [
+      {
+        "cert": 4134,
+        "bank": "THE FIRST NATIONAL BANK OF LINDSAY"
+      },
+      {
+        "cert": 18265,
+        "bank": "ERICSON STATE BANK"
+      }
+    ],
+    "note": "Addressable PR-AUC under externally-sourced fraud=invisible labels vs the threshold split. Stability across the two label sources is the label-source sensitivity test; disagreements are banks where regulator cause (e.g. insider-loan fraud) and financial visibility (high noncurrent) differ, which is the substantive nuance, not an error."
+  },
   "ci_overlap_full_addressable": true,
   "addressable_positives": 52,
   "invisible_positives": 14,

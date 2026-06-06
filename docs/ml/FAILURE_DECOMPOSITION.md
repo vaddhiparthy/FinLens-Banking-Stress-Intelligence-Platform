@@ -130,6 +130,26 @@ signal skews credit; that is a genuine, addressable weakness (more rate/liquidit
 training mass would help), distinct from the invisible cohort, which is not addressable at
 all.
 
+## External-label validation (regulator-sourced, C2/C5)
+
+The invisible set above is an author-defined financial-visibility threshold. To remove that
+dependence, the addressable PR-AUC is recomputed with the invisible set instead taken from
+externally-sourced failure causes (`ml/finlens_ml/failure_cause_labels.py`: FDIC OIG / OCC /
+Fed / Treasury OIG, 18/19 banks primary-regulator-sourced, fraud cause -> invisible):
+
+| Invisible-label source | Addressable PR-AUC | 95% CI |
+| --- | --- | --- |
+| Author financial-visibility thresholds | 0.382 | [0.250, 0.530] |
+| External regulator-stated cause (fraud) | 0.389 | [0.246, 0.549] |
+
+The two are within each other's intervals (label agreement 92% on positive bank-quarters), so
+the finding does not depend on how the invisible cohort is labelled. The only disagreements are
+First National Bank of Lindsay and Ericson State Bank: both fraud by regulator cause, but their
+fraud surfaced as elevated noncurrent loans, so the financial-visibility threshold reads them
+as credit-visible. That cause-versus-visibility divergence is the substantive nuance, not an
+error: some fraud is financially visible (insider bad loans), some is not (off-book deposits,
+wired-out funds), and the addressable headline is stable either way.
+
 ## Why this is the load-bearing finding
 
 It separates the three things that were previously conflated in one unstable number:

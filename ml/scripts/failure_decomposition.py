@@ -148,6 +148,27 @@ def main() -> None:
     full_ci = bootstrap_metrics(y_te, p_te, k=k)["pr_auc_ci"]
     addr_ci = bootstrap_metrics(y_te[keep], p_te[keep], k=k)["pr_auc_ci"]
 
+    # ---- C2/C5: addressable under EXTERNAL (regulator-sourced) failure-cause labels ----
+    # The threshold classifier above is the author-defined visibility split. Here the invisible
+    # set is instead the regulator-stated fraud cohort (failure_cause_labels), so the addressable
+    # number rests on cited OIG/OCC/Fed sources, not thresholds. Reporting both is the
+    # label-source sensitivity test: if the result is stable across sources it is not an artifact
+    # of how the labels were drawn.
+    from finlens_ml.failure_cause_labels import visibility_for_cert
+    certs_te = te_df["cert"].to_numpy()
+    ext_vis = np.array([visibility_for_cert(int(c)) for c in certs_te], dtype=object)
+    invisible_ext = (ext_vis == "invisible")
+    keep_ext = ~(invisible_ext & (y_te == 1))
+    addr_ext = evaluate(y_te[keep_ext], p_te[keep_ext], k=k)
+    addr_ext_ci = bootstrap_metrics(y_te[keep_ext], p_te[keep_ext], k=k)["pr_auc_ci"]
+    # agreement of the invisible flag on POSITIVES, threshold vs external
+    posm = (y_te == 1)
+    n_pos_q = int(posm.sum())
+    agree_q = int(((invisible_mask == invisible_ext)[posm]).sum())
+    disagree = sorted({(int(te_df.iloc[i]["cert"]), str(te_df.iloc[i]["bank_name"]))
+                       for i in range(len(te_df))
+                       if posm[i] and (bool(invisible_mask[i]) != bool(invisible_ext[i]))})
+
     # stratified percentile cross-check: resample positives and negatives separately so the
     # positive count is held fixed (the appropriate variant for a rare-event AP, and tractable
     # at 118k rows where a BCa jackknife is not). Reported alongside the percentile headline to
@@ -253,6 +274,20 @@ def main() -> None:
                      "the overlap/non-separability conclusion.",
         "pr_auc_full_ci_stratified": full_ci_strat,
         "pr_auc_addressable_ci_stratified": addr_ci_strat,
+        "external_labels": {
+            "source": "ml/finlens_ml/failure_cause_labels.py (regulator-sourced, 18/19 "
+                      "primary-regulator; fraud cause -> invisible)",
+            "pr_auc_addressable_external": round(float(addr_ext.pr_auc), 4),
+            "pr_auc_addressable_external_ci": [round(addr_ext_ci[0], 4), round(addr_ext_ci[1], 4)],
+            "invisible_positives_external": int((invisible_ext & posm).sum()),
+            "label_agreement_rate_on_positives": round(agree_q / max(1, n_pos_q), 4),
+            "disagreements": [{"cert": c, "bank": b} for c, b in disagree],
+            "note": ("Addressable PR-AUC under externally-sourced fraud=invisible labels vs the "
+                     "threshold split. Stability across the two label sources is the "
+                     "label-source sensitivity test; disagreements are banks where regulator "
+                     "cause (e.g. insider-loan fraud) and financial visibility (high noncurrent) "
+                     "differ, which is the substantive nuance, not an error."),
+        },
         "ci_overlap_full_addressable": bool(addr_ci[0] <= full_ci[1] and full_ci[0] <= addr_ci[1]),
         "addressable_positives": int(n_pos - n_invis),
         "invisible_positives": n_invis,
