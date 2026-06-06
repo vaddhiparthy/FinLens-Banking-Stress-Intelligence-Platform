@@ -24,12 +24,15 @@ result is established for the financially-visible cohort but is silent on the in
   1117 / Richmond WP 25-04 / NBER w32907 / arXiv 2506.06082. 1863-2024 panel; failures highly
   predictable from public accounting metrics; ROC-AUC 80-85% (NOT PR-AUC); fundamentals over
   runs. Does not decompose by failure type or report addressable-vs-pooled. The elephant.
-- [ ] Claremont thesis (2024) "Explaining and Predicting U.S. Bank Failures 2001-2024" — TO
-  VERIFY (claimed near-twin: Call Report panel, FDIC labels, 4q horizon, dropped RWA ratios for
-  the post-2020 break).
-- [ ] RF/XGBoost peer-reviewed papers (claimed 98.4% RF, 2001-2023Q3; counterfactual-explanations
-  paper; insolvency comparison) — TO VERIFY.
-- [ ] Cole & Gunther (1998) and the CAMELS-downgrade econometric lineage — TO VERIFY/cite.
+- [x] Shakiba, CMC Senior Thesis (2026, NOT 2024) "Explaining and Predicting U.S. Bank
+  Failures, 2001-2024" — VERIFIED. 632,764 obs, ROC-AUC>0.97, 200x lift; drops two RWA ratios
+  for the post-2020 CBLR break (our C4 shows dropping is harmful). Near-twin on prediction.
+- [x] Hu, Shao & Zhang, Finance Research Letters 75 (2025) — VERIFIED. RF 98.4% ACCURACY on
+  2001-2023Q3 (accuracy is a weak metric at <1% base rate; motivates our PR-AUC/addressable
+  framing). Plus Vallarino JEA 3(1) 2024 (survival) and Citterio et al. SEPS 92 (2024) survey.
+- [x] Cole & Gunther JFSR 13(2) 1998 (off-site vs CAMEL) + JBF 19(6) 1995 (timing) — VERIFIED.
+- [x] Novelty check: no published work does failure-cause-decomposed or addressable-vs-pooled
+  evaluation (state as "we are not aware of"). See docs/ml/RELATED_WORK.md.
 
 ## Master checklist
 
@@ -40,7 +43,7 @@ result is established for the financially-visible cohort but is silent on the in
 | C1 | External failure-cause labels | failure_cause_labels.py: per-CERT cause from COMPOSITE source (OIG MLR + OIG short reviews + DOJ/SEC + FDIC PR) with source doc + date per bank | domain: FAIL if a cause contradicts the cited source; ML: FAIL if coverage gaps undisclosed | TODO (needs web-fetch go) |
 | C2 | Decomposition off external labels | failure_decomposition joins external labels; addressable PR-AUC recomputed on externally-defined invisible set | ML/stats: FAIL if numbers don't reconcile or label join is wrong | BLOCKED by C1 |
 | C5 | Label-source sensitivity | addressable PR-AUC stable across {MLR, OCC, DOJ, threshold} label sources | ML/stats: FAIL if result swings materially with source and that isn't disclosed | BLOCKED by C1 |
-| S1 | Full literature positioning | related-work section citing+differentiating Correia, Claremont, RF/XGBoost, Cole-Gunther, CAMELS-downgrade | peer-reviewer: FAIL if any load-bearing comparable is missing or mischaracterized | TODO |
+| S1 | Full literature positioning | related-work section citing+differentiating Correia, Claremont, RF/XGBoost, Cole-Gunther, CAMELS-downgrade | peer-reviewer: FAIL if any load-bearing comparable is missing or mischaracterized | DONE (docs/ml/RELATED_WORK.md) |
 | S2 | Reframe model->measurement | every "my model achieves X" reframed; evaluation problem leads; 0.301->0.382 framed as artifact evidence | UI/honesty + peer-reviewer: FAIL on any performance-brag framing | PARTIAL (docs already hedged) |
 | S3 | Competing-risks as second pillar | merger-censoring + Fine-Gray positioned vs the discrete-time competing-risks methods literature | methodologist: FAIL if presented as a one-off check, not positioned vs literature | TODO |
 | S4 | arXiv/SSRN preprint | compileable manuscript with C1-C5 + S1-S3 folded in; reproducible artifacts referenced | full 3-persona gate: FAIL if any item above is open | TODO |
