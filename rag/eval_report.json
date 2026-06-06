@@ -1,0 +1,171 @@
+{
+  "n_questions": 20,
+  "k": 4,
+  "retrieval_hit_at_k": 1.0,
+  "retrieval_mrr": 0.9167,
+  "citation_grounding_rate": 1.0,
+  "llm_reachable": false,
+  "ragas_llm_metrics": "SKIPPED: no model-serving Ollama reachable on this machine (models-path/server split, see rag/graph.py). Deterministic retrieval + citation-grounding metrics above stand on their own; RAGAS faithfulness/relevancy need a reachable LLM judge and are not faked.",
+  "rows": [
+    {
+      "q": "Why did Silicon Valley Bank fail?",
+      "expected": "failure::24735",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "What caused Signature Bank to fail?",
+      "expected": "failure::57053",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "Why did First Republic Bank fail?",
+      "expected": "failure::59017",
+      "hit@k": true,
+      "rank": 2,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "What happened to Heartland Tri-State Bank?",
+      "expected": "failure::25851",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "Why did Pulaski Savings Bank fail?",
+      "expected": "failure::28611",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "What caused Enloe State Bank to fail?",
+      "expected": "failure::10716",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "Why did the First National Bank of Lindsay fail?",
+      "expected": "failure::4134",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "What caused Santa Anna National Bank to fail?",
+      "expected": "failure::5520",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "Why did Republic First Bank fail?",
+      "expected": "failure::27332",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "What caused Almena State Bank to fail?",
+      "expected": "failure::15426",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "Why did Ericson State Bank fail?",
+      "expected": "failure::18265",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "What caused First City Bank of Florida to fail?",
+      "expected": "failure::16748",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "Why did Citizens Bank of Sac City fail?",
+      "expected": "failure::8758",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "What caused City National Bank of New Jersey to fail?",
+      "expected": "failure::21111",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "Why did Resolute Bank fail?",
+      "expected": "failure::58317",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "What is the addressable PR-AUC and how does it differ from pooled?",
+      "expected": "method::failure_decomposition",
+      "hit@k": true,
+      "rank": 2,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "Does the pooled-vs-addressable gap hold across different models?",
+      "expected": "method::pooled_vs_addressable",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "Did the GRU sequence model beat the gradient-boosted model?",
+      "expected": "method::sequence_challenger",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "How was the 2020 capital-ratio reporting break handled?",
+      "expected": "method::cblr_robustness",
+      "hit@k": true,
+      "rank": 3,
+      "citation_grounded": true,
+      "used_llm": false
+    },
+    {
+      "q": "How good is the served FullLens model out of time?",
+      "expected": "method::served_model",
+      "hit@k": true,
+      "rank": 1,
+      "citation_grounded": true,
+      "used_llm": false
+    }
+  ]
+}

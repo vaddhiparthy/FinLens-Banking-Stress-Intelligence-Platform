@@ -41,3 +41,4 @@ qa_interactive.py
 
 # RAG local vector store (regenerable via python -m rag.ingest)
 rag/chroma_db/
+rag/traces.jsonl
