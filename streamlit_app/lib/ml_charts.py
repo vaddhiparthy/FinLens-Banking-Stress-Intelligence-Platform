@@ -526,16 +526,26 @@ def failure_mix_by_year_fig(decomp: dict, mode: str | None = None) -> go.Figure:
 
 
 def addressable_pr_fig(decomp: dict, mode: str | None = None) -> go.Figure:
-    """Full vs addressable (invisible failures removed) out-of-time PR-AUC."""
+    """Full vs addressable (invisible failures removed) out-of-time PR-AUC, with 95%
+    bootstrap CI whiskers so the bars are not read as bare point estimates."""
     pal = get_palette(mode)
     full = decomp.get("pr_auc_full", 0.0)
     addr = decomp.get("pr_auc_addressable", 0.0)
     npos = decomp.get("n_oot_positives", 0)
     addr_n = decomp.get("addressable_positives", 0)
+    fci = decomp.get("pr_auc_full_ci"); aci = decomp.get("pr_auc_addressable_ci")
     fig = go.Figure()
+    err = None
+    if fci and aci:
+        err = dict(type="data", symmetric=False,
+                   array=[fci[1] - full, aci[1] - addr],
+                   arrayminus=[full - fci[0], addr - aci[0]],
+                   color=pal["text_muted"], thickness=1.4, width=6)
     fig.add_bar(x=[f"Full OOT ({npos})", f"Addressable ({addr_n})"], y=[full, addr],
                 marker_color=[pal["text_soft"], pal["accent"]],
+                error_y=err,
                 text=[f"{full:.3f}", f"{addr:.3f}"], textposition="outside")
-    fig.update_yaxes(title="PR-AUC", range=[0, max(0.5, addr * 1.25)])
+    top = max([0.5, addr * 1.25] + ([aci[1] * 1.1] if aci else []))
+    fig.update_yaxes(title="PR-AUC (95% CI)", range=[0, top])
     return _base(fig, pal, height=300, legend=False,
-                 title="PR-AUC: full vs structurally-addressable failures")
+                 title="PR-AUC: full vs structurally-addressable failures (with 95% CI)")

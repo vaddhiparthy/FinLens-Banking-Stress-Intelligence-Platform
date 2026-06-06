@@ -104,6 +104,15 @@
     0.2499,
     0.5296
   ],
+  "ci_method": "percentile bootstrap (n_boot=2000, seed=42); BCa is infeasible at 118k rows (O(n) jackknife) and percentile coverage is ~92.6% per the G0 sim, i.e. the true 95% interval is slightly WIDER, which only strengthens the overlap/non-separability conclusion.",
+  "pr_auc_full_ci_stratified": [
+    0.1934,
+    0.4338
+  ],
+  "pr_auc_addressable_ci_stratified": [
+    0.262,
+    0.5272
+  ],
   "ci_overlap_full_addressable": true,
   "addressable_positives": 52,
   "invisible_positives": 14,

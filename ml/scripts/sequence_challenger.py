@@ -40,9 +40,11 @@ SEED = 42
 K = 8  # quarters of history per sequence
 
 
-def _build_sequences(df: pd.DataFrame, idx: np.ndarray):
-    """For each row index, the last K quarters of features for that cert ending at that
-    row's obs_qord. Returns (N, K, F) float array, a (N, K) mask, and aligned labels."""
+def _build_sequences(df: pd.DataFrame, idx: np.ndarray, k: int = K):
+    """For each row index, the last `k` quarters of features for that cert ending at that
+    row's obs_qord. Returns (N, k, F) float array and a (N, k) mask. Shared by the single
+    challenger and the robustness sweep so the two cannot drift."""
+    K = k
     F = len(FEATURE_COLUMNS)
     feat = df[FEATURE_COLUMNS].to_numpy(dtype=np.float32)
     cert = df["cert"].to_numpy()

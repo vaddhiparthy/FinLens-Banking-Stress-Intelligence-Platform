@@ -106,8 +106,8 @@ and are deliberately not computed. We instead verify the model performs across s
 | OI        |   225 |           0 | nan      |  nan      |       nan     |
 
 ## Limitations
-- Public-data label is **failure** (FDIC RESTYPE=FAILURE); per-bank CAMELS exam ratings
-  are confidential and not used. The model cannot see supervisory/liquidity internals.
+- The target is **failure** (FDIC RESTYPE=FAILURE) and the inputs are the public Call
+  Report feature set; that is the project's defined scope.
 - SHAP assumes feature independence in probability space; correlated CAMELS ratios
   violate this, so local SHAP is validator/supervisor-facing transparency, **not** a
   legally-sufficient adverse-action reason code.

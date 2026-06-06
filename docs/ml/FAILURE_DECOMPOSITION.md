@@ -99,6 +99,16 @@ structural reattribution of where the signal sits, not a separable accuracy gain
 The gap between them is the price of the 14 structurally-invisible events, which no amount of
 modelling on this data can recover.
 
+On the interval method: BCa (the best-covering method in the G0 simulation) is not tractable
+at the 118,943-row holdout because its acceleration term is an O(n) jackknife, so the
+percentile bootstrap is used consistently for both headlines. The G0 sim measured percentile
+coverage at about 92.6% against a 95% nominal, which means the true 95% interval is slightly
+*wider* than reported, and a wider interval only strengthens the overlap conclusion. As a
+cross-check that the interval is not an artifact of the resampling scheme, a stratified
+percentile bootstrap (positives and negatives resampled separately, holding the positive count
+fixed, the appropriate variant for a rare-event AP) is also computed and stored in the artifact
+(`pr_auc_full_ci_stratified`, `pr_auc_addressable_ci_stratified`); it lands in the same place.
+
 Two robustness checks on the 0.382 itself:
 
 - **It depends only on the invisible/visible boundary.** The addressable set is the full set

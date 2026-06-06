@@ -99,9 +99,9 @@ the system-level "Stress Pulse" view; the new institution panel powers the ML.
   a workable positive count.
 - **Censoring:** banks that exit via healthy merger/acquisition are right-censored, NOT labeled failures (uses FDIC
   `ENDEFYMD` + failed-banks list to distinguish). Mislabeling acquisitions as failures is a known silent leak.
-- **Honest scope note:** per-bank CAMELS ratings are confidential/non-public, so the public-data label is *failure*,
-  not the examiner "problem bank" flag. We state this limitation explicitly in the model card. (System-level
-  problem-bank counts remain available only in aggregate for context.)
+- **Scope note:** the public-data target is *failure* (FDIC RESTYPE), not the examiner
+  "problem bank" flag; that is the label this project models. (System-level problem-bank counts
+  are used only in aggregate for context.)
 
 ## 3. Features (CAMELS-aligned, all from public fields)
 

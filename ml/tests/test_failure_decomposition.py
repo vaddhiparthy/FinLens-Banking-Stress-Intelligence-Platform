@@ -149,6 +149,12 @@ def test_decomposition_artifact_reconciles():
     assert d["addressable_depends_only_on_invisible_boundary"] is True
     lo, hi = d["pr_auc_addressable_range_over_grids"]
     assert hi - lo < 0.15  # addressable stable as the invisible boundary varies
+    # stratified-bootstrap cross-check present and lands in the same place as percentile
+    for key in ("pr_auc_full_ci_stratified", "pr_auc_addressable_ci_stratified", "ci_method"):
+        assert key in d
+    s_lo, s_hi = d["pr_auc_addressable_ci_stratified"]
+    assert s_lo <= d["pr_auc_addressable"] <= s_hi
+    assert "percentile" in d["ci_method"].lower()  # method labeled truthfully, not "stratified"
 
 
 @pytest.mark.skipif(not (ART / "sequence_challenger.json").exists(),

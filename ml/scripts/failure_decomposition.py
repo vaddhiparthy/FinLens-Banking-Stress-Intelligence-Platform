@@ -148,6 +148,24 @@ def main() -> None:
     full_ci = bootstrap_metrics(y_te, p_te, k=k)["pr_auc_ci"]
     addr_ci = bootstrap_metrics(y_te[keep], p_te[keep], k=k)["pr_auc_ci"]
 
+    # stratified percentile cross-check: resample positives and negatives separately so the
+    # positive count is held fixed (the appropriate variant for a rare-event AP, and tractable
+    # at 118k rows where a BCa jackknife is not). Reported alongside the percentile headline to
+    # show the interval is not an artifact of the resampling scheme. seed matched to the headline.
+    def _ci_stratified(yv, sv, n_boot=2000, seed=42):
+        yv = np.asarray(yv).astype(int); sv = np.asarray(sv, dtype=float)
+        pos = np.where(yv == 1)[0]; neg = np.where(yv == 0)[0]
+        rng = np.random.default_rng(seed)
+        from sklearn.metrics import average_precision_score
+        vals = []
+        for _ in range(n_boot):
+            idx = np.concatenate([pos[rng.integers(0, len(pos), len(pos))],
+                                  neg[rng.integers(0, len(neg), len(neg))]])
+            vals.append(float(average_precision_score(yv[idx], sv[idx])))
+        return [round(float(np.percentile(vals, 2.5)), 4), round(float(np.percentile(vals, 97.5)), 4)]
+    full_ci_strat = _ci_stratified(y_te, p_te)
+    addr_ci_strat = _ci_stratified(y_te[keep], p_te[keep])
+
     n_pos = int(y_te.sum())
     n_invis = types.get("invisible", 0)
 
@@ -229,6 +247,12 @@ def main() -> None:
         "pr_auc_full_ci": [round(full_ci[0], 4), round(full_ci[1], 4)],
         "pr_auc_addressable": round(float(addr.pr_auc), 4),
         "pr_auc_addressable_ci": [round(addr_ci[0], 4), round(addr_ci[1], 4)],
+        "ci_method": "percentile bootstrap (n_boot=2000, seed=42); BCa is infeasible at "
+                     "118k rows (O(n) jackknife) and percentile coverage is ~92.6% per the G0 "
+                     "sim, i.e. the true 95% interval is slightly WIDER, which only strengthens "
+                     "the overlap/non-separability conclusion.",
+        "pr_auc_full_ci_stratified": full_ci_strat,
+        "pr_auc_addressable_ci_stratified": addr_ci_strat,
         "ci_overlap_full_addressable": bool(addr_ci[0] <= full_ci[1] and full_ci[0] <= addr_ci[1]),
         "addressable_positives": int(n_pos - n_invis),
         "invisible_positives": n_invis,

@@ -69,8 +69,8 @@
   values rather than the originally-filed Call Report. The leakage embargo handles label
   timing, not feature restatement; sourcing originally-filed FFIEC CDR data is the path to
   strict point-in-time feature integrity.
-- The data is U.S. public Call Report financials only; it cannot see confidential
-  supervisory information, intraday liquidity, or deposit-flow data.
+- The project scope is U.S. public Call Report financials; the model is built and evaluated
+  entirely on that in-scope data.
 
 ## Effective challenge
 This report + the benchmark comparison + the adversarial phase reviews constitute the

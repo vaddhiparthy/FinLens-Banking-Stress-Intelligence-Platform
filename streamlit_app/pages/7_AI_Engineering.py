@@ -268,7 +268,7 @@ elif section == "quality":
                         f"year, so the headline sits within the rolling-fold spread rather than "
                         "equalling the mean. The std is as large as the mean because the folds "
                         "are bimodal, near-zero in calm years and ~0.5 in failure-containing "
-                        "windows, which is the honest story, not a defect."
+                        "windows, which is the expected behaviour, not a defect."
                     )
         chal = m.get("challengers", {})
         tune = m.get("hyperparameter_tuning", {})
@@ -356,7 +356,7 @@ elif section == "quality":
         gp = g0.get("gate_power") or {}
         cov = g0.get("interval_coverage_sim") or {}
         if gp or cov:
-            section_heading("How we know the intervals are honest",
+            section_heading("How the intervals were coverage-validated",
                             "An external-truth simulation (not a bootstrap of the holdout) "
                             "measures whether the CIs actually cover and how much power the "
                             "gate has at this positive count.")
@@ -374,7 +374,7 @@ elif section == "quality":
                 st.caption(
                     f"Chosen interval method: **{cov['chosen_method']}** (nominal "
                     f"{cov.get('nominal', 0.95):.0%}). Measured coverage under external-truth "
-                    f"DGPs — " + " · ".join(cells) + "." + recall_clause
+                    f"DGPs: " + " · ".join(cells) + "." + recall_clause
                 )
         c1, c2 = st.columns(2)
         with c1:

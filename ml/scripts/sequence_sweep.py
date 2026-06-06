@@ -62,24 +62,9 @@ def main() -> None:
     sd = np.nanstd(Xall[tr], axis=0); sd[sd == 0] = 1.0
     df[FEATURE_COLUMNS] = (np.nan_to_num(Xall, nan=mu) - mu) / sd
 
-    feat = df[FEATURE_COLUMNS].to_numpy(dtype=np.float32)
-    cert = df["cert"].to_numpy(); qord = df["obs_qord"].to_numpy()
-    order: dict = {}
-    for pos in np.argsort(qord, kind="stable"):
-        order.setdefault(cert[pos], []).append(pos)
-    cert_rows = {c: np.array(v) for c, v in order.items()}
-    cert_qord = {c: qord[v] for c, v in cert_rows.items()}
+    # reuse the SAME sequence builder as the single challenger so the two cannot drift
+    from sequence_challenger import _build_sequences
     F = len(FEATURE_COLUMNS)
-
-    def build(idx, K):
-        X = np.zeros((len(idx), K, F), dtype=np.float32)
-        M = np.zeros((len(idx), K), dtype=np.float32)
-        for n, i in enumerate(idx):
-            c = cert[i]; q = qord[i]
-            hist = cert_rows[c][cert_qord[c] <= q][-K:]
-            seq = feat[hist]; L = len(seq)
-            X[n, K - L:, :] = np.nan_to_num(seq, nan=0.0); M[n, K - L:] = 1.0
-        return X, M
 
     tr_sorted = tr[np.argsort(obs.to_numpy()[tr], kind="stable")]
     cut = int(len(tr_sorted) * 0.85)
@@ -94,7 +79,9 @@ def main() -> None:
 
     def run(hidden, dropout, wd, K, seed):
         torch.manual_seed(seed); np.random.seed(seed)
-        Xtr, Mtr = build(tr_in, K); Xva, Mva = build(va_in, K); Xte, Mte = build(te, K)
+        Xtr, Mtr = _build_sequences(df, tr_in, k=K)
+        Xva, Mva = _build_sequences(df, va_in, k=K)
+        Xte, Mte = _build_sequences(df, te, k=K)
 
         class G(nn.Module):
             def __init__(self):

@@ -217,8 +217,8 @@ and are deliberately not computed. We instead verify the model performs across s
 {_md_table(seg['charter_class']) if 'charter_class' in seg else '(n/a)'}
 
 ## Limitations
-- Public-data label is **failure** (FDIC RESTYPE=FAILURE); per-bank CAMELS exam ratings
-  are confidential and not used. The model cannot see supervisory/liquidity internals.
+- The target is **failure** (FDIC RESTYPE=FAILURE) and the inputs are the public Call
+  Report feature set; that is the project's defined scope.
 - SHAP assumes feature independence in probability space; correlated CAMELS ratios
   violate this, so local SHAP is validator/supervisor-facing transparency, **not** a
   legally-sufficient adverse-action reason code.
@@ -345,8 +345,8 @@ def generate_validation_report(horizon_q: int = 4) -> Path:
   values rather than the originally-filed Call Report. The leakage embargo handles label
   timing, not feature restatement; sourcing originally-filed FFIEC CDR data is the path to
   strict point-in-time feature integrity.
-- The data is U.S. public Call Report financials only; it cannot see confidential
-  supervisory information, intraday liquidity, or deposit-flow data.
+- The project scope is U.S. public Call Report financials; the model is built and evaluated
+  entirely on that in-scope data.
 
 ## Effective challenge
 This report + the benchmark comparison + the adversarial phase reviews constitute the

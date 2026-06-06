@@ -266,8 +266,8 @@ def main() -> None:
     out-of-time PR-AUC from 0.219 to 0.139, because the early 2000s banking regime dilutes the
     recent-failure signal; it was reverted. The roughly 2,400 failures of the 1980s and 1990s
     Savings and Loan crisis are unreachable, because machine-readable Call Reports begin in 2001.
-    Confidential supervisory data (CAMELS exam ratings, intraday liquidity, deposit flows) is not
-    public at any price. So the model sits at its data ceiling.</div>""")
+    The project scope is the public FDIC and FFIEC data, and on that data the model sits at its
+    ceiling.</div>""")
 
     H.append(f"""<h2 class="pagebreak">4. Panel construction</h2>
     <p>The unit of observation is (CERT, quarter), where CERT is the FDIC certificate number and
@@ -485,7 +485,6 @@ def main() -> None:
       <li>Rare events: about {m.get('test_positives','66')} out-of-time failures cap statistical power; this is the dominant ceiling.</li>
       <li>Failure-type scope: roughly a fifth of out-of-time failures are financially invisible (fast run / fraud / sudden) and unrecoverable on public quarterly financials; the model is scoped to credit-visible distress (see section 15).</li>
       <li>Architecture: the matched GRU sequence model was built and tested; it did not beat the GBM out-of-time and is not promoted (see section 16).</li>
-      <li>Public data only: no confidential supervisory, intraday-liquidity, or deposit-flow data.</li>
       <li>Originally filed data is noisier than restated, so point-in-time loses as a training source.</li>
       <li>Pre-2001 history is unreachable; extending to 2001 was tested and hurt.</li>
       <li>SHAP is transparency, not a legally sufficient adverse-action reason code.</li>
