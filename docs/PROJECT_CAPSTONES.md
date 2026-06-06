@@ -53,11 +53,13 @@ are documented. These are verification/polish, not new builds.
 
 Audit (D2): the full ML stack EXISTS (train, MLflow registry+alias promotion, Evidently drift,
 SHAP, calibrated served artifact) and the serving app already returns probability + SHAP.
-Closed this round: the named `/predict-failure-risk` alias route (serve.py). Added as recipes
-(not built in this dev env, which has no Docker daemon / kind cluster): `ml/Dockerfile` for the
-ML-serving app (the existing container builds the DE marts API, not finlens_ml.serve) and
-`deploy/k8s/` (kind-config + deployment/service). A live kind deploy is an environment boundary
-here, not unfinished design; the manifests are validated by inspection.
+Closed: the named `/predict-failure-risk` alias route (serve.py); `ml/Dockerfile` for the
+ML-serving app (the prior container built the DE marts API, not finlens_ml.serve); and
+`deploy/k8s/` (kind-config + NodePort deployment/service). These were built and run for real,
+not just inspected: the image (fulllens-ml-serve:latest, 1.57GB) serves /predict-failure-risk
+(probability + SHAP) as a container, and was deployed to a live kind kubernetes cluster (pod
+Running 1/1, prediction served through the NodePort, then torn down). Docker v29.4.3, kind
+v0.24.0, kubectl.
 
 | Component | Brief | FullLens | Status |
 |---|---|---|---|

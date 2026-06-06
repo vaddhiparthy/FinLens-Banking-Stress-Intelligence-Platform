@@ -41,19 +41,28 @@ Capstone track (docs/PROJECT_CAPSTONES.md), all committed:
   0.382 [0.250, 0.530]; pooled-to-addressable lift positive across logit/RF/XGBoost/2 GBMs
   (+0.041 to +0.081); label-source agreement 92%; CBLR break robustly handled.
 
-## Remaining limitations (all unavoidable, none are incomplete work)
+## Platform boundaries: crossed (no longer caveats)
+
+The two items previously listed as environment boundaries were tested and crossed, with
+evidence:
+- RAG local-LLM synthesis WORKS via the Ollama CLI path (`ollama run llama3.2:3b`): "Why did
+  SVB fail?" returns coherent LLM-synthesized prose grounded in the retrieved regulator docs
+  with citations (used_llm=True), not the extractive fallback. The HTTP server on :11434 is
+  empty on this machine, so synthesize() tries the CLI first, then HTTP, then extractive.
+- The ML-serving Docker image was built (fulllens-ml-serve:latest, 1.57GB), run as a container
+  ( /ready, /health, /predict-failure-risk -> probability + 6 SHAP reasons ), AND deployed to a
+  live kind kubernetes cluster: image loaded, deployment available, pod Running 1/1, and a real
+  /predict-failure-risk (probability 0.0863 + SHAP, model_version finlens-distress-h4-...) served
+  through the NodePort, then the cluster was torn down. Docker v29.4.3 + kind v0.24.0 + kubectl.
+
+## Remaining limitation (the one genuine wall)
 
 - Statistical power: 66 out-of-time failures cap the paired test at ~6% power, so no single
   number is individually separable; every figure is reported with intervals and the claims are
   about direction across models and label sources. This is a data-existence wall and it bounds
   the realistic venue (a strong applied-ML / financial-stability journal plus a citable preprint,
   not a top-three finance journal). Pre-2001 Call Reports do not exist in machine-readable form.
-- Platform/environment boundaries, documented and honest, not design gaps: (a) the RAG local-LLM
-  synthesis runs the cited extractive fallback in this environment because the reachable Ollama
-  server has an empty model set (a models-path/server split on this machine); the LLM path is
-  wired and engages against any normally-configured Ollama. (b) The ML-serving Docker image and
-  the kind/k8s manifests are validated by inspection but not applied, because there is no Docker
-  daemon or cluster in this environment.
+  This is the only material limitation that remains, and it is physics, not unfinished work.
 
 ## Disclosed non-material notes
 
