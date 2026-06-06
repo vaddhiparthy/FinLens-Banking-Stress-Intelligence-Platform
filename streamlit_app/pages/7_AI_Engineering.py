@@ -409,6 +409,84 @@ elif section == "quality":
                     {"year": r["year"], "failures": r["n_pos"],
                      "PR-AUC": r["pr_auc"], "low power": r["low_power"]} for r in by_year
                 ]), hide_index=True, use_container_width=True)
+
+        decomp = mc.load_decomposition()
+        if decomp:
+            tc = decomp.get("type_counts", {})
+            section_heading(
+                "Why the by-year number collapses: failure-type decomposition",
+                "The 66 out-of-time failures are not one kind of event. Classified by "
+                "model-independent financial signature, the calm-year collapse splits into "
+                "two distinct causes, not noise.")
+            d1, d2 = st.columns(2)
+            with d1:
+                st.plotly_chart(mc.failure_mix_by_year_fig(decomp, MODE),
+                                use_container_width=True)
+            with d2:
+                st.plotly_chart(mc.addressable_pr_fig(decomp, MODE),
+                                use_container_width=True)
+            st.markdown(
+                f"- **Credit-visible: {tc.get('credit_visible', 0)}** bank-quarters, the "
+                "model's design scope (high noncurrent / charge-offs / capital below the PCA "
+                "lines).\n"
+                f"- **Rate/liquidity-visible: {tc.get('rate_liquidity_visible', 0)}** "
+                "(large uninsured base + securities book): the 2023 wave, Silicon Valley, "
+                "Signature, First Republic. A credit-skewed model under-weights these, which "
+                "is the collapse on the **2022 filing cohort** (those banks failed in 2023).\n"
+                f"- **Invisible: {tc.get('invisible', 0)}** were financially sound at the "
+                "last filing and failed anyway: in practice the fraud and scam failures "
+                "(Enloe State, Heartland Tri-State, First National Bank of Lindsay, Pulaski "
+                "Savings). No model on quarterly financials can rank these, which is the "
+                "collapse on the **2024 filing cohort**.")
+            _fci = decomp.get("pr_auc_full_ci"); _aci = decomp.get("pr_auc_addressable_ci")
+            _fci_s = f" (95% CI {_fci[0]:.3f}-{_fci[1]:.3f})" if _fci else ""
+            _aci_s = f" (95% CI {_aci[0]:.3f}-{_aci[1]:.3f})" if _aci else ""
+            st.caption(
+                f"Year on the chart is the FILING year; a flagged bank-quarter is a filing "
+                f"that fails within the next 4 quarters, so failures land later (no banks "
+                f"failed in calendar 2021 or 2022). Removing only the "
+                f"{decomp.get('invisible_positives', 0)} invisible failures moves out-of-time "
+                f"PR-AUC from {decomp.get('pr_auc_full')}{_fci_s} to "
+                f"{decomp.get('pr_auc_addressable')}{_aci_s} on the "
+                f"{decomp.get('addressable_positives')} addressable failures. The intervals "
+                "overlap heavily (fewer positives widen the addressable CI): this is a "
+                "structural reattribution of the signal, not a separable gain (G0 ~6% power). "
+                "The addressable number is unchanged by the credit-vs-rate/liquidity boundary "
+                "(only the invisible boundary moves it). The three modes are an author-defined "
+                "diagnostic split, not a supervisory classification.")
+
+        seq = mc.load_sequence()
+        if seq:
+            section_heading(
+                "Architecture challenger: GRU over quarterly trajectories",
+                "The matched architecture for within-bank temporal autocorrelation was built "
+                "and tested on equal footing. It does not beat the gradient-boosted incumbent.")
+            s1, s2 = st.columns([1, 1.1])
+            with s1:
+                st.plotly_chart(mc.sequence_vs_gbm_fig(seq, MODE), use_container_width=True)
+            with s2:
+                st.markdown(
+                    f"- GRU OOT PR-AUC **{seq.get('oot_pr_auc_gru')}** vs served GBM "
+                    f"**{seq.get('oot_pr_auc_gbm_served')}** (delta {seq.get('delta_vs_gbm')}).\n"
+                    f"- Inner-validation PR-AUC **{seq.get('best_inner_val_pr_auc')}** collapses "
+                    "out-of-time: the in-sample trajectory signal does not transfer across the "
+                    "regime/cohort shift (consistent with the decomposition above).\n"
+                    f"- The GRU sits **inside** the GBM bootstrap CI, so at "
+                    f"{seq.get('n_oot_positives')} failures the two are not statistically "
+                    "separable; the worse point estimate plus monotonicity, calibration, and "
+                    "interpretability keep the GBM served.")
+                rs = seq.get("robustness_sweep") or {}
+                if rs:
+                    st.markdown(
+                        f"- Not a single-config artifact: a sweep of **{rs.get('n_configs')}** "
+                        f"GRUs (varying size, regularization, history length, seed) lands "
+                        f"out-of-time in **{rs.get('oot_min')}–{rs.get('oot_max')}**, every one "
+                        "below the GBM, with the same in-sample collapse.")
+            st.caption(
+                "Reported as a challenger, not a candidate for promotion. The obvious "
+                "'more sophisticated' model was built, measured on equal footing, and does not "
+                "help on the data that exists.")
+
         if viz.get("drift_top_features"):
             section_heading("Drift monitoring (Evidently)", "Reference 2008-18 vs current 2019-26.")
             ds = viz.get("drift_summary", {})

@@ -73,8 +73,9 @@ def evaluate(y_true: np.ndarray, y_score: np.ndarray, k: int = 200) -> EvalMetri
 def bootstrap_metrics(
     y_true: np.ndarray, y_score: np.ndarray, k: int = 200, n_boot: int = 2000, seed: int = 42
 ) -> dict:
-    """Stratified bootstrap 95% CIs. With ~66 positives a point estimate is not a
-    defensible result, so PR-AUC / ROC-AUC / recall@k are reported with intervals."""
+    """Percentile bootstrap 95% CIs (iid resampling with replacement, degenerate draws
+    skipped). With ~66 positives a point estimate is not a defensible result, so PR-AUC /
+    ROC-AUC / recall@k are reported with intervals."""
     y_true = np.asarray(y_true).astype(int)
     y_score = np.asarray(y_score, dtype=float)
     n = len(y_true)

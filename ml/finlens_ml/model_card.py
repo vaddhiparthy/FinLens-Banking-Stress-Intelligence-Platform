@@ -319,7 +319,7 @@ def generate_validation_report(horizon_q: int = 4) -> Path:
 ## 3. Outcomes analysis (back-testing)
 - **Headline holdout:** {metrics['n_test']:,} bank-quarters / {metrics['test_positives']} real
   failures (2019-2026, includes the 2023 SVB/Signature/First-Republic cluster).
-- **Uncertainty (the point estimates are not the result):** 95% stratified-bootstrap CIs —
+- **Uncertainty (the point estimates are not the result):** 95% percentile-bootstrap CIs —
   PR-AUC [{prci[0]:.3f}, {prci[1]:.3f}], recall@k [{rci[0]:.3f}, {rci[1]:.3f}]. The PR-AUC
   edge over the logit is a paired bootstrap: difference 95% CI
   [{dci[0]:+.3f}, {dci[1]:+.3f}], P(LGBM > logit) = {diff.get('prob_a_beats_b', float('nan')):.1%}.

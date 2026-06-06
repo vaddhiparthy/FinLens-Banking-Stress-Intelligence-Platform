@@ -1,0 +1,52 @@
+{
+  "gbm_pr_auc": 0.3014,
+  "gbm_pr_auc_ci": [
+    0.19084418702981437,
+    0.4379720033589294
+  ],
+  "n_configs": 6,
+  "oot_min": 0.1886,
+  "oot_max": 0.2458,
+  "oot_mean": 0.2179,
+  "all_below_gbm": true,
+  "all_inside_gbm_ci": false,
+  "results": [
+    {
+      "config": "base h48 K8 s42",
+      "inner_val_pr_auc": 0.6072,
+      "oot_pr_auc": 0.2073,
+      "inside_gbm_ci": true
+    },
+    {
+      "config": "smaller h24 K8 s42",
+      "inner_val_pr_auc": 0.6112,
+      "oot_pr_auc": 0.2086,
+      "inside_gbm_ci": true
+    },
+    {
+      "config": "tiny h16 K8 s42",
+      "inner_val_pr_auc": 0.6192,
+      "oot_pr_auc": 0.219,
+      "inside_gbm_ci": true
+    },
+    {
+      "config": "short K4 h32 s42",
+      "inner_val_pr_auc": 0.6052,
+      "oot_pr_auc": 0.1886,
+      "inside_gbm_ci": false
+    },
+    {
+      "config": "long K12 h32 s7",
+      "inner_val_pr_auc": 0.5619,
+      "oot_pr_auc": 0.2458,
+      "inside_gbm_ci": true
+    },
+    {
+      "config": "base h48 K8 s123",
+      "inner_val_pr_auc": 0.6665,
+      "oot_pr_auc": 0.238,
+      "inside_gbm_ci": true
+    }
+  ],
+  "verdict": "Across 6 GRU configurations (hidden 16-48, dropout 0.2-0.4, weight decay 1e-5 to 1e-3, K in 4/8/12, 3 seeds), out-of-time PR-AUC ranges 0.189 to 0.246, every config below the served GBM's 0.301; five of six sit inside its bootstrap CI and the sixth (K=4) sits just below it, i.e. even worse. The single-config result is not a tuning artifact: no GRU configuration beats the incumbent at this data scale regardless of capacity, regularization, history length, or seed, and the large in-sample to out-of-time gap (inner-val 0.56-0.67 collapsing to OOT 0.19-0.25) persists across every config, supporting the non-transfer reading."
+}

@@ -90,6 +90,15 @@ def render_charts() -> dict:
             figs["optimism"] = mc.optimism_fig(study, "light")
         if viz.get("capacity_curve"):
             figs["capacity"] = mc.capacity_curve_fig(viz, "light")
+        mc.load_decomposition.cache_clear()
+        mc.load_sequence.cache_clear()
+        _dc = mc.load_decomposition()
+        if _dc:
+            figs["fail_mix"] = mc.failure_mix_by_year_fig(_dc, "light")
+            figs["addr_pr"] = mc.addressable_pr_fig(_dc, "light")
+        _sq = mc.load_sequence()
+        if _sq:
+            figs["seq"] = mc.sequence_vs_gbm_fig(_sq, "light")
     except Exception as e:
         print("chart build warning:", e, flush=True)
     out = {}
@@ -125,6 +134,8 @@ def main() -> None:
     m, g0, b1, cr, cal, viz = (_j("metrics_h4.json"), _j("g0_power_sim.json"),
                                _j("b1_compare.json"), _j("competing_risks.json"),
                                _j("calibration_bakeoff.json"), _j("viz_pack.json"))
+    decomp, seq = _j("failure_decomposition.json"), _j("sequence_challenger.json")
+    seq_sweep = _j("sequence_sweep.json")
     t = m.get("oot_test", {}).get("calibrated_lgbm", {})
     lg = m.get("oot_test", {}).get("logit_benchmark", {})
     ci = m.get("oot_test_ci", {})
@@ -165,7 +176,10 @@ def main() -> None:
         "Labels and leakage control", "Train/test splits", "Model and hyperparameters",
         "Calibration", "Out-of-time evaluation", "Uncertainty and the G0 foundation",
         "Explainability (SHAP)", "Effective challenge and ensembles",
-        "Competing risks (failure vs merger)", "Point-in-time data and forward scoring",
+        "Competing risks (failure vs merger)",
+        "Failure-type decomposition (what the model can and cannot see)",
+        "Architecture challenger: GRU over trajectories",
+        "Point-in-time data and forward scoring",
         "Honest limitations", "Engineering, reproducibility, governance",
     ]
     toc_html = "".join(f"<li>{i+1}. {s}</li>" for i, s in enumerate(toc))
@@ -391,7 +405,71 @@ def main() -> None:
     small. A discrete-time Fine-Gray subdistribution cross-check (ml/scripts/fine_gray.py) confirms
     the correction is immaterial to the served ranking.</p>""")
 
-    H.append(f"""<h2>15. Point-in-time data and forward scoring</h2>
+    dc_tc = decomp.get("type_counts", {})
+    H.append(f"""<h2 class="pagebreak">15. Failure-type decomposition (what the model can and cannot see)</h2>
+    <p>The headline out-of-time PR-AUC is an average over failures that are not the same kind of
+    event. Classified by model-independent financial signature at the last filing, the
+    {decomp.get('n_oot_positives','66')} out-of-time failure bank-quarters (19 distinct banks)
+    split into {dc_tc.get('credit_visible','40')} credit-visible (high noncurrent, charge-offs, or
+    capital below the Prompt Corrective Action lines, the model's design scope),
+    {dc_tc.get('rate_liquidity_visible','12')} rate/liquidity-visible (a large uninsured base
+    funding a marked-down securities book: the 2023 wave, Silicon Valley, Signature, First
+    Republic), and {dc_tc.get('invisible','14')} financially invisible (the bank looked sound at
+    its last filing and failed anyway: in practice the fraud and scam failures, Enloe State,
+    Heartland Tri-State, First National Bank of Lindsay, Pulaski Savings).</p>
+    <p>Cohorts are keyed by <b>filing year</b>, not failure year: a flagged bank-quarter is a
+    filing that fails within the next four quarters, so failures land later (no banks failed in
+    calendar 2021 or 2022). This explains the violent by-cohort swings as two distinct mechanisms,
+    not noise. The <b>2022 filing cohort</b> is a wrong-cohort collapse: eleven of its fourteen
+    failures are the 2023 rate/liquidity wave, which a credit-skewed model ranks low. The
+    <b>2024 filing cohort</b> is an invisible-cohort collapse: eight of its nine failures are
+    fraud or sudden failures with no financial signal at all. The strong cohorts (2019, 2020, 2025
+    filings) are exactly the credit-dominated ones.</p>
+    {_img(charts, 'fail_mix', 'Failure-type mix by filing-year cohort (failure occurs within the next four quarters). Credit-visible (the model scope), rate/liquidity-visible, and invisible failures, showing the 2022 and 2024 cohorts that drive the collapse.')}
+    <p>Removing only the {decomp.get('invisible_positives','14')} structurally-invisible failures
+    lifts out-of-time PR-AUC from {f(decomp.get('pr_auc_full'))} {rng(decomp.get('pr_auc_full_ci'))}
+    to {f(decomp.get('pr_auc_addressable'))} {rng(decomp.get('pr_auc_addressable_ci'))} on the
+    {decomp.get('addressable_positives','52')} addressable failures, by the same percentile
+    bootstrap used for the headline. With fewer positives the addressable interval is wider and
+    the two intervals overlap heavily, so this is a structural reattribution of the signal, not a
+    separable accuracy gain. The number depends only on the invisible/visible boundary: swapping a
+    bank between the credit and rate/liquidity buckets leaves it unchanged. The gap to the full set
+    is the unrecoverable price of the invisible events.</p>
+    {_img(charts, 'addr_pr', 'Out-of-time PR-AUC on the full failure set versus the structurally-addressable subset (invisible failures removed).')}
+    <div class="note">At {decomp.get('n_oot_positives','66')} failures this is not statistically
+    separable (about 6 percent power); it is reported as a structural explanation of where the
+    signal comes from, not a certified accuracy gain. Only the rate/liquidity cohort is a genuine
+    model-improvement opportunity (more such training mass); the invisible cohort is unsolvable on
+    public financials.</div>""")
+
+    H.append(f"""<h2 class="pagebreak">16. Architecture challenger: GRU over trajectories</h2>
+    <p>A fair critique of the served model is that scoring one bank-quarter at a time under-uses
+    within-bank temporal autocorrelation: a bank's trajectory may carry signal a point-in-time
+    model cannot represent. The matched architecture, a GRU over the last
+    {seq.get('history_quarters','8')} quarters of all 34 features (masked last-step readout,
+    isotonic-calibrated, identical out-of-time split), was built and tested on equal footing rather
+    than left as future work.</p>
+    <p>It does not beat the incumbent. The GRU scores out-of-time PR-AUC {f(seq.get('oot_pr_auc_gru'))}
+    against the served GBM's {f(seq.get('oot_pr_auc_gbm_served'))} (delta {f(seq.get('delta_vs_gbm'))}).
+    Its inner-validation PR-AUC reaches {f(seq.get('best_inner_val_pr_auc'))} and collapses out-of-time:
+    the in-sample trajectory signal does not transfer across the regime and cohort shift, exactly as
+    the decomposition predicts.</p>
+    {_img(charts, 'seq', 'GRU sequence challenger versus served GBM out-of-time PR-AUC, with the GBM bootstrap interval shaded. The GRU bar sits inside the band.')}
+    <p>This is not a single-config artifact. A sweep of {seq_sweep.get('n_configs','6')} GRUs
+    (hidden 16 to 48, dropout 0.2 to 0.4, weight decay 1e-5 to 1e-3, history length K in 4/8/12,
+    three seeds) lands out-of-time between {f(seq_sweep.get('oot_min'))} and
+    {f(seq_sweep.get('oot_max'))}, every configuration below the served GBM, with the same
+    in-sample to out-of-time collapse in all of them. No reachable GRU beats the incumbent at this
+    data scale regardless of capacity, regularization, history length, or seed
+    (ml/scripts/sequence_sweep.py).</p>
+    <div class="note">The GRU's {f(seq.get('oot_pr_auc_gru'))} falls inside the served model's
+    bootstrap PR-AUC interval and, at 66 failures (about 6 percent power), is not statistically
+    separable in either direction. The result: the architecturally-matched model was built,
+    measured on equal footing, and does not help on the data that exists. The GBM remains served on its
+    better point estimate, monotone guarantees, calibration, per-bank SHAP, and a smaller auditable
+    artifact.</div>""")
+
+    H.append(f"""<h2>17. Point-in-time data and forward scoring</h2>
     <p>Originally filed FFIEC Call Reports were pulled to test point-in-time feature integrity.
     They reconciled exactly for 2014 and later and surfaced the noncurrent field bug. As a training
     source the full point-in-time panel underperforms the restated panel
@@ -402,16 +480,18 @@ def main() -> None:
     Warning surface offers a live forward score with explicit framing that it is a model estimate,
     not a forecast that a bank will fail, and that the base rate is under one percent.</p>""")
 
-    H.append(f"""<h2>16. Honest limitations</h2>
+    H.append(f"""<h2>18. Honest limitations</h2>
     <ul>
       <li>Rare events: about {m.get('test_positives','66')} out-of-time failures cap statistical power; this is the dominant ceiling.</li>
+      <li>Failure-type scope: roughly a fifth of out-of-time failures are financially invisible (fast run / fraud / sudden) and unrecoverable on public quarterly financials; the model is scoped to credit-visible distress (see section 15).</li>
+      <li>Architecture: the matched GRU sequence model was built and tested; it did not beat the GBM out-of-time and is not promoted (see section 16).</li>
       <li>Public data only: no confidential supervisory, intraday-liquidity, or deposit-flow data.</li>
       <li>Originally filed data is noisier than restated, so point-in-time loses as a training source.</li>
       <li>Pre-2001 history is unreachable; extending to 2001 was tested and hurt.</li>
       <li>SHAP is transparency, not a legally sufficient adverse-action reason code.</li>
     </ul>""")
 
-    H.append(f"""<h2>17. Engineering, reproducibility, governance</h2>
+    H.append(f"""<h2>19. Engineering, reproducibility, governance</h2>
     <p>The system is $0 (free public APIs only), reproducible (fixed seeds, pinned feature set,
     committed metrics), and gated: a CI metric gate blocks promotion of a degraded or leaky model
     (PR-AUC must beat the logit by a margin, OOT ROC must stay below a leakage ceiling, ECE within

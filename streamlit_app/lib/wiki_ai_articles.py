@@ -60,13 +60,54 @@ def _load_metric_values() -> dict:
         for i in range(min(3, len(si))):
             V[f"shap{i+1}"] = si[i]["feature"]
             V[f"shap{i+1}_v"] = f"{si[i]['mean_abs_shap']:.3f}"
+        try:
+            fd = _json.loads((art / "failure_decomposition.json").read_text())
+            tc = fd.get("type_counts", {})
+
+            def _cis(key):
+                c = fd.get(key)
+                return f"[{c[0]:.3f}, {c[1]:.3f}]" if c else "—"
+            V.update(
+                fd_credit=str(tc.get("credit_visible", "—")),
+                fd_rate=str(tc.get("rate_liquidity_visible", "—")),
+                fd_invis=str(tc.get("invisible", "—")),
+                fd_full=str(fd.get("pr_auc_full", "—")),
+                fd_addr=str(fd.get("pr_auc_addressable", "—")),
+                fd_addr_n=str(fd.get("addressable_positives", "—")),
+                fd_full_ci=_cis("pr_auc_full_ci"),
+                fd_addr_ci=_cis("pr_auc_addressable_ci"),
+            )
+        except Exception:
+            pass
+        try:
+            sq = _json.loads((art / "sequence_challenger.json").read_text())
+            pw = sq.get("g0_paired_power_at_delta_0_02")
+            V.update(
+                seq_pr=str(sq.get("oot_pr_auc_gru", "—")),
+                seq_gbm=str(sq.get("oot_pr_auc_gbm_served", "—")),
+                seq_delta=(f"{sq.get('delta_vs_gbm'):+.3f}"
+                           if sq.get("delta_vs_gbm") is not None else "—"),
+                seq_k=str(sq.get("history_quarters", "—")),
+                seq_power=(f"{pw * 100:.0f}%" if isinstance(pw, (int, float)) else "~6%"),
+            )
+            rs = sq.get("robustness_sweep", {})
+            if rs:
+                V.update(seq_sweep_n=str(rs.get("n_configs", "—")),
+                         seq_sweep_min=str(rs.get("oot_min", "—")),
+                         seq_sweep_max=str(rs.get("oot_max", "—")))
+        except Exception:
+            pass
     except Exception:
         pass
     # safe defaults so f-strings never KeyError
     for k in ("pr", "roc", "recall_pct", "logit_pr", "logit_roc", "boot_pr", "boot_roc",
               "boot_recall", "paired_ci", "p_beat", "roll_mean", "roll_std", "roll_min",
               "roll_max", "n_est", "unc_pr", "shap1", "shap1_v", "shap2", "shap2_v",
-              "shap3", "shap3_v", "ece", "cal_pred", "cal_obs"):
+              "shap3", "shap3_v", "ece", "cal_pred", "cal_obs",
+              "fd_credit", "fd_rate", "fd_invis", "fd_full", "fd_addr", "fd_addr_n",
+              "fd_full_ci", "fd_addr_ci",
+              "seq_pr", "seq_gbm", "seq_delta", "seq_k", "seq_power",
+              "seq_sweep_n", "seq_sweep_min", "seq_sweep_max"):
         V.setdefault(k, "—")
     return V
 
@@ -626,6 +667,134 @@ AI_ARTICLES: dict[str, dict] = {
             "the model behaves identically wherever it is invoked. [[Drift Monitoring]] scores "
             "its reference and current windows through this entry point precisely so the "
             "prediction-drift signal reflects the deployed model and not a stale copy."
+        ),
+    },
+    "Failure-Type Decomposition": {
+        "cluster": "AI Engineering",
+        "branch": "Evaluation",
+        "summary": (
+            "Why the by-year out-of-time number swings so violently: the 66 failures are "
+            "three different kinds of event, and the model is scoped to only one of them."
+        ),
+        "body": (
+            "The headline out-of-time PR-AUC is an average over failures that are not the same "
+            "kind of event. Averaging a credit-distress model across failure types it was never "
+            "designed to see is what makes the by-year number swing from near the floor to "
+            "strong and back. This article decomposes the 66 out-of-time failures by mode, using "
+            "model-independent financial signatures (the raw Call Report condition at the last "
+            "filing, not the model's own score, to avoid circularity), and shows the swings "
+            "track the failure-type mix of each filing-year cohort rather than being noise.\n\n"
+            "## Three failure modes\n"
+            f"Of the 66 failure bank-quarters (19 distinct banks), **{_V['fd_credit']}** are "
+            "credit-visible (high noncurrent, charge-offs, or capital below the Prompt "
+            "Corrective Action lines, the classic deterioration the model is built to catch), "
+            f"**{_V['fd_rate']}** are rate/liquidity-visible (a large uninsured deposit base "
+            "funding a marked-down securities book, the 2023 wave: Silicon Valley, Signature, "
+            f"and First Republic), and **{_V['fd_invis']}** are financially invisible: the bank "
+            "looked sound at its last filing and failed anyway. In practice the invisible class "
+            "is the fraud and scam failures (Enloe State, Heartland Tri-State, First National "
+            "Bank of Lindsay, Pulaski Savings), which carry no financial signature by "
+            "construction.\n\n"
+            "## A note on the year axis\n"
+            "The cohorts are keyed by FILING year, not failure year. A positive bank-quarter is "
+            "a filing that fails within the next four quarters, so the failure happens later: "
+            "the 2022 filing cohort is the set of 2022 filings that failed in 2023. No banks "
+            "failed in calendar 2021 or 2022; the by-year swings below are about when the "
+            "doomed banks were filing, which is what the model actually scores.\n\n"
+            "## The collapse has two distinct causes, not one\n"
+            "The two near-floor filing cohorts collapse for opposite reasons. The **2022 filing "
+            "cohort is a wrong-cohort collapse**: eleven of its fourteen failures are the 2023 "
+            "rate/liquidity wave (Silicon Valley and peers), which a credit-skewed model ranks "
+            "low because, on the credit axis, they looked fine. The **2024 filing cohort is an "
+            "invisible-cohort collapse**: eight of its nine failures are fraud or sudden "
+            "failures with no elevated financial signal, and no model built on quarterly Call "
+            "Reports can rank those above healthy banks because the signal is not in the data. "
+            "The strong cohorts (2019, 2020, 2025 filings) are exactly the credit-dominated "
+            "ones. The annual headline is a weighted average whose weights are the unknown, "
+            "cohort-specific failure-type mix.\n\n"
+            "## PR-AUC on the addressable subset\n"
+            f"Removing only the {_V['fd_invis']} structurally-invisible failures from the "
+            f"positive set lifts out-of-time PR-AUC from {_V['fd_full']} (95% CI "
+            f"{_V['fd_full_ci']}) to {_V['fd_addr']} (95% CI {_V['fd_addr_ci']}) on the "
+            f"{_V['fd_addr_n']} addressable failures, by the same percentile bootstrap used for "
+            "the headline. With fewer positives the addressable interval is wider, and the two "
+            "intervals overlap heavily: this is a structural reattribution of where the signal "
+            "is, not a separable accuracy gain. Two further checks: the addressable number "
+            "depends only on the invisible/visible boundary (swapping any bank between the "
+            "credit and rate/liquidity buckets leaves it unchanged, since neither bucket is "
+            "dropped), and across the four threshold grids it ranges only narrowly as the "
+            "invisible count moves between 9 and 14. The gap to the full set is the price of the "
+            "invisible events, which no modelling on this data can recover.\n\n"
+            "## Why this is the load-bearing finding\n"
+            "It separates three things a single number conflates: what the model does well "
+            "(credit-visible distress), what it under-weights but could learn given more such "
+            "training mass (rate/liquidity failures), and what is structurally impossible on "
+            "public financials (the invisible cohort). Only the middle category is a model-"
+            "improvement opportunity; chasing a higher headline on the full set would be self-"
+            "deception, because roughly a fifth of the positives carry no signal to find. At 66 "
+            "failures none of this is statistically separable (~6% power, see "
+            "[[Out-of-Time Evaluation]]); it is a structural "
+            "explanation of where the signal comes from, not a certified gain. The matched "
+            "architecture is tested separately in [[Sequence-Model Challenger]]."
+        ),
+    },
+    "Sequence-Model Challenger": {
+        "cluster": "AI Engineering",
+        "branch": "Modelling",
+        "summary": (
+            "A GRU over each bank's quarterly trajectory, built to test whether within-bank "
+            "temporal autocorrelation beats the point-in-time GBM. It does not."
+        ),
+        "body": (
+            "The served model scores one bank-quarter at a time. A fair critique is that this "
+            "under-uses within-bank temporal autocorrelation: a bank's trajectory, the shape of "
+            "its last several quarters, may carry signal a point-in-time model cannot represent. "
+            "The architecture matched to that hypothesis is a recurrent network over the "
+            "quarterly sequence, so it was built and tested on equal footing rather than "
+            "hand-waved as future work.\n\n"
+            "## What was built\n"
+            f"A GRU (hidden 48) over the last K = {_V['seq_k']} quarters of all 34 features, "
+            "left-padded and masked per CERT, read out at the last unmasked step into a small "
+            "ReLU head, z-scored on train statistics only, class-weighted, early-stopped on an "
+            "inner time-ordered validation tail, and isotonic-calibrated with the same recipe as "
+            "the GBM. It was evaluated on the identical out-of-time holdout used everywhere "
+            "else.\n\n"
+            "## Result: it does not beat the incumbent\n"
+            f"The GRU scores out-of-time PR-AUC {_V['seq_pr']} against the served GBM's "
+            f"{_V['seq_gbm']} (delta {_V['seq_delta']}). Its point estimate is lower, and it "
+            "overfits in-sample: inner-validation PR-AUC reaches the low 0.6s and then collapses "
+            "out-of-time. That collapse is informative. The trajectory signal the GRU learns in "
+            "the training era does not transfer across the regime and cohort shift into the "
+            "out-of-time window, which is exactly what the [[Failure-Type Decomposition]] "
+            "predicts: the out-of-time failures are a different mix of modes, and a model that "
+            "memorizes in-sample trajectory shapes has nothing to grab when the failure type "
+            "changes.\n\n"
+            "## Not a single-config artifact\n"
+            f"To rule out a single bad configuration, a sweep of {_V['seq_sweep_n']} GRUs was "
+            "run on the same split (hidden 16 to 48, dropout 0.2 to 0.4, weight decay 1e-5 to "
+            f"1e-3, history length K in 4/8/12, three seeds). Out-of-time PR-AUC ranged "
+            f"{_V['seq_sweep_min']} to {_V['seq_sweep_max']}, every configuration below the "
+            "served GBM, with the in-sample to out-of-time collapse present in all of them. No "
+            "reachable GRU beats the incumbent at this data scale regardless of capacity, "
+            "regularization, history length, or seed, so the verdict is not inferred from one "
+            "run.\n\n"
+            "## Statistical separability\n"
+            f"The GRU's {_V['seq_pr']} falls inside the served model's bootstrap PR-AUC "
+            f"interval, and at 66 out-of-time failures the paired comparison has {_V['seq_power']} "
+            "power, so the two are not statistically separable in either direction. The result "
+            "is that the architecturally-matched sequence model did not deliver an out-of-time "
+            "gain, its point estimate is worse, and the data cannot certify a difference of this "
+            "size. Claiming the GRU captures trajectory structure the GBM misses would be the "
+            "exact fake improvement to avoid: in-sample it appears to, out-of-time it does "
+            "not.\n\n"
+            "## Why the GBM remains served\n"
+            "Even setting aside the point estimates (which are not separable), the GBM is "
+            "preferred on grounds the small recurrent net cannot match at this data scale: a "
+            "better out-of-time point estimate, monotone constraints (more capital can never "
+            "raise predicted risk, a guarantee the GRU has no way to make), calibrated "
+            "probabilities with per-bank SHAP attributions a supervisor can read, and a far "
+            "smaller, auditable, serialization-safe artifact. The challenger is kept as the "
+            "documented test of the trajectory hypothesis, not a candidate for promotion."
         ),
     },
 }

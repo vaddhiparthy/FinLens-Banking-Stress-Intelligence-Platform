@@ -465,3 +465,77 @@ def capacity_curve_fig(pack: dict, mode: str | None = None) -> go.Figure:
     fig.update_xaxes(title="review budget k (banks flagged)")
     fig.update_yaxes(title="rate", range=[0, 1])
     return _base(fig, pal, height=320, title="Capacity curve: recall vs review budget")
+
+
+@lru_cache(maxsize=1)
+def load_decomposition() -> dict | None:
+    p = _PROJECT_ROOT / "ml" / "artifacts" / "failure_decomposition.json"
+    return json.loads(p.read_text()) if p.exists() else None
+
+
+@lru_cache(maxsize=1)
+def load_sequence() -> dict | None:
+    p = _PROJECT_ROOT / "ml" / "artifacts" / "sequence_challenger.json"
+    return json.loads(p.read_text()) if p.exists() else None
+
+
+def sequence_vs_gbm_fig(seq: dict, mode: str | None = None) -> go.Figure:
+    """GRU challenger vs served GBM out-of-time PR-AUC, with the GBM bootstrap CI band so
+    the 'not separable' claim is visible (the GRU bar sits inside the band)."""
+    pal = get_palette(mode)
+    gru = seq.get("oot_pr_auc_gru", 0.0)
+    gbm = seq.get("oot_pr_auc_gbm_served", 0.0)
+    ci = seq.get("gbm_pr_auc_ci") or [gbm, gbm]
+    fig = go.Figure()
+    fig.add_bar(x=["Served GBM", "GRU challenger"], y=[gbm, gru],
+                marker_color=[pal["accent"], pal["text_soft"]],
+                text=[f"{gbm:.3f}", f"{gru:.3f}"], textposition="outside")
+    fig.add_hrect(y0=ci[0], y1=ci[1], fillcolor=pal["accent"], opacity=0.10, line_width=0,
+                  annotation_text="GBM bootstrap CI", annotation_position="top left",
+                  annotation_font=dict(size=9, color=pal["text_soft"]))
+    fig.update_yaxes(title="out-of-time PR-AUC", range=[0, max(0.5, ci[1] * 1.15)])
+    return _base(fig, pal, height=300, legend=False,
+                 title="GRU sequence challenger vs served GBM (not separable)")
+
+
+_MODE_LABEL = {
+    "credit_visible": "credit-visible (model scope)",
+    "rate_liquidity_visible": "rate/liquidity-visible",
+    "invisible": "invisible (no signal)",
+}
+
+
+def failure_mix_by_year_fig(decomp: dict, mode: str | None = None) -> go.Figure:
+    """Stacked failure-type mix per FILING year (a positive is a filing that fails within
+    the next 4 quarters, so failures land later). Makes the two collapse mechanisms
+    visible: the 2022 filing cohort is rate/liquidity-dominated (the 2023 wave, wrong cohort
+    for a credit model), the 2024 filing cohort is invisible/fraud-dominated."""
+    pal = get_palette(mode)
+    by = decomp.get("by_filing_year", decomp.get("by_year_type", {}))
+    years = sorted(by.keys())
+    colors = {"credit_visible": pal["accent"], "rate_liquidity_visible": pal["teal"],
+              "invisible": pal["rose"]}
+    fig = go.Figure()
+    for key in ("credit_visible", "rate_liquidity_visible", "invisible"):
+        fig.add_bar(x=years, y=[by.get(y, {}).get(key, 0) for y in years],
+                    name=_MODE_LABEL[key], marker_color=colors[key])
+    fig.update_layout(barmode="stack")
+    fig.update_yaxes(title="failure bank-quarters")
+    fig.update_xaxes(title="filing year (failure occurs within the next 4 quarters)")
+    return _base(fig, pal, title="Failure-type mix by filing-year cohort")
+
+
+def addressable_pr_fig(decomp: dict, mode: str | None = None) -> go.Figure:
+    """Full vs addressable (invisible failures removed) out-of-time PR-AUC."""
+    pal = get_palette(mode)
+    full = decomp.get("pr_auc_full", 0.0)
+    addr = decomp.get("pr_auc_addressable", 0.0)
+    npos = decomp.get("n_oot_positives", 0)
+    addr_n = decomp.get("addressable_positives", 0)
+    fig = go.Figure()
+    fig.add_bar(x=[f"Full OOT ({npos})", f"Addressable ({addr_n})"], y=[full, addr],
+                marker_color=[pal["text_soft"], pal["accent"]],
+                text=[f"{full:.3f}", f"{addr:.3f}"], textposition="outside")
+    fig.update_yaxes(title="PR-AUC", range=[0, max(0.5, addr * 1.25)])
+    return _base(fig, pal, height=300, legend=False,
+                 title="PR-AUC: full vs structurally-addressable failures")

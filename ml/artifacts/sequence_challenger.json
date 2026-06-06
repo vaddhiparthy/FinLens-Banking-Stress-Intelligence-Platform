@@ -1,0 +1,26 @@
+{
+  "architecture": "GRU(hidden=48) over last K=8 quarters of 34 features, masked last-step readout, isotonic-calibrated",
+  "history_quarters": 8,
+  "n_train_sequences": 229803,
+  "n_oot_sequences": 118943,
+  "n_oot_positives": 66,
+  "best_inner_val_pr_auc": 0.6072,
+  "oot_pr_auc_gru": 0.2073,
+  "oot_pr_auc_gbm_served": 0.3014,
+  "oot_roc_auc_gru": 0.7693,
+  "delta_vs_gbm": -0.094,
+  "verdict": "The GRU sequence challenger scores OOT PR-AUC 0.207 vs the served GBM 0.301 (delta -0.094). The GRU point estimate is LOWER, but it falls INSIDE the served model bootstrap PR-AUC interval [0.191, 0.438], and at 66 OOT failures the paired test has ~6% power (G0), so the two are NOT statistically separable in either direction. Note the large inner-validation PR-AUC (0.607) collapsing to 0.207 out-of-time: the trajectory signal the GRU learns in-sample does not transfer across the regime/cohort shift, consistent with the failure-type decomposition. The trajectory architecture is the theoretically-matched design for within-bank autocorrelation, but it does not beat the incumbent here. It is reported as a challenger, not a replacement; the GBM remains served on grounds of point estimate, calibration, monotonicity, and interpretability.",
+  "gbm_pr_auc_ci": [
+    0.19084418702981437,
+    0.4379720033589294
+  ],
+  "gru_pr_within_gbm_ci": true,
+  "g0_paired_power_at_delta_0_02": "~6%",
+  "robustness_sweep": {
+    "n_configs": 6,
+    "oot_min": 0.1886,
+    "oot_max": 0.2458,
+    "oot_mean": 0.2179,
+    "all_below_gbm": true
+  }
+}

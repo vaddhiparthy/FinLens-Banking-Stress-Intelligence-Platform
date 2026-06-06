@@ -1,0 +1,194 @@
+{
+  "n_oot_positives": 66,
+  "n_distinct_banks": 19,
+  "type_counts": {
+    "invisible": 14,
+    "credit_visible": 40,
+    "rate_liquidity_visible": 12
+  },
+  "by_filing_year": {
+    "2023": {
+      "invisible": 2,
+      "credit_visible": 6,
+      "rate_liquidity_visible": 1
+    },
+    "2024": {
+      "invisible": 8,
+      "credit_visible": 1
+    },
+    "2025": {
+      "invisible": 1,
+      "credit_visible": 7
+    },
+    "2022": {
+      "credit_visible": 1,
+      "rate_liquidity_visible": 11,
+      "invisible": 2
+    },
+    "2019": {
+      "invisible": 1,
+      "credit_visible": 18
+    },
+    "2020": {
+      "credit_visible": 7
+    }
+  },
+  "year_axis_note": "Keys are the FILING year of the bank-quarter. A positive is a filing that fails within the next 4 quarters, so the failure occurs later: the 2022-filing cohort failed in 2023 (the SVB wave). No banks failed in calendar 2021 or 2022.",
+  "failure_year_banks": {
+    "2019": [
+      "CITY NATIONAL BANK OF NEW JERSEY",
+      "LOUISA COMMUNITY BANK",
+      "RESOLUTE BANK",
+      "THE ENLOE STATE BANK"
+    ],
+    "2020": [
+      "ALMENA STATE BANK",
+      "ERICSON STATE BANK",
+      "FIRST CITY BANK OF FLORIDA",
+      "THE FIRST STATE BANK"
+    ],
+    "2023": [
+      "CITIZENS BANK",
+      "FIRST REPUBLIC BANK",
+      "HEARTLAND TRI-STATE BANK",
+      "SIGNATURE BANK",
+      "SILICON VALLEY BANK"
+    ],
+    "2024": [
+      "REPUBLIC BANK",
+      "THE FIRST NATIONAL BANK OF LINDSAY"
+    ],
+    "2025": [
+      "PULASKI SAVINGS BANK",
+      "THE SANTA ANNA NATIONAL BANK"
+    ],
+    "2026": [
+      "COMMUNITY BANK AND TRUST - WEST GEORGIA",
+      "METROPOLITAN CAPITAL BANK & TRUST"
+    ]
+  },
+  "mode_examples": {
+    "credit_visible": [
+      "CITY NATIONAL BANK OF NEW JERSEY",
+      "LOUISA COMMUNITY BANK",
+      "RESOLUTE BANK",
+      "ALMENA STATE BANK",
+      "ERICSON STATE BANK",
+      "FIRST CITY BANK OF FLORIDA",
+      "THE FIRST STATE BANK",
+      "CITIZENS BANK",
+      "REPUBLIC BANK",
+      "COMMUNITY BANK AND TRUST - WEST GEORGIA",
+      "METROPOLITAN CAPITAL BANK & TRUST"
+    ],
+    "rate_liquidity_visible": [
+      "FIRST REPUBLIC BANK",
+      "SIGNATURE BANK",
+      "SILICON VALLEY BANK"
+    ],
+    "invisible": [
+      "THE ENLOE STATE BANK",
+      "HEARTLAND TRI-STATE BANK",
+      "THE FIRST NATIONAL BANK OF LINDSAY",
+      "PULASKI SAVINGS BANK",
+      "THE SANTA ANNA NATIONAL BANK"
+    ]
+  },
+  "pr_auc_full": 0.3014,
+  "pr_auc_full_ci": [
+    0.1908,
+    0.438
+  ],
+  "pr_auc_addressable": 0.3819,
+  "pr_auc_addressable_ci": [
+    0.2499,
+    0.5296
+  ],
+  "ci_overlap_full_addressable": true,
+  "addressable_positives": 52,
+  "invisible_positives": 14,
+  "threshold_sensitivity": [
+    {
+      "grid": "base",
+      "thresholds": {
+        "noncurrent": 3.0,
+        "tier1_rwa": 6.0,
+        "uninsured": 30.0,
+        "securities": 5.0
+      },
+      "counts": {
+        "credit_visible": 40,
+        "rate_liquidity_visible": 12,
+        "invisible": 14
+      },
+      "dom_2022_filing": "rate_liquidity_visible",
+      "dom_2024_filing": "invisible",
+      "pr_auc_addressable": 0.3819
+    },
+    {
+      "grid": "loose",
+      "thresholds": {
+        "noncurrent": 2.0,
+        "tier1_rwa": 7.0,
+        "uninsured": 25.0,
+        "securities": 3.0
+      },
+      "counts": {
+        "credit_visible": 42,
+        "rate_liquidity_visible": 15,
+        "invisible": 9
+      },
+      "dom_2022_filing": "rate_liquidity_visible",
+      "dom_2024_filing": "invisible",
+      "pr_auc_addressable": 0.3487
+    },
+    {
+      "grid": "strict",
+      "thresholds": {
+        "noncurrent": 4.0,
+        "tier1_rwa": 5.0,
+        "uninsured": 35.0,
+        "securities": 8.0
+      },
+      "counts": {
+        "credit_visible": 40,
+        "rate_liquidity_visible": 12,
+        "invisible": 14
+      },
+      "dom_2022_filing": "rate_liquidity_visible",
+      "dom_2024_filing": "invisible",
+      "pr_auc_addressable": 0.3819
+    },
+    {
+      "grid": "uninsured-heavy",
+      "thresholds": {
+        "noncurrent": 3.0,
+        "tier1_rwa": 6.0,
+        "uninsured": 40.0,
+        "securities": 10.0
+      },
+      "counts": {
+        "credit_visible": 40,
+        "rate_liquidity_visible": 12,
+        "invisible": 14
+      },
+      "dom_2022_filing": "rate_liquidity_visible",
+      "dom_2024_filing": "invisible",
+      "pr_auc_addressable": 0.3819
+    }
+  ],
+  "story_robust_to_thresholds": true,
+  "pr_auc_addressable_range_over_grids": [
+    0.3487,
+    0.3819
+  ],
+  "addressable_depends_only_on_invisible_boundary": true,
+  "boundary_swap_positives_relabeled": 52,
+  "pr_auc_addressable_after_credit_rateliq_swap": 0.3819,
+  "classification_rule": {
+    "credit_visible": "noncurrent>=3% or NCO>=1% or tier1_rwa<6% (PCA undercapitalized) or equity/assets<4%",
+    "rate_liquidity_visible": "uninsured_deposit_share>=30% and HTM+AFS securities share>=5% of assets",
+    "invisible": "none of the above (financially sound at the last filing; structurally unpredictable from Call Report financials, in practice fraud or a sudden run)"
+  },
+  "interpretation": "Of 66 out-of-time failure bank-quarters (19 distinct banks), 40 are credit-visible, 12 rate/liquidity-visible, and 14 financially invisible at the last filing. The taxonomy maps cleanly onto the real record: the rate/liquidity class is the 2023 wave (Silicon Valley, Signature, First Republic), and the invisible class is the fraud/scam failures (Enloe State, Heartland Tri-State, First National Bank of Lindsay, Pulaski Savings), which carry no financial signature by construction. Excluding only the invisible failures lifts PR-AUC from 0.301 to 0.382 on the addressable subset. By filing year this explains the collapse: the 2022 filing cohort (which failed in 2023) is rate/liquidity-driven and a credit-skewed model ranks it low, and the 2024 filing cohort is dominated by fraud failures that have no signal to find."
+}

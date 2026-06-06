@@ -29,6 +29,9 @@ ml/mlflow.db
 ml/artifacts/*
 !ml/artifacts/metrics_*.json
 !ml/artifacts/drift_report.json
+!ml/artifacts/failure_decomposition.json
+!ml/artifacts/sequence_challenger.json
+!ml/artifacts/sequence_sweep.json
 audit/
 audit_crawl*.py
 qa/
