@@ -1,0 +1,50 @@
+{
+  "cblr_break": {
+    "feature": "tier1_rwa_ratio",
+    "null_rate_2019": 0.003,
+    "null_rate_2020plus": 0.37,
+    "mechanism": "Community Bank Leverage Ratio election (2020Q1) lets banks stop reporting the risk-weighted ratio; a null flips from data-error to well-capitalized-opt-out.",
+    "oot_rows_cblr_elected": 32747
+  },
+  "variants": [
+    {
+      "variant": "baseline",
+      "n_features": 34,
+      "pr_auc_pooled": 0.1978,
+      "pr_auc_addressable_threshold": 0.2503,
+      "pr_auc_addressable_threshold_ci": [
+        0.1499,
+        0.3639
+      ],
+      "pr_auc_addressable_external": 0.2469,
+      "lift_threshold": 0.0525
+    },
+    {
+      "variant": "cblr_indicator",
+      "n_features": 35,
+      "pr_auc_pooled": 0.1978,
+      "pr_auc_addressable_threshold": 0.2503,
+      "pr_auc_addressable_threshold_ci": [
+        0.1499,
+        0.3639
+      ],
+      "pr_auc_addressable_external": 0.2469,
+      "lift_threshold": 0.0525
+    },
+    {
+      "variant": "drop_rwa_post2020",
+      "n_features": 33,
+      "pr_auc_pooled": 0.067,
+      "pr_auc_addressable_threshold": 0.0849,
+      "pr_auc_addressable_threshold_ci": [
+        0.0496,
+        0.1281
+      ],
+      "pr_auc_addressable_external": 0.0862,
+      "lift_threshold": 0.0179
+    }
+  ],
+  "robust_to_break_handling": true,
+  "drop_feature_cost_addressable": 0.1654,
+  "conclusion": "The two legitimate treatments of the 2020Q1 break give identical addressable PR-AUC (native-null 0.250 vs explicit CBLR indicator 0.250): LightGBM routes the null natively, so the measurement result is robust to how the break is handled. Naively DROPPING tier1_rwa post-2020 (a prior-work approach) instead craters it to 0.085 (a 0.165 addressable loss), because it is the single strongest feature. So the break is real and is handled correctly by retaining the feature with native-null handling (the explicit indicator is neutral); dropping the feature is harmful and unnecessary. NOTE: these are quick single-GBM analysis variants (lower absolute PR-AUC than the served bagged champion, which is unchanged at 7473608); the comparison here is relative."
+}

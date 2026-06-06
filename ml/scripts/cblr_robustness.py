@@ -142,8 +142,9 @@ def main() -> None:
             "bagged champion, which is unchanged at 7473608); the comparison here is relative."),
     }
     (s.artifact_dir / "cblr_robustness.json").write_text(json.dumps(out, indent=2))
-    print("addressable stable across variants:",
-          out["addressable_stable_across_variants"], out["addressable_threshold_range"], flush=True)
+    print("robust to break handling (native-null == indicator):",
+          out["robust_to_break_handling"], "| drop-feature addressable cost:",
+          out["drop_feature_cost_addressable"], flush=True)
 
 
 if __name__ == "__main__":
