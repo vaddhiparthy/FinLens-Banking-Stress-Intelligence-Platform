@@ -1,0 +1,12 @@
+# Local kind cluster for the FullLens ML serving deploy ($0, single node). Recipe:
+#   kind create cluster --config deploy/k8s/kind-config.yaml
+# Maps host 8077 -> node 30077 so the service is reachable without a LoadBalancer.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: fulllens
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30077
+        hostPort: 8077
+        protocol: TCP

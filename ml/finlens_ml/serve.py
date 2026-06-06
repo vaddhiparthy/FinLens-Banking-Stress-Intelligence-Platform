@@ -153,6 +153,15 @@ def predict(req: BankFeatures) -> PredictResponse:
     return _score_one(req.features)
 
 
+@app.post("/predict-failure-risk", response_model=PredictResponse)
+def predict_failure_risk(req: BankFeatures) -> PredictResponse:
+    """Named alias for /predict: takes bank quarterly financials, returns the calibrated
+    4-quarter failure probability plus SHAP reason codes (Capstone-2 serving contract)."""
+    if not getattr(app.state, "ready", False):
+        raise HTTPException(status_code=503, detail="model not loaded")
+    return _score_one(req.features)
+
+
 @app.post("/predict/batch")
 def predict_batch(req: BatchRequest) -> dict:
     if not getattr(app.state, "ready", False):

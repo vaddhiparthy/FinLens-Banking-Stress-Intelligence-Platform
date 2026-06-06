@@ -1,0 +1,51 @@
+# Capstone-2 ML serving on a local kind cluster ($0). Deploy recipe:
+#   kind create cluster --config deploy/k8s/kind-config.yaml
+#   docker build -f ml/Dockerfile -t fulllens-ml-serve:latest .
+#   kind load docker-image fulllens-ml-serve:latest
+#   kubectl apply -f deploy/k8s/ml-serve.yaml
+#   kubectl port-forward svc/fulllens-ml-serve 8077:8077
+# NOTE: manifests authored and validated by inspection; not applied in the dev environment
+# (no cluster here). To be applied where kind/kubectl are available.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fulllens-ml-serve
+  labels: {app: fulllens-ml-serve}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: fulllens-ml-serve}
+  template:
+    metadata:
+      labels: {app: fulllens-ml-serve}
+    spec:
+      containers:
+        - name: ml-serve
+          image: fulllens-ml-serve:latest
+          imagePullPolicy: IfNotPresent   # image is kind-loaded locally, not from a registry
+          ports:
+            - containerPort: 8077
+          env:
+            - {name: OMP_NUM_THREADS, value: "1"}
+          readinessProbe:
+            httpGet: {path: /ready, port: 8077}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: 8077}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests: {cpu: "250m", memory: "512Mi"}
+            limits: {cpu: "1", memory: "1Gi"}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fulllens-ml-serve
+  labels: {app: fulllens-ml-serve}
+spec:
+  selector: {app: fulllens-ml-serve}
+  ports:
+    - {name: http, port: 8077, targetPort: 8077}
+  type: ClusterIP

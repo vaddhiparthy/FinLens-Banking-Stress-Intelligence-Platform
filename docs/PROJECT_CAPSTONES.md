@@ -21,7 +21,14 @@ they are. The capstones wrap around them.
 | Langfuse cloud | Langfuse self-host / OSS, or local trace JSONL |
 | Hosted LLM API | local Ollama model (no paid API; $0) |
 
-## Capstone 1 — FullLens Data Platform (DE). Status: ~90% EXISTS
+## Capstone 1 — FullLens Data Platform (DE). Status: PARTIAL (audited)
+
+Audit (D1): ingestion, the seven Airflow DAGs, the dbt project, the medallion layering, and
+the GX scaffold all EXIST. But two named criteria are genuinely MISSING, not just unnamed: the
+bank-quarter gold mart `bank_quarterly_risk_facts` does not exist (the dbt marts are
+industry-aggregate; the per-bank risk ratios live only in Python -> DuckDB `ml.training_dataset`),
+and the Great Expectations suites are trivial stubs (a `bank_id` null check + a row-count), with
+no schema/freshness/null-rate assertions on the risk ratios. These are real builds, below.
 
 | Component | Brief | FullLens | Status |
 |---|---|---|---|
@@ -37,7 +44,15 @@ DE gaps to confirm/close: (a) the gold mart is literally named `bank_quarterly_r
 (b) a GX suite asserts schema + freshness + null-rate on the key ratios; (c) medallion layers
 are documented. These are verification/polish, not new builds.
 
-## Capstone 2 — FullLens Risk Model (ML). Status: ~90% EXISTS + research depth
+## Capstone 2 — FullLens Risk Model (ML). Status: PARTIAL (audited) + research depth
+
+Audit (D2): the full ML stack EXISTS (train, MLflow registry+alias promotion, Evidently drift,
+SHAP, calibrated served artifact) and the serving app already returns probability + SHAP.
+Closed this round: the named `/predict-failure-risk` alias route (serve.py). Added as recipes
+(not built in this dev env, which has no Docker daemon / kind cluster): `ml/Dockerfile` for the
+ML-serving app (the existing container builds the DE marts API, not finlens_ml.serve) and
+`deploy/k8s/` (kind-config + deployment/service). A live kind deploy is an environment boundary
+here, not unfinished design; the manifests are validated by inspection.
 
 | Component | Brief | FullLens | Status |
 |---|---|---|---|
