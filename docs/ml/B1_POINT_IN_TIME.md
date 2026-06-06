@@ -6,7 +6,7 @@ point-in-time retrain currently UNDERPERFORMS the restated panel. The
 shipped model therefore stays on the FDIC-restated panel + Tier A; the point-in-time
 feed is a validated capability and the remaining accuracy lever, not yet integrated.**
 
-This is the honest outcome of the committee-certified plan's B1 line item (the one it
+This is the outcome of the committee-certified plan's B1 line item (the one it
 ranked as the only true accuracy lever). We do not claim a win we did not measure.
 
 ## What B1 is

@@ -297,7 +297,7 @@ def generate_validation_report(horizon_q: int = 4) -> Path:
   enforced at runtime (`assert_no_temporal_overlap`); labels are strictly forward-looking
   with merger / end-of-data censoring. OOT ROC-AUC {t['roc_auc']:.4f} is well below the
   >0.98 leakage-suspicion threshold.
-- **Honest data caveats:** the bank-level model does **not** join macro series (FRED is
+- **Data caveats:** the bank-level model does **not** join macro series (FRED is
   business-surface context, not a model input), so no macro-vintage question arises here.
   FDIC `/financials` returns currently-restated values, not the originally-filed Call
   Report; feature values are as-served, and originally-filed FFIEC data is the path to

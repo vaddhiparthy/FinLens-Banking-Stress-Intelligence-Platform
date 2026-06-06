@@ -30,8 +30,8 @@ Audit (D1) found two real gaps; both now CLOSED:
 - **Real GX suite + runner:** `great_expectations/expectations/bank_quarterly_risk_facts.json`
   (GX v3 format) asserts schema (column existence), freshness (max quarter >= 2024Q4), and
   null-rate (mostly thresholds, with tier1_rwa intentionally tolerant of the ~37% CBLR null),
-  run by `great_expectations/validate.py` -> 20/20 passed, exits non-zero on failure. Honest
-  note: the real GX PyPI engine is shadowed by the repo's `great_expectations/` directory, so
+  run by `great_expectations/validate.py` -> 20/20 passed, exits non-zero on failure. Note:
+  the real GX PyPI engine is shadowed by the repo's `great_expectations/` directory, so
   the runner is a self-contained evaluator of the same GX-format suite (documented in the file).
 - Medallion layering was already documented (data-flow / data-model / ADRs).
 
