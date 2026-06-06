@@ -234,7 +234,7 @@ elif section == "quality":
         with k3:
             sub = (f"95% CI [{rci[0]:.0%}, {rci[1]:.0%}]"
                    if rci and rci[0] is not None else "of failures caught")
-            metric_card("Recall@200", f"{t['recall_at_k']:.0%}", sub)
+            metric_card("Recall@200", f"{t['recall_at_k']:.1%}", sub)
         with k4:
             metric_card("Calibration ECE", f"{cal.get('ece', float('nan')):.1e}", "lower is better")
         st.caption(
@@ -261,12 +261,14 @@ elif section == "quality":
                 if rb.get("n_folds"):
                     st.markdown(
                         f"**Multi-origin rolling backtest** ({rb['n_folds']} embargoed "
-                        f"out-of-time folds): PR-AUC mean **{rb['pr_auc_mean']}** "
-                        f"(±{rb['pr_auc_std']}), range {rb['pr_auc_min']}–{rb['pr_auc_max']}. "
-                        f"The headline {t['pr_auc']:.3f} is the single last held-out window; "
-                        f"this {rb['pr_auc_mean']} is the mean across all folds, so the two "
-                        "agree. The spread is the honest story: strong in failure-containing "
-                        "windows, near-floor in calm years."
+                        f"out-of-time folds): PR-AUC mean **{rb['pr_auc_mean']}**, "
+                        f"std {rb['pr_auc_std']}, range {rb['pr_auc_min']}–{rb['pr_auc_max']}. "
+                        f"These are a different cut from the headline {t['pr_auc']:.3f} (which "
+                        "is the full 28-quarter out-of-time holdout); each fold here is a single "
+                        f"year, so the headline sits within the rolling-fold spread rather than "
+                        "equalling the mean. The std is as large as the mean because the folds "
+                        "are bimodal, near-zero in calm years and ~0.5 in failure-containing "
+                        "windows, which is the honest story, not a defect."
                     )
         chal = m.get("challengers", {})
         tune = m.get("hyperparameter_tuning", {})
