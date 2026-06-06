@@ -1,0 +1,54 @@
+{
+  "n_oot_positives_pooled": 66,
+  "n_oot_positives_addressable": 52,
+  "invisible_positives_removed": 14,
+  "invisible_label_source": "threshold-based _classify (item 1: external OIG/OCC/DOJ labels will replace this)",
+  "models": [
+    {
+      "model": "monotone_gbm_served",
+      "pr_auc_pooled": 0.3014,
+      "pr_auc_pooled_ci": [
+        0.1908,
+        0.438
+      ],
+      "pr_auc_addressable": 0.3819,
+      "pr_auc_addressable_ci": [
+        0.2499,
+        0.5296
+      ],
+      "lift": 0.0805
+    },
+    {
+      "model": "unconstrained_gbm",
+      "pr_auc_pooled": 0.2696,
+      "pr_auc_pooled_ci": [
+        0.1623,
+        0.4049
+      ],
+      "pr_auc_addressable": 0.3418,
+      "pr_auc_addressable_ci": [
+        0.2204,
+        0.4945
+      ],
+      "lift": 0.0722
+    },
+    {
+      "model": "penalized_logit",
+      "pr_auc_pooled": 0.1533,
+      "pr_auc_pooled_ci": [
+        0.0799,
+        0.2692
+      ],
+      "pr_auc_addressable": 0.1939,
+      "pr_auc_addressable_ci": [
+        0.1053,
+        0.3288
+      ],
+      "lift": 0.0406
+    }
+  ],
+  "lift_present_in_all_models": true,
+  "lift_min": 0.0406,
+  "lift_max": 0.0805,
+  "claim": "The pooled-to-addressable PR-AUC lift is positive for every model family (monotone GBM, unconstrained GBM, penalized logit): +0.041 to +0.081. Because the same fixed invisible cohort depresses every model's pooled score, the gap is a property of the evaluation set, not of any one model. Pooled PR-AUC is therefore a biased summary of rare-event bank-failure performance; addressable PR-AUC (computed on the financially-observable positives) is the comparable quantity. At this sample size none of these differences is individually separable; the claim is about the consistent direction across models, not a certified per-model gain."
+}

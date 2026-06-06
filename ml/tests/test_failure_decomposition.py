@@ -157,6 +157,17 @@ def test_decomposition_artifact_reconciles():
     assert "percentile" in d["ci_method"].lower()  # method labeled truthfully, not "stratified"
 
 
+@pytest.mark.skipif(not (ART / "pooled_vs_addressable.json").exists(),
+                    reason="pooled-vs-addressable artifact not built")
+def test_pooled_addressable_lift_is_cross_model():
+    d = json.loads((ART / "pooled_vs_addressable.json").read_text())
+    # the measurement claim: the addressable lift is positive for EVERY model family
+    assert len(d["models"]) >= 3
+    assert all(m["pr_auc_addressable"] >= m["pr_auc_pooled"] for m in d["models"])
+    assert d["lift_present_in_all_models"] is True
+    assert d["lift_min"] > 0
+
+
 @pytest.mark.skipif(not (ART / "sequence_challenger.json").exists(),
                     reason="sequence artifact not built")
 def test_sequence_artifact_inside_gbm_ci():

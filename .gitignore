@@ -32,6 +32,7 @@ ml/artifacts/*
 !ml/artifacts/failure_decomposition.json
 !ml/artifacts/sequence_challenger.json
 !ml/artifacts/sequence_sweep.json
+!ml/artifacts/pooled_vs_addressable.json
 audit/
 audit_crawl*.py
 qa/
