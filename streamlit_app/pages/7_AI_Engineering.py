@@ -550,6 +550,90 @@ elif section == "quality":
                 "validator expects alongside Evidently drift."
             )
 
+        # ---- Robustness & validation cross-checks (collapsed to keep the headline clean) ----
+        cbk = mc.load_calibration_bakeoff()
+        cblr = mc.load_cblr_robustness()
+        fg = mc.load_fine_gray()
+        crisk = mc.load_competing_risks()
+        b1 = mc.load_b1_compare()
+        if any((cbk, cblr, fg, b1)):
+            section_heading(
+                "Robustness & validation cross-checks",
+                "The measurement was stress-tested against the choices a validator would "
+                "challenge: how probabilities are calibrated, how the 2020 capital-ratio "
+                "reporting break is handled, competing-risks censoring, and originally-filed "
+                "vs restated inputs. Each is the real artifact, collapsed here so the headline "
+                "above stays uncluttered.")
+            if cbk:
+                with st.expander("Calibration bake-off — why isotonic was chosen"):
+                    st.plotly_chart(mc.calibration_bakeoff_fig(cbk, MODE),
+                                    use_container_width=True)
+                    ws = cbk.get("winner_stability", {})
+                    cf = cbk.get("conformal_feasibility", {})
+                    st.caption(
+                        f"Isotonic, Platt, and Venn-Abers were each fit and scored out-of-time; "
+                        f"isotonic has the lowest ECE. The isotonic-vs-Platt winner flips in "
+                        f"{ws.get('bootstrap_flip_rate', 0):.0%} of bootstrap resamples (both are "
+                        f"excellent at this base rate, so the choice is low-stakes). "
+                        + cf.get("prediction_set_note", ""))
+            if cblr:
+                with st.expander("2020Q1 CBLR reporting break — robustness of the result"):
+                    st.plotly_chart(mc.cblr_variants_fig(cblr, MODE), use_container_width=True)
+                    br = cblr.get("cblr_break", {})
+                    st.caption(
+                        f"Mechanism: {br.get('mechanism', '')} ({br.get('null_rate_2020plus', 0):.0%} "
+                        f"of post-2020 rows null vs {br.get('null_rate_2019', 0):.1%} before). "
+                        + cblr.get("conclusion", ""))
+            if fg or crisk:
+                with st.expander("Competing risks — cause-specific vs Fine-Gray"):
+                    if fg:
+                        cs = fg.get("cause_specific", {})
+                        fgm = fg.get("fine_gray", {})
+                        cc1, cc2 = st.columns(2)
+                        with cc1:
+                            cs_ci = cs.get("pr_auc_ci", [0, 0])
+                            metric_card("Cause-specific (censoring)",
+                                        f"{cs.get('pr_auc', 0):.3f}",
+                                        f"95% CI [{cs_ci[0]:.3f}, {cs_ci[1]:.3f}]")
+                        with cc2:
+                            fg_ci = fgm.get("pr_auc_ci", [0, 0])
+                            metric_card("Fine-Gray subdistribution",
+                                        f"{fgm.get('pr_auc', 0):.3f}",
+                                        f"95% CI [{fg_ci[0]:.3f}, {fg_ci[1]:.3f}]")
+                        st.caption(fg.get("interpretation", ""))
+                    if crisk:
+                        cif = crisk.get("cumulative_incidence", {})
+                        ic = crisk.get("informative_censoring", {})
+                        st.markdown(
+                            f"- **Cumulative incidence** over the panel: failure "
+                            f"{cif.get('failure', 0):.1%}, merger {cif.get('merger', 0):.1%} "
+                            "(mergers ~4x more common, which is why they are modelled as a "
+                            "competing risk, not treated as survivors).\n"
+                            f"- **Informative-censoring bound**: {ic.get('interpretation', '')}")
+            if b1:
+                with st.expander("Point-in-time vs restated inputs (B1 integrity check)"):
+                    pit = b1.get("point_in_time", {}).get("oot", {})
+                    res = b1.get("fdic_restated", {}).get("oot", {})
+                    bc1, bc2 = st.columns(2)
+                    with bc1:
+                        r_ci = res.get("ci", [0, 0])
+                        metric_card("FDIC restated inputs", f"{res.get('pr_auc', 0):.3f}",
+                                    f"95% CI [{r_ci[0]:.3f}, {r_ci[1]:.3f}]")
+                    with bc2:
+                        p_ci = pit.get("ci", [0, 0])
+                        metric_card("Originally-filed (point-in-time)",
+                                    f"{pit.get('pr_auc', 0):.3f}",
+                                    f"95% CI [{p_ci[0]:.3f}, {p_ci[1]:.3f}]")
+                    audit = b1.get("noncurrent_field_audit", {})
+                    recon = b1.get("noncurrent_reconstruction", {})
+                    st.caption(
+                        "Scoring on originally-filed (point-in-time) Call Reports instead of the "
+                        "current restated values lowers OOT PR-AUC but the intervals overlap, so "
+                        "the result is not an artifact of look-ahead restatement. Field audit "
+                        f"also fixed the noncurrent-loans definition: {audit.get('note', '')} "
+                        f"Pre-2014 reconstruction validates at corr "
+                        f"{recon.get('category_sum_vs_official_corr', 0)} vs the official total.")
+
 elif section == "decisions":
     section_heading(
         "Key model decisions",
@@ -574,6 +658,24 @@ elif section == "decisions":
     if mcard.exists():
         with st.expander("Full model card (generated from the real metrics)"):
             st.markdown(mcard.read_text(encoding="utf-8"))
+
+    section_heading("Methodology write-ups",
+                    "The full technical documents behind the analyses on the Model Quality "
+                    "surface. Each is the real markdown from the repo.")
+    _DOCS = [
+        ("Failure-type decomposition", "FAILURE_DECOMPOSITION.md"),
+        ("Competing risks (cause-specific + Fine-Gray)", "COMPETING_RISKS.md"),
+        ("Point-in-time vs restated inputs (B1)", "B1_POINT_IN_TIME.md"),
+        ("Sequence challenger (GRU)", "SEQUENCE_CHALLENGER.md"),
+        ("Validation report", "VALIDATION_REPORT.md"),
+        ("Related work", "RELATED_WORK.md"),
+    ]
+    _docdir = PROJECT_ROOT / "docs" / "ml"
+    for _label, _fname in _DOCS:
+        _fp = _docdir / _fname
+        if _fp.exists():
+            with st.expander(_label):
+                st.markdown(_fp.read_text(encoding="utf-8"))
 
 elif section == "administration":
     from finlens_ml import registry

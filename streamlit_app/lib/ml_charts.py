@@ -577,3 +577,85 @@ def addressable_pr_fig(decomp: dict, mode: str | None = None) -> go.Figure:
     fig.update_yaxes(title="PR-AUC (95% CI)", range=[0, top])
     return _base(fig, pal, height=300, legend=False,
                  title="PR-AUC: full vs structurally-addressable failures (with 95% CI)")
+
+
+# ---- Robustness & validation cross-checks (artifact loaders + figures) ----
+
+@lru_cache(maxsize=1)
+def load_calibration_bakeoff() -> dict | None:
+    p = _PROJECT_ROOT / "ml" / "artifacts" / "calibration_bakeoff.json"
+    return json.loads(p.read_text()) if p.exists() else None
+
+
+@lru_cache(maxsize=1)
+def load_cblr_robustness() -> dict | None:
+    p = _PROJECT_ROOT / "ml" / "artifacts" / "cblr_robustness.json"
+    return json.loads(p.read_text()) if p.exists() else None
+
+
+@lru_cache(maxsize=1)
+def load_b1_compare() -> dict | None:
+    p = _PROJECT_ROOT / "ml" / "artifacts" / "b1_compare.json"
+    return json.loads(p.read_text()) if p.exists() else None
+
+
+@lru_cache(maxsize=1)
+def load_competing_risks() -> dict | None:
+    p = _PROJECT_ROOT / "ml" / "artifacts" / "competing_risks.json"
+    return json.loads(p.read_text()) if p.exists() else None
+
+
+@lru_cache(maxsize=1)
+def load_fine_gray() -> dict | None:
+    p = _PROJECT_ROOT / "ml" / "artifacts" / "fine_gray.json"
+    return json.loads(p.read_text()) if p.exists() else None
+
+
+_CBLR_LABEL = {
+    "baseline": "Native-null (served)",
+    "cblr_indicator": "Explicit CBLR flag",
+    "drop_rwa_post2020": "Drop feature (prior work)",
+}
+
+
+def cblr_variants_fig(cblr: dict, mode: str | None = None) -> go.Figure:
+    """Addressable PR-AUC under three treatments of the 2020Q1 capital-ratio reporting
+    break. The two legitimate handlings tie; naively dropping the feature craters it,
+    so the break is handled correctly and the measurement is robust to the choice."""
+    pal = get_palette(mode)
+    rows = cblr.get("variants", [])
+    names = [_CBLR_LABEL.get(r["variant"], r["variant"]) for r in rows]
+    vals = [r.get("pr_auc_addressable_threshold", 0.0) for r in rows]
+    cis = [r.get("pr_auc_addressable_threshold_ci") for r in rows]
+    colors = [pal["accent"] if r["variant"] != "drop_rwa_post2020" else pal["rose"] for r in rows]
+    err = None
+    if all(cis):
+        err = dict(type="data", symmetric=False,
+                   array=[c[1] - v for c, v in zip(cis, vals)],
+                   arrayminus=[v - c[0] for c, v in zip(cis, vals)],
+                   color=pal["text_muted"], thickness=1.4, width=6)
+    fig = go.Figure()
+    fig.add_bar(x=names, y=vals, marker_color=colors, error_y=err,
+                text=[f"{v:.3f}" for v in vals], textposition="outside")
+    fig.update_yaxes(title="addressable PR-AUC (95% CI)", range=[0, 0.45])
+    fig.update_xaxes(tickangle=-15)
+    return _base(fig, pal, height=320, legend=False,
+                 title="2020Q1 CBLR break: robust to handling, harmed only by dropping the feature")
+
+
+def calibration_bakeoff_fig(cb: dict, mode: str | None = None) -> go.Figure:
+    """Calibration error (ECE) across the methods that were bench-raced. Isotonic wins
+    and is the one served; the alternatives are shown to prove the choice was earned."""
+    pal = get_palette(mode)
+    bake = cb.get("calibration_bakeoff", {})
+    order = [k for k in ("isotonic", "platt", "venn_abers(sample)") if k in bake]
+    names = [k.replace("(sample)", " (sample)").title() for k in order]
+    vals = [bake[k].get("ece", 0.0) for k in order]
+    winner = cb.get("winner", "isotonic")
+    colors = [pal["accent"] if k == winner else pal["text_soft"] for k in order]
+    fig = go.Figure()
+    fig.add_bar(x=names, y=vals, marker_color=colors,
+                text=[f"{v:.1e}" for v in vals], textposition="outside")
+    fig.update_yaxes(title="expected calibration error (lower is better)")
+    return _base(fig, pal, height=300, legend=False,
+                 title=f"Calibration bake-off: {winner} wins")
