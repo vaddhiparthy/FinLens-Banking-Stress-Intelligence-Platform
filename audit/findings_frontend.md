@@ -12,6 +12,8 @@ Evidence-backed. A finding is CLOSED only when a new artifact proves it.
 | A-006 | Visual polish | AI Model Quality | Major | audit/screenshots/ai_engineering.png | OPEN | Long wall of charts, no hero result up top, deep validator charts not collapsed into expanders. |
 | A-007 | Visual polish | AI Pipeline | Major | audit/screenshots/ai_engineering.png | OPEN | Pipeline section sparse, no flow diagram. |
 | A-008 | Visual polish | shared shell | Major | audit/screenshots/*.png | OPEN | Active section tab uses disabled-grey, reads as broken not selected. |
-| A-009 | Pending artifacts | all pages | Blocker | (none yet) | OPEN | Lighthouse per page, Playwright E2E results.xml (incl chatbot), journey.md, usefulness.md, interactive-state screenshots not yet generated. |
+| A-009 | Pending artifacts | all pages | Major | audit/lighthouse/*.json (5 pages DONE), audit/axe/*.json (5 pages DONE) | PARTIAL | Lighthouse DONE (5 pages: a11y 95-100, perf 55-90, bp 96-100, seo 82). STILL OPEN: Playwright E2E results.xml (incl chatbot), journey.md, usefulness.md, interactive-state screenshots. |
+| A-010 | Performance | Data Engineering (perf 57), Early Warning (perf 55) | Major | audit/lighthouse/{data_engineering,early_warning}.json | OPEN | Lighthouse perf 55-57 on the two chart-heavy pages (many Plotly figures via Streamlit). Investigate: lazy-load/defer below-the-fold charts, fewer simultaneous figures, or accept as a Streamlit+Plotly density constraint with evidence. a11y/bp are fine (100/96). |
+| A-011 | SEO | all pages | Minor | audit/lighthouse/*.json (seo 82) | OPEN | Lighthouse SEO 82 on every page (likely missing meta description / document title per route). Low priority for an internal portfolio app but cheap to lift. |
 
 Reviewer sign-offs pending: ui-design, information-architecture, frontend, data-integrity, accessibility (audit/signoffs/).
