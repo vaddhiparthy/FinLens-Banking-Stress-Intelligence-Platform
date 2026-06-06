@@ -408,7 +408,11 @@ def ablation_forest_fig(pack: dict, mode: str | None = None) -> go.Figure:
         fig.add_vline(x=served, line=dict(color=pal["rose"], width=1.2, dash="dash"),
                       annotation_text=f"shipped {served:.3f}",
                       annotation_font=dict(size=9, color=pal["rose"]))
-    fig.update_xaxes(title="OOT PR-AUC (average precision)", range=[0, 0.35])
+    # x-axis must contain the widest CI whisker (not a hardcoded cap that clips them and
+    # makes the uncertainty look smaller than it is).
+    ci_his = [r.get("ap_ci")[1] for r in rungs if r.get("ap_ci")]
+    xmax = round(max([0.35] + [h * 1.05 for h in ci_his]), 2)
+    fig.update_xaxes(title="OOT PR-AUC (average precision)", range=[0, xmax])
     # explanation placed ABOVE the title (separate rows, generous top margin) so the two
     # never overprint.
     fig.add_annotation(xref="paper", yref="paper", x=0, y=1.20, showarrow=False,

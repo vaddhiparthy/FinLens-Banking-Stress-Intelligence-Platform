@@ -208,9 +208,17 @@ with tab_live:
         "not a basis for any deposit, investment, or business decision. For decisions "
         "about a bank, rely only on official U.S. regulator sources.",
     )
+    import json as _json
+    try:
+        _served_pr = _json.loads(
+            (PROJECT_ROOT / "ml" / "artifacts" / "metrics_h4.json").read_text()
+        )["oot_test"]["calibrated_lgbm"]["pr_auc"]
+        _pr_txt = f"~{_served_pr:.2f}"
+    except Exception:
+        _pr_txt = "~0.30"
     st.write(
         "Score a live U.S. bank as of its **latest available quarter**, whose 4-quarter "
-        "outcome has not yet elapsed. The model's out-of-time track record (PR-AUC ~0.27 "
+        f"outcome has not yet elapsed. The model's out-of-time track record (PR-AUC {_pr_txt} "
         "on 66 real failures, with wide intervals) is on the AI Engineering surface; treat "
         "this as a screening estimate, nothing more."
     )
