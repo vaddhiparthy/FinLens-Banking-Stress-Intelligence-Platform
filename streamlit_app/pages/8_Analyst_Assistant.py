@@ -45,41 +45,66 @@ def _rag():
     return traced_answer
 
 
-examples = [
+@st.cache_data(show_spinner=False)
+def _demo_cache() -> dict:
+    import json
+    p = PROJECT_ROOT / "rag" / "demo_answers.json"
+    return json.loads(p.read_text()) if p.exists() else {}
+
+
+def _render(out: dict) -> None:
+    mode = "local LLM (llama3.2)" if out.get("used_llm") else "cited extractive"
+    st.markdown(f"**Answer** ({mode})")
+    st.write(out["answer"])
+    mp = out.get("model_pred")
+    if mp:
+        st.info(f"Live FullLens model score for the named bank as of {mp['quarter']}: "
+                f"calibrated 4-quarter distress probability {mp['probability']:.3f} "
+                f"(review threshold {mp['threshold']:.2f}). A low score on a known "
+                "rate/liquidity or fraud failure is the decomposition's point, not an error.")
+    if out.get("citations"):
+        st.markdown("**Sources (regulator documents)**")
+        for c in out["citations"]:
+            st.markdown(f"- [{c}]({c})")
+
+
+demo = _demo_cache()
+examples = list(demo.keys()) or [
     "Why did Silicon Valley Bank fail?",
     "What caused Heartland Tri-State Bank to fail?",
     "What is the addressable PR-AUC and how does it differ from pooled?",
     "Did the GRU sequence model beat the gradient-boosted model?",
 ]
-q = st.text_input("Your question", value=examples[0], key="aa_q",
-                  placeholder="e.g. Why did Silicon Valley Bank fail?")
-st.caption("Examples: " + "  ·  ".join(examples))
 
-if st.button("Ask", type="primary") and q.strip():
+pick = st.selectbox("Example questions (answered instantly from cache)", examples, key="aa_pick")
+if pick and pick in demo:
+    _render(demo[pick])
+    st.caption("Cached demonstration answer (the live path is identical; cached here so the "
+               "page is instant). Ask your own below to run it live.")
+
+with st.expander("How this works (retrieval-augmented, $0, local)"):
+    st.markdown(
+        "- **Retrieve**: the question is embedded (sentence-transformers) and matched against a "
+        "local Chroma index of regulator failure reports (FDIC OIG, OCC, Federal Reserve) plus "
+        "the model's own findings.\n"
+        "- **Ground**: for any named bank, the live FullLens model is scored and attached.\n"
+        "- **Synthesize**: a local Ollama model writes a cited answer from only the retrieved "
+        "context (no paid API). Orchestrated with LangGraph.\n"
+        "- **Evaluated**: on a 20-question set, retrieval hit@4 = 1.0, MRR = 0.92, "
+        "citation-grounding = 1.0; every query is traced (latency, citations, cost $0).")
+
+st.divider()
+q = st.text_input("Ask your own question (runs live, ~30s on the local model)", key="aa_q",
+                  placeholder="e.g. What are the risk factors for a bank with high uninsured deposits?")
+if st.button("Ask live", type="primary") and q.strip():
     try:
         traced_answer = _rag()
-        with st.spinner("Retrieving sources, scoring the bank, synthesizing…"):
+        with st.spinner("Retrieving sources, scoring the bank, synthesizing with the local model…"):
             out = traced_answer(q.strip())
     except Exception as e:  # noqa: BLE001
         st.error(f"Assistant backend unavailable: {e}")
         st.stop()
-
-    mode = "local LLM" if out.get("used_llm") else "extractive (no local LLM reachable)"
-    st.markdown(f"**Answer** ({mode}):")
-    st.write(out["answer"])
-
-    mp = out.get("model_pred")
-    if mp:
-        st.info(f"Live FullLens model score for the named bank as of {mp['quarter']}: "
-                f"calibrated 4-quarter distress probability {mp['probability']:.3f} "
-                f"(review threshold {mp['threshold']:.2f}). Note: a low score on a known "
-                "rate/liquidity or fraud failure is the decomposition's point, not an error.")
-
-    if out.get("citations"):
-        st.markdown("**Sources**")
-        for c in out["citations"]:
-            st.markdown(f"- {c}")
-
+    _render(out)
     tr = out.get("trace", {})
     st.caption(f"Traced: {tr.get('latency_ms', '?')} ms, {tr.get('n_retrieved', 0)} docs "
                f"retrieved, {tr.get('n_citations', 0)} citations, cost $0 (local).")

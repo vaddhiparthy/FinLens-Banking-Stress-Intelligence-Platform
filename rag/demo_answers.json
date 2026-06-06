@@ -1,0 +1,54 @@
+{
+  "Why did Silicon Valley Bank fail?": {
+    "answer": "[1] According to the context, the regulator-determined primary cause of fai\nfailure of Silicon Valley Bank was rate_liquidity (financial-visibility cla\nclass: rate_liquidity_visible), specifically mismanaged interest-rate and l\nliquidity risk. This led to rate-driven unrealized securities losses plus ~\n~94% uninsured deposits triggering a run.\n\nNote that while the model suggests a low 4-quarter distress probability, th\nthis does not directly answer why Silicon Valley Bank failed, but rather in\nindicates a low likelihood of failure at the time the model was calibrated.",
+    "citations": [
+      "https://www.federalreserve.gov/publications/files/svb-review-20230428.pdf",
+      "https://www.fdicoig.gov/reports/bank-failures/failed-bank-review-first-state-bank-barboursville-west-virginia",
+      "https://www.fdicoig.gov/sites/default/files/reports/2024-03/Citizens%20Bank%20Failed%20Bank%20Review%20Memorandum_0.pdf",
+      "https://oig.federalreserve.gov/reports/board-material-loss-review-heartland-tri-state-bank-feb2024.pdf"
+    ],
+    "model_pred": {
+      "quarter": "2022Q4",
+      "probability": 0.0006910938216677596,
+      "threshold": 0.1
+    },
+    "used_llm": true
+  },
+  "What caused Heartland Tri-State Bank to fail?": {
+    "answer": "[1] According to the context, the regulator-determined primary cause of fai\nfailure was fraud, specifically a \"pig-butchering\" scam where the CEO wired\nwired ~$47.1M to crypto wallets.\n\nThis information is directly cited from source [1], which is also confirmed\nconfirmed by a reliable news article (source not explicitly cited but likel\nlikely [2]) that mentions the same incident and underlying cause of failure\nfailure.",
+    "citations": [
+      "https://oig.federalreserve.gov/reports/board-material-loss-review-heartland-tri-state-bank-feb2024.pdf",
+      "https://bankingjournal.aba.com/2026/05/community-bank-and-trust-west-georgia-closed-by-regulators/",
+      "https://www.fdicoig.gov/sites/default/files/reports/2022-08/FBR-20-001.pdf",
+      "https://www.fdicoig.gov/reports/bank-failures/failed-bank-review-first-state-bank-barboursville-west-virginia"
+    ],
+    "model_pred": {
+      "quarter": "2023Q1",
+      "probability": 0.0005586906423166767,
+      "threshold": 0.1
+    },
+    "used_llm": true
+  },
+  "What is the addressable PR-AUC and how does it differ from pooled?": {
+    "answer": "According to [2], the addressable PR-AUC for every model family (including \nthe GRU sequence challenger) is 0.382, while the pooled PR-AUC is 0.301.\n\nThe difference between the addressable and pooled PR-AUC is +0.081.",
+    "citations": [
+      "ml/artifacts/pooled_vs_addressable.json",
+      "ml/artifacts/failure_decomposition.json",
+      "ml/artifacts/sequence_challenger.json",
+      "ml/artifacts/cblr_robustness.json"
+    ],
+    "model_pred": null,
+    "used_llm": true
+  },
+  "Did the GRU sequence model beat the gradient-boosted model?": {
+    "answer": "No. According to [1], the GRU point estimate is LOWER than the served GBM (\n(delta -0.094), and since the two are not statistically separable in either\neither direction, we can conclude that the GRU sequence model did not beat \nthe gradient-boosted model.",
+    "citations": [
+      "ml/artifacts/sequence_challenger.json",
+      "ml/artifacts/metrics_h4.json",
+      "ml/artifacts/pooled_vs_addressable.json",
+      "ml/artifacts/cblr_robustness.json"
+    ],
+    "model_pred": null,
+    "used_llm": true
+  }
+}

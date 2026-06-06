@@ -127,8 +127,10 @@ def _ollama_cli(prompt: str) -> str:
     :11434 has an empty model set but the CLI store has llama3.2:3b, so the CLI path is the one
     that actually serves the model. Strips terminal control codes from the output."""
     import subprocess
+    # encoding=utf-8 + errors=replace: Ollama emits UTF-8 spinner/ANSI bytes that the Windows
+    # default cp1252 decoder chokes on (UnicodeDecodeError in the reader thread). Force UTF-8.
     r = subprocess.run(["ollama", "run", OLLAMA_MODEL, prompt],
-                       capture_output=True, text=True, timeout=240)
+                       capture_output=True, encoding="utf-8", errors="replace", timeout=240)
     out = _strip_ansi(r.stdout or "").strip()
     if not out:
         raise RuntimeError(f"empty ollama-cli output (rc={r.returncode}): {r.stderr[:120]}")
