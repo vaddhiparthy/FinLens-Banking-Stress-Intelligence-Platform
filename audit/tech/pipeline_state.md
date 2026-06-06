@@ -19,7 +19,9 @@
 ## Quality gates (reconciliation that passes, with numbers)
 - Great Expectations suite `bank_quarterly_risk_facts`: 20/20 expectations pass
   (audit via great_expectations/validate.py), covering schema, freshness (max quarter >= 2024Q4),
-  and null-rate (tier1_rwa tolerant of the ~37% post-2020 CBLR null).
+  and null-rate (tier1_rwa: ~10% null across the full 2008-2026 panel, rising to ~37% post-2020
+  as small banks elect the CBLR framework and stop reporting risk-weighted assets; GX threshold
+  mostly=0.55 passes either way).
 - dbt tests: pass on the mart.
 - Test suite: 82 passed, 0 failed (audit/tech/test_results.txt), incl. artifact-reconciliation
   tests (decomposition counts sum to 66; addressable >= pooled; CIs present; GRU inside GBM CI).

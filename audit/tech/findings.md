@@ -10,4 +10,14 @@ Evidence-backed. CLOSED only when a new artifact proves it.
 | B-004 | Pipeline state / reconciliation | DuckDB + dbt + GX + model | (info) | audit/tech/pipeline_state.md | CLOSED | dbt build SUCCESS; GX 20/20; metric gate active; 448,661 bank-quarters to 2026Q1; 66 OOT failures; reproducible from committed state. |
 | B-005 | Unavoidable limit | model / paper tier | (info) | docs/ml/FINAL_SIGNOFF.md, g0_power_sim.json | ACCEPTED (physical) | 66 out-of-time failures cap paired power at ~6%; no single metric is individually separable. Data-existence wall (failures that did not happen cannot be created; pre-2001 Call Reports not machine-readable). Not unfinished work. |
 
-Reviewer sign-offs pending (audit/signoffs/): tech_ml-model-risk, tech_data-engineering, tech_data-integrity.
+## Reviewer sign-offs (audit/signoffs/)
+
+| Reviewer | Verdict | File | Method |
+|----------|---------|------|--------|
+| tech_ml-model-risk | PASS | audit/signoffs/tech_ml-model-risk.md | reproduced 82/82 tests; verified embargo (splits.py assert_no_temporal_overlap), no-leakage (served ROC 0.855 < logit 0.924), calibration ECE 1.2e-4, monotone beats unconstrained, headline arithmetic reconciles, limits trace to 66-failure data wall |
+| tech_data-engineering | PASS | audit/signoffs/tech_data-engineering.md | live re-ran dbt build (+3 grain tests), GX validate.py 20/20, pytest 82, DuckDB reconciliation 448,661 rows / 8,803 banks; confirmed GX-engine shadowing is disclosed in validate.py |
+| tech_data-integrity | PASS | audit/signoffs/tech_data-integrity.md | spot-checked every UI value to its committed artifact (PR-AUC 0.301, addressable 0.382 [0.250,0.530], 66/19, cross-model lift, RAG hit@4 1.0); no served number is a code literal; 18/19 failure causes cite a regulator source |
+
+All three Ceiling-B reviewers PASS with zero blocking issues. Non-blocking notes addressed:
+- RAG metrics on the Analyst Assistant page were static copy -> now read from rag/eval_report.json (auto-sync).
+- tier1_rwa null-rate wording clarified (~10% full-panel, ~37% post-2020 CBLR).

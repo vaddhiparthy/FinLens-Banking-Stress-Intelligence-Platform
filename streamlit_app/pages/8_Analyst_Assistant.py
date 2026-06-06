@@ -52,6 +52,28 @@ def _demo_cache() -> dict:
     return json.loads(p.read_text()) if p.exists() else {}
 
 
+@st.cache_data(show_spinner=False)
+def _eval_report() -> dict:
+    import json
+    p = PROJECT_ROOT / "rag" / "eval_report.json"
+    return json.loads(p.read_text()) if p.exists() else {}
+
+
+def _eval_caption() -> str:
+    """Read the committed eval report so the numbers can never go stale vs the artifact."""
+    r = _eval_report()
+    if not r:
+        return "- **Evaluated**: see rag/eval_report.json for retrieval and grounding metrics."
+    n = r.get("n_questions", "?")
+    k = r.get("k", 4)
+    hit = r.get("retrieval_hit_at_k")
+    mrr = r.get("retrieval_mrr")
+    ground = r.get("citation_grounding_rate")
+    return (f"- **Evaluated**: on a {n}-question set, retrieval hit@{k} = {hit:.2f}, "
+            f"MRR = {mrr:.2f}, citation-grounding = {ground:.2f}; every query is traced "
+            "(latency, citations, cost $0).")
+
+
 def _render(out: dict) -> None:
     mode = "local LLM (llama3.2)" if out.get("used_llm") else "cited extractive"
     st.markdown(f"**Answer** ({mode})")
@@ -90,8 +112,7 @@ with st.expander("How this works (retrieval-augmented, $0, local)"):
         "- **Ground**: for any named bank, the live FullLens model is scored and attached.\n"
         "- **Synthesize**: a local Ollama model writes a cited answer from only the retrieved "
         "context (no paid API). Orchestrated with LangGraph.\n"
-        "- **Evaluated**: on a 20-question set, retrieval hit@4 = 1.0, MRR = 0.92, "
-        "citation-grounding = 1.0; every query is traced (latency, citations, cost $0).")
+        + _eval_caption())
 
 st.divider()
 q = st.text_input("Ask your own question (runs live, ~30s on the local model)", key="aa_q",
