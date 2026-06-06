@@ -45,6 +45,34 @@
         0.3288
       ],
       "lift": 0.0406
+    },
+    {
+      "model": "random_forest",
+      "pr_auc_pooled": 0.2958,
+      "pr_auc_pooled_ci": [
+        0.1832,
+        0.4303
+      ],
+      "pr_auc_addressable": 0.3749,
+      "pr_auc_addressable_ci": [
+        0.2444,
+        0.5212
+      ],
+      "lift": 0.0792
+    },
+    {
+      "model": "xgboost",
+      "pr_auc_pooled": 0.2782,
+      "pr_auc_pooled_ci": [
+        0.1738,
+        0.4072
+      ],
+      "pr_auc_addressable": 0.3515,
+      "pr_auc_addressable_ci": [
+        0.2288,
+        0.4888
+      ],
+      "lift": 0.0733
     }
   ],
   "lift_present_in_all_models": true,

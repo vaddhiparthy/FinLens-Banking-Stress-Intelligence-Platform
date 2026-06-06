@@ -85,6 +85,35 @@ def main() -> None:
     logit = _fit_logit(X_tr, y[tr])
     models["penalized_logit"] = logit.predict_proba(X_te)[:, 1]
 
+    ytr = y[tr]
+    spw = float((ytr == 0).sum() / max(1, (ytr == 1).sum()))
+
+    # 4. Random Forest — the published architecture from the 2023 RF-for-bank-failure papers
+    #    (reimplemented; RF needs imputation, it cannot consume NaN)
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.impute import SimpleImputer
+    from sklearn.pipeline import Pipeline
+    rf = Pipeline([
+        ("impute", SimpleImputer(strategy="median")),
+        ("rf", RandomForestClassifier(n_estimators=400, min_samples_leaf=5,
+                                      class_weight="balanced_subsample", n_jobs=4,
+                                      random_state=SEED)),
+    ])
+    rf.fit(X_tr, ytr)
+    models["random_forest"] = rf.predict_proba(X_te)[:, 1]
+
+    # 5. XGBoost — the published architecture from the Claremont thesis and adjacent ML papers
+    #    (reimplemented; native NaN handling)
+    try:
+        from xgboost import XGBClassifier
+        xgb = XGBClassifier(n_estimators=400, max_depth=4, learning_rate=0.05,
+                            subsample=0.8, colsample_bytree=0.8, scale_pos_weight=spw,
+                            eval_metric="aucpr", n_jobs=4, random_state=SEED, tree_method="hist")
+        xgb.fit(X_tr, ytr)
+        models["xgboost"] = xgb.predict_proba(X_te)[:, 1]
+    except Exception as e:  # noqa: BLE001
+        print("xgboost unavailable, skipping:", str(e)[:60], flush=True)
+
     rows = []
     for name, p in models.items():
         pooled = evaluate(y_te, p, k=k).pr_auc

@@ -33,6 +33,7 @@ ml/artifacts/*
 !ml/artifacts/sequence_challenger.json
 !ml/artifacts/sequence_sweep.json
 !ml/artifacts/pooled_vs_addressable.json
+!ml/artifacts/cblr_robustness.json
 audit/
 audit_crawl*.py
 qa/
