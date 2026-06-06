@@ -117,9 +117,26 @@ OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "127.0.0.1:11434").replace("http://"
 OLLAMA_URL = f"http://{OLLAMA_HOST}/api/chat"
 
 
+def _strip_ansi(s: str) -> str:
+    import re
+    return re.sub(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b\][^\x07]*\x07", "", s).replace("\r", "")
+
+
+def _ollama_cli(prompt: str) -> str:
+    """Generate via the local Ollama CLI (`ollama run`). On this machine the HTTP server on
+    :11434 has an empty model set but the CLI store has llama3.2:3b, so the CLI path is the one
+    that actually serves the model. Strips terminal control codes from the output."""
+    import subprocess
+    r = subprocess.run(["ollama", "run", OLLAMA_MODEL, prompt],
+                       capture_output=True, text=True, timeout=240)
+    out = _strip_ansi(r.stdout or "").strip()
+    if not out:
+        raise RuntimeError(f"empty ollama-cli output (rc={r.returncode}): {r.stderr[:120]}")
+    return out
+
+
 def _ollama_chat(prompt: str) -> str:
-    """Call the local Ollama HTTP API directly (more reliable than the python client in some
-    environments; curl-reachable == this works). Raises on any failure -> extractive fallback."""
+    """Call the local Ollama HTTP API directly. Raises on any failure -> next fallback."""
     import json
     import urllib.request
     body = json.dumps({"model": OLLAMA_MODEL, "stream": False,
@@ -138,16 +155,18 @@ def synthesize(state: State) -> State:
         "context below. Cite the context items you use like [1], [2]. If the context does not "
         "support an answer, say so plainly. Do not invent facts or numbers.\n\n"
         f"Context:\n{context}\n\nQuestion: {state['question']}\n\nCited answer:")
-    try:
-        return {"answer": _ollama_chat(prompt), "used_llm": True}
-    except Exception:  # noqa: BLE001
-        # extractive, fully-cited fallback ($0, no LLM needed)
-        bullets = "\n".join(f"- {d}" for d in state.get("docs", [])[:3])
-        mp = state.get("model_pred")
-        extra = (f"\nLive model score for {state.get('bank_name')}: "
-                 f"{mp['probability']:.3f} as of {mp['quarter']}." if mp else "")
-        return {"answer": f"(extractive, no local LLM available)\n{bullets}{extra}",
-                "used_llm": False}
+    for backend in (_ollama_cli, _ollama_chat):  # CLI first (the path that works here), then HTTP
+        try:
+            return {"answer": backend(prompt), "used_llm": True}
+        except Exception:  # noqa: BLE001
+            continue
+    # extractive, fully-cited fallback ($0, no LLM needed)
+    bullets = "\n".join(f"- {d}" for d in state.get("docs", [])[:3])
+    mp = state.get("model_pred")
+    extra = (f"\nLive model score for {state.get('bank_name')}: "
+             f"{mp['probability']:.3f} as of {mp['quarter']}." if mp else "")
+    return {"answer": f"(extractive, no local LLM available)\n{bullets}{extra}",
+            "used_llm": False}
 
 
 def _build_graph():
