@@ -54,3 +54,32 @@ The current right-censoring is **adequate, and the bias it introduces is small, 
 measured, and now cross-checked against a built Fine-Gray model** rather than hand-waved.
 This replaces the prior "handled by censoring, not a formal model" gap with two numbers
 (2.2% distressed-merger rate; Fine-Gray 0.182 vs cause-specific 0.176, within noise).
+
+## Positioning against the competing-risks methods literature (S3)
+
+This treatment is deliberately aligned with the established competing-risks methodology, so a
+methods reviewer can place it. The relevant lineage:
+
+- **Cause-specific vs subdistribution hazards.** The standard distinction (cause-specific
+  hazard for etiology vs the subdistribution hazard for absolute risk) is from Fine & Gray,
+  "A proportional hazards model for the subdistribution of a competing risk," JASA 94 (1999)
+  496-509, with the applied framing in Austin, Lee & Fine, "Introduction to the analysis of
+  survival data in the presence of competing risks," Circulation 133 (2016) 601-609. We report
+  both views: cause-specific failure and merger hazards, and the Aalen-Johansen cumulative
+  incidence (the absolute-risk quantity the subdistribution targets).
+- **Discrete time is the correct regime here.** Call Reports are quarterly, so the event time
+  is genuinely discrete and the continuous-time Fine-Gray model does not directly apply. This
+  is exactly the gap the discrete-time competing-risks literature addresses: Berger et al.,
+  "Subdistribution hazard models for competing risks in discrete time," Biostatistics 21(3)
+  (2020) 449-466, and the overview in Schmid & Berger, "Competing risks analysis for discrete
+  time-to-event data," WIREs Computational Statistics 13(5) (2021) e1529. Our Fine-Gray
+  cross-check is implemented as a **discrete-time** subdistribution model (ml/scripts/
+  fine_gray.py), consistent with that literature, not a misapplied continuous-time fit.
+- **What we add.** The methods literature establishes how to model competing risks; it does
+  not quantify, for a bank-failure panel, how much the common right-censoring-of-mergers
+  practice biases measured failure performance. We give that decision-relevant number (2.2% of
+  merger exits were elevated-distress at exit) and show a discrete-time Fine-Gray subdistribution
+  model lands within noise of the cause-specific model (0.182 vs 0.176), so for this panel the
+  censoring approach is adequate and the competing-risks correction is immaterial to the served
+  ranking. The contribution is the empirical bias bound for this application, positioned within
+  the discrete-time subdistribution framework, not a new estimator.
