@@ -116,6 +116,19 @@ _WIKI_SLUG = {
 status_ribbon("Machine Learning Engineering")
 page_intro("AI Engineering", _title, _copy, wiki_slug=_WIKI_SLUG.get(section))
 
+try:
+    _lc1, _lc2 = st.columns(2)
+    with _lc1:
+        st.page_link("pages/8_Analyst_Assistant.py",
+                     label="Open the Analyst Assistant (cited RAG chatbot)", icon="💬")
+    with _lc2:
+        _paper = PROJECT_ROOT / "docs" / "ml" / "PAPER.md"
+        if _paper.exists():
+            with st.popover("Research write-up (measurement paper)"):
+                st.markdown(_paper.read_text(encoding="utf-8"))
+except Exception:
+    pass
+
 
 if section == "pipeline":
     section_heading("Training & scoring pipeline", "Discrete-time hazard model on the FDIC bank-quarter panel.")
@@ -454,6 +467,33 @@ elif section == "quality":
                 "The addressable number is unchanged by the credit-vs-rate/liquidity boundary "
                 "(only the invisible boundary moves it). The three modes are an author-defined "
                 "diagnostic split, not a supervisory classification.")
+
+        pva = mc.load_pooled_vs_addressable()
+        if pva:
+            section_heading(
+                "The lift is a property of the evaluation, not the model",
+                "The pooled-to-addressable lift appears in every model family, including the "
+                "published Random Forest and XGBoost baselines, so it is the evaluation set that "
+                "is biased by the structurally-invisible failures, not any one model.")
+            cpa1, cpa2 = st.columns([1.2, 1])
+            with cpa1:
+                st.plotly_chart(mc.pooled_vs_addressable_fig(pva, MODE), use_container_width=True)
+            with cpa2:
+                lifts = ", ".join(f"{m['lift']:+.3f}" for m in pva.get("models", []))
+                st.markdown(
+                    f"- Lift positive in **all {len(pva.get('models', []))} families** "
+                    f"({pva.get('lift_min')} to {pva.get('lift_max')}): {lifts}.\n"
+                    "- Same out-of-time split per model; invisible positives removed identically.\n"
+                    "- At 66 failures no single delta is separable; the claim is the consistent "
+                    "direction across families, which is what makes it a measurement finding.")
+            ext = (decomp or {}).get("external_labels") if decomp else None
+            if ext:
+                st.caption(
+                    "Label-source sensitivity: with the invisible set taken from externally-"
+                    f"sourced regulator failure causes instead of thresholds, addressable PR-AUC "
+                    f"is {ext.get('pr_auc_addressable_external')} vs {decomp.get('pr_auc_addressable')} "
+                    f"(threshold), agreement {ext.get('label_agreement_rate_on_positives')} on "
+                    "positives. The result does not depend on how the invisible cohort is labelled.")
 
         seq = mc.load_sequence()
         if seq:

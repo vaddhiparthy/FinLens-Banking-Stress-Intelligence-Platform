@@ -479,6 +479,34 @@ def load_sequence() -> dict | None:
     return json.loads(p.read_text()) if p.exists() else None
 
 
+@lru_cache(maxsize=1)
+def load_pooled_vs_addressable() -> dict | None:
+    p = _PROJECT_ROOT / "ml" / "artifacts" / "pooled_vs_addressable.json"
+    return json.loads(p.read_text()) if p.exists() else None
+
+
+_PVA_LABEL = {"monotone_gbm_served": "Monotone GBM (served)", "unconstrained_gbm": "Unconstrained GBM",
+              "penalized_logit": "Penalized logit", "random_forest": "Random forest", "xgboost": "XGBoost"}
+
+
+def pooled_vs_addressable_fig(pva: dict, mode: str | None = None) -> go.Figure:
+    """The robustness proof: pooled vs addressable PR-AUC for EVERY model family. The
+    addressable lift is positive across all of them, so the gap is a property of the
+    evaluation set (the structurally-invisible failures), not of any one model."""
+    pal = get_palette(mode)
+    rows = pva.get("models", [])
+    names = [_PVA_LABEL.get(r["model"], r["model"]) for r in rows]
+    fig = go.Figure()
+    fig.add_bar(x=names, y=[r["pr_auc_pooled"] for r in rows], name="pooled (all failures)",
+                marker_color=pal["text_soft"])
+    fig.add_bar(x=names, y=[r["pr_auc_addressable"] for r in rows],
+                name="addressable (invisible removed)", marker_color=pal["accent"])
+    fig.update_layout(barmode="group")
+    fig.update_yaxes(title="out-of-time PR-AUC", range=[0, 0.55])
+    fig.update_xaxes(tickangle=-20)
+    return _base(fig, pal, title="Pooled vs addressable PR-AUC, every model family")
+
+
 def sequence_vs_gbm_fig(seq: dict, mode: str | None = None) -> go.Figure:
     """GRU challenger vs served GBM out-of-time PR-AUC, with the GBM bootstrap CI band so
     the 'not separable' claim is visible (the GRU bar sits inside the band)."""
