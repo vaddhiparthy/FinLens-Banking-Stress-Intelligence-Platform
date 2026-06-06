@@ -43,3 +43,9 @@ qa_interactive.py
 rag/chroma_db/
 rag/traces.jsonl
 great_expectations/uncommitted/
+
+# dbt run byproducts
+dbt/target/
+dbt/logs/
+dbt/.user.yml
+dbt/dbt_packages/
