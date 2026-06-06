@@ -124,7 +124,7 @@ try:
     with _lc2:
         _paper = PROJECT_ROOT / "docs" / "ml" / "PAPER.md"
         if _paper.exists():
-            with st.popover("Research write-up (measurement paper)"):
+            with st.expander("Research write-up (measurement paper)"):
                 st.markdown(_paper.read_text(encoding="utf-8"))
 except Exception:
     pass

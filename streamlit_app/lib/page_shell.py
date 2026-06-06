@@ -296,7 +296,7 @@ def _render_top_bar(active_page: str, mode: str) -> None:
     bar_left, bar_center, bar_right = st.columns([1.25, 2.5, 1.25], vertical_alignment="center")
     with bar_left:
         st.markdown('<div class="surface-pop-anchor"></div>', unsafe_allow_html=True)
-        with st.popover(trigger, icon=":material/grid_view:", use_container_width=True):
+        with st.expander(trigger, expanded=False, icon=":material/grid_view:"):
             st.markdown('<div class="pop-title">Go to surface</div>', unsafe_allow_html=True)
             if not is_home and st.button(
                 "Home", key=f"pop_home_{active_page}", use_container_width=True

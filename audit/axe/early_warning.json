@@ -1,12 +1,5 @@
 {
   "url": "http://localhost:8601/Early_Warning",
-  "n_violations": 1,
-  "violations": [
-    {
-      "id": "aria-allowed-attr",
-      "impact": "critical",
-      "nodes": 1,
-      "help": "Elements must only use supported ARIA attributes"
-    }
-  ]
+  "n_violations": 0,
+  "violations": []
 }
