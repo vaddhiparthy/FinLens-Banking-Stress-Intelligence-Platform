@@ -34,7 +34,8 @@ ml/artifacts/*
 !ml/artifacts/sequence_sweep.json
 !ml/artifacts/pooled_vs_addressable.json
 !ml/artifacts/cblr_robustness.json
-audit/
+# audit/ is now a committed deliverable (production-readiness audit artifacts); keep only the
+# old crawl scripts and any node_modules out.
 audit_crawl*.py
 qa/
 qa_interactive.py

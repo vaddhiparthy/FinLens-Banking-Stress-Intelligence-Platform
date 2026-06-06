@@ -1,0 +1,12 @@
+{
+  "url": "http://localhost:8601/AI_Engineering",
+  "n_violations": 1,
+  "violations": [
+    {
+      "id": "aria-allowed-attr",
+      "impact": "critical",
+      "nodes": 2,
+      "help": "Elements must only use supported ARIA attributes"
+    }
+  ]
+}
