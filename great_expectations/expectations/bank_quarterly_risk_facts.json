@@ -1,0 +1,32 @@
+{
+  "expectation_suite_name": "bank_quarterly_risk_facts",
+  "meta": {
+    "purpose": "Capstone-1 data-quality gate on the gold mart marts.bank_quarterly_risk_facts: schema (columns exist), freshness (data includes recent quarters), and null-rate thresholds on the risk ratios. tier1_rwa_ratio is intentionally allowed a high null-rate (~37%) because of the 2020Q1 Community Bank Leverage Ratio election (see docs/ml/CEILING_BACKLOG.md / C4).",
+    "great_expectations_format": "expectation-suite v3"
+  },
+  "expectations": [
+    {"expectation_type": "expect_table_row_count_to_be_between", "kwargs": {"min_value": 100000, "max_value": 2000000}},
+    {"expectation_type": "expect_column_to_exist", "kwargs": {"column": "cert"}},
+    {"expectation_type": "expect_column_to_exist", "kwargs": {"column": "quarter"}},
+    {"expectation_type": "expect_column_to_exist", "kwargs": {"column": "noncurrent_to_loans"}},
+    {"expectation_type": "expect_column_to_exist", "kwargs": {"column": "nco_to_loans"}},
+    {"expectation_type": "expect_column_to_exist", "kwargs": {"column": "tier1_rwa_ratio"}},
+    {"expectation_type": "expect_column_to_exist", "kwargs": {"column": "tier1_leverage"}},
+    {"expectation_type": "expect_column_to_exist", "kwargs": {"column": "equity_to_assets"}},
+    {"expectation_type": "expect_column_to_exist", "kwargs": {"column": "roa"}},
+
+    {"expectation_type": "expect_column_values_to_not_be_null", "kwargs": {"column": "cert"}},
+    {"expectation_type": "expect_column_values_to_not_be_null", "kwargs": {"column": "quarter"}},
+    {"expectation_type": "expect_column_values_to_not_be_null", "kwargs": {"column": "tier1_leverage", "mostly": 0.95}},
+    {"expectation_type": "expect_column_values_to_not_be_null", "kwargs": {"column": "equity_to_assets", "mostly": 0.95}},
+    {"expectation_type": "expect_column_values_to_not_be_null", "kwargs": {"column": "roa", "mostly": 0.95}},
+    {"expectation_type": "expect_column_values_to_not_be_null", "kwargs": {"column": "noncurrent_to_loans", "mostly": 0.90}},
+    {"expectation_type": "expect_column_values_to_not_be_null", "kwargs": {"column": "tier1_rwa_ratio", "mostly": 0.55}},
+
+    {"expectation_type": "expect_column_values_to_be_between", "kwargs": {"column": "equity_to_assets", "min_value": -60, "max_value": 100, "mostly": 0.99}},
+    {"expectation_type": "expect_column_values_to_be_between", "kwargs": {"column": "tier1_leverage", "min_value": -60, "max_value": 100, "mostly": 0.99}},
+    {"expectation_type": "expect_column_values_to_be_between", "kwargs": {"column": "noncurrent_to_loans", "min_value": 0, "max_value": 100, "mostly": 0.99}},
+
+    {"expectation_type": "expect_column_max_to_be_between", "kwargs": {"column": "quarter", "min_value": "2024Q4"}}
+  ]
+}

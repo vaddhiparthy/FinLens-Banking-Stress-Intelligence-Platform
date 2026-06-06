@@ -15,3 +15,14 @@ models:
     columns:
       - name: quarter
         tests: [not_null]
+  - name: bank_quarterly_risk_facts
+    description: "Gold mart: per-bank-quarter CAMELS-aligned risk ratios. Grain (cert, quarter)."
+    columns:
+      - name: cert
+        tests: [not_null]
+      - name: quarter
+        tests: [not_null]
+    # grain integrity (not_null cert/quarter + the singular composite-unique test) is enforced
+    # here; null-RATE thresholds on the ratios (which are ~99.7% populated, and tier1_rwa
+    # intentionally ~63% post-CBLR) are enforced by the Great Expectations suite, which supports
+    # a "mostly" tolerance that dbt's strict not_null does not.

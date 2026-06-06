@@ -23,12 +23,17 @@ they are. The capstones wrap around them.
 
 ## Capstone 1 — FullLens Data Platform (DE). Status: PARTIAL (audited)
 
-Audit (D1): ingestion, the seven Airflow DAGs, the dbt project, the medallion layering, and
-the GX scaffold all EXIST. But two named criteria are genuinely MISSING, not just unnamed: the
-bank-quarter gold mart `bank_quarterly_risk_facts` does not exist (the dbt marts are
-industry-aggregate; the per-bank risk ratios live only in Python -> DuckDB `ml.training_dataset`),
-and the Great Expectations suites are trivial stubs (a `bank_id` null check + a row-count), with
-no schema/freshness/null-rate assertions on the risk ratios. These are real builds, below.
+Audit (D1) found two real gaps; both now CLOSED:
+- **Gold mart built:** `dbt/models/marts/bank_quarterly_risk_facts.sql` at the (cert, quarter)
+  grain, sourced from `ml.training_dataset` (same DuckDB), with grain integrity tests (not_null
+  cert/quarter + a dependency-free composite-unique singular test). `dbt build` SUCCESS.
+- **Real GX suite + runner:** `great_expectations/expectations/bank_quarterly_risk_facts.json`
+  (GX v3 format) asserts schema (column existence), freshness (max quarter >= 2024Q4), and
+  null-rate (mostly thresholds, with tier1_rwa intentionally tolerant of the ~37% CBLR null),
+  run by `great_expectations/validate.py` -> 20/20 passed, exits non-zero on failure. Honest
+  note: the real GX PyPI engine is shadowed by the repo's `great_expectations/` directory, so
+  the runner is a self-contained evaluator of the same GX-format suite (documented in the file).
+- Medallion layering was already documented (data-flow / data-model / ADRs).
 
 | Component | Brief | FullLens | Status |
 |---|---|---|---|

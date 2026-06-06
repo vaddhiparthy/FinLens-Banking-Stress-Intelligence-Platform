@@ -8,3 +8,8 @@ sources:
       - name: fred_observations_raw
       - name: fdic_qbp_raw
       - name: nic_current_parent_raw
+  - name: ml
+    schema: ml
+    description: "ML feature panel (per-bank-quarter CAMELS ratios), built by ml/scripts/build_dataset.py in the same DuckDB file."
+    tables:
+      - name: training_dataset
