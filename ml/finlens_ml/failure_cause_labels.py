@@ -18,9 +18,10 @@ while others left no signal (off-book deposits, wired-out funds). The label here
 regulator-stated CAUSE; the decomposition and the label-source sensitivity test (C5) quantify
 where cause-based labels and threshold-based visibility labels agree and diverge.
 
-Provenance: compiled from the cited regulator documents below (17 of 19 banks have a primary
-regulator source; Metropolitan Capital leans on the FDIC FAQ + a listed but unretrievable OIG
-review; Community Bank & Trust - West Georgia is the one news-only case, no OIG report yet).
+Provenance: compiled from the cited regulator documents below (18 of 19 banks have a primary
+regulator source, counting the FDIC FAQ for Metropolitan Capital; Community Bank & Trust - West
+Georgia is the one news-only case, no OIG report yet). The __main__ counter (source_type !=
+"news") reports the same 18/19.
 """
 
 from __future__ import annotations
@@ -101,7 +102,7 @@ FAILURE_CAUSES: dict[int, dict] = {
             "cause": "rate_liquidity", "confidence": "high", "source_type": "fed",
             "source_url": "https://www.federalreserve.gov/publications/files/svb-review-20230428.pdf",
             "quote": "Mismanaged interest-rate and liquidity risk; rate-driven unrealized "
-                     "securities losses plus ~89% uninsured deposits triggered a run."},
+                     "securities losses plus ~94% uninsured deposits triggered a run."},
     27332: {"name": "Republic First Bank", "failure_year": 2024,
             "cause": "fundamental_credit", "confidence": "high", "source_type": "oig_mlr",
             "source_url": "https://www.fdicoig.gov/sites/default/files/reports/2024-11/EVAL-2025-01%20Material%20Loss%20Review%20of%20Republic%20First%20Bank.pdf",
