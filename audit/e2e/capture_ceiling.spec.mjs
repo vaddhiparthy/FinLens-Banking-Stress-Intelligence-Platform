@@ -100,7 +100,10 @@ test("ai model quality", async ({ page }) => {
 test("ai notebook", async ({ page }) => {
   await page.goto("/AI_Engineering"); await settle(page);
   await sectionTab(page, "Notebook");
-  await page.waitForFunction(() => document.querySelectorAll("iframe").length > 0,
+  await page.getByText("Analysis notebook", { exact: false }).first().waitFor({ timeout: 30000 });
+  // wait for the EMBEDDED notebook iframe (not the 0px meta-injection iframe) to render tall
+  await page.waitForFunction(
+    () => [...document.querySelectorAll("iframe")].some((e) => e.clientHeight > 300),
     { timeout: 30000 }).catch(() => {});
   await page.waitForTimeout(2500);
   await page.screenshot({ path: `${SHOTS}ai_notebook.png`, ...FULL });
