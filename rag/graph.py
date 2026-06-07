@@ -29,6 +29,7 @@ TOP_K = 4
 class State(TypedDict, total=False):
     question: str
     docs: list
+    doc_sources: list  # source URL/path per doc, aligned 1:1 with docs (for cited-only output)
     sources: list
     bank_cert: int
     bank_name: str
@@ -65,26 +66,51 @@ def _bank_lookup() -> dict:
 
 # ---- nodes ----
 
+def _detect_bank(question: str):
+    q = question.lower()
+    for frag, (cert, name) in _bank_lookup().items():
+        if frag in q:
+            return cert, name
+    return None
+
+
 def retrieve(state: State) -> State:
     col = _collection()
     res = col.query(query_texts=[state["question"]], n_results=TOP_K)
-    docs = res["documents"][0]
-    metas = res["metadatas"][0]
-    sources = []
-    for md in metas:
-        src = md.get("source_url") or md.get("source")
-        if src and src not in sources:
-            sources.append(src)
-    return {"docs": docs, "sources": sources}
+    docs = list(res["documents"][0])
+    metas = list(res["metadatas"][0])
+
+    # Precision fix: if the question names a known bank, make that bank's OWN failure document
+    # rank first. Pure semantic similarity on a short query ("what happened to SVB") sometimes
+    # ranks a different bank's report above the right one, which then gets miscited.
+    hit = _detect_bank(state["question"])
+    if hit:
+        cert, _name = hit
+        try:
+            got = col.get(ids=[f"failure::{cert}"])
+            if got and got.get("documents"):
+                bank_doc = got["documents"][0]
+                bank_meta = (got.get("metadatas") or [{}])[0]
+                # de-dupe then prepend
+                docs = [d for d in docs if d != bank_doc]
+                metas = [m for m in metas if m.get("cert") != cert]
+                docs.insert(0, bank_doc)
+                metas.insert(0, bank_meta)
+                docs, metas = docs[:TOP_K], metas[:TOP_K]
+        except Exception:  # noqa: BLE001
+            pass
+
+    doc_sources = [(m.get("source_url") or m.get("source") or "") for m in metas]
+    # deduped, order-preserving list of all retrieved sources (fallback if no [n] is cited)
+    sources: list = []
+    for s in doc_sources:
+        if s and s not in sources:
+            sources.append(s)
+    return {"docs": docs, "doc_sources": doc_sources, "sources": sources}
 
 
 def ground_model(state: State) -> State:
-    q = state["question"].lower()
-    hit = None
-    for frag, (cert, name) in _bank_lookup().items():
-        if frag in q:
-            hit = (cert, name)
-            break
+    hit = _detect_bank(state["question"])
     if not hit:
         return {}
     cert, name = hit
@@ -187,14 +213,33 @@ def _build_graph():
 _GRAPH = None
 
 
+def _cited_sources(answer: str, doc_sources: list, all_sources: list) -> list:
+    """Return only the sources the answer actually cites via [n] markers, mapped through the
+    per-doc source list. Falls back to all retrieved sources if the model emitted no markers.
+    This stops irrelevant retrievals (e.g. a different bank's report) from being listed as
+    'sources' when the answer never used them."""
+    import re
+    idxs = sorted({int(n) for n in re.findall(r"\[(\d{1,2})\]", answer or "")})
+    cited: list = []
+    for i in idxs:
+        if 1 <= i <= len(doc_sources):
+            s = doc_sources[i - 1]
+            if s and s not in cited:
+                cited.append(s)
+    return cited or list(all_sources)
+
+
 def answer_question(question: str) -> dict:
     global _GRAPH
     if _GRAPH is None:
         _GRAPH = _build_graph()
     out = _GRAPH.invoke({"question": question})
-    return {"question": question, "answer": out.get("answer", ""),
-            "citations": out.get("sources", []), "retrieved": out.get("docs", []),
-            "model_pred": out.get("model_pred"), "used_llm": out.get("used_llm", False)}
+    answer = out.get("answer", "")
+    citations = _cited_sources(answer, out.get("doc_sources", []), out.get("sources", []))
+    return {"question": question, "answer": answer,
+            "citations": citations, "retrieved": out.get("docs", []),
+            "model_pred": out.get("model_pred"), "used_llm": out.get("used_llm", False),
+            "bank_name": out.get("bank_name"), "bank_cert": out.get("bank_cert")}
 
 
 if __name__ == "__main__":

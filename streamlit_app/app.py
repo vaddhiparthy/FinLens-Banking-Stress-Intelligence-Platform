@@ -162,9 +162,9 @@ st.markdown(
         <div class="landing-eyebrow">Surya Vaddhiparthy · M.S. Data Science</div>
         <div class="landing-h1">Spotting financial stress<br>in U.S. banks</div>
         <p class="landing-sub">
-            I built FinLens to turn free public banking data (FDIC Call Reports, failure
-            history, FRED macro series) into an early-warning read on bank distress, and to
-            show the full data-engineering and machine-learning build behind it.
+            FinLens turns free public banking data (FDIC Call Reports, failure
+            history, FRED macro series) into an early-warning read on bank distress, and
+            shows the full data-engineering and machine-learning build behind it.
         </p>
     </div>
     """,
@@ -211,7 +211,7 @@ with ent_a:
 
 # Supporting content (scroll)
 st.markdown('<div class="landing-section-rule"></div>', unsafe_allow_html=True)
-st.markdown('<div class="landing-h2">What I am working with</div>', unsafe_allow_html=True)
+st.markdown('<div class="landing-h2">What it is built on</div>', unsafe_allow_html=True)
 card1, card2, card3, card4 = st.columns(4)
 with card1:
     metric_card("FDIC failures", f"{len(failures):,}", "Public failure records")
@@ -222,12 +222,12 @@ with card3:
 with card4:
     metric_card("Pipeline flows", f"{len(pipeline_rows)}", "Tracked data movements")
 
-st.markdown('<div class="landing-h2">How I organised it</div>', unsafe_allow_html=True)
+st.markdown('<div class="landing-h2">How it is organised</div>', unsafe_allow_html=True)
 left, right = st.columns([1, 1], vertical_alignment="top")
 with left:
     section_heading(
         "Three surfaces, one project",
-        "I split FinLens into three views so each audience gets what it needs: the banking "
+        "FinLens is split into three views so each audience gets what it needs: the banking "
         "story for business readers, the build for data engineers, and the model for ML "
         "reviewers. Data flows from public sources, lands as raw artifacts, is normalised "
         "into canonical tables, and only dashboard-ready marts reach the surfaces.",
@@ -243,7 +243,7 @@ with right:
 
 chart_note(
     "Use notice",
-    "This is my personal analytical project using public data sources. It is not financial "
+    "FinLens is a personal portfolio project using public data sources. It is not financial "
     "advice or a substitute for official U.S. government / regulator sources.",
 )
 

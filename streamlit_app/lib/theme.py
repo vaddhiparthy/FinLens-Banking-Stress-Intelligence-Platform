@@ -2191,5 +2191,42 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
             padding: .45rem .5rem;
         }}
     }}
+
+    /* ---- Floating assistant widget (bottom-right, every page) ---- */
+    .st-key-finlens_chat_closed {{
+        position: fixed; right: 22px; bottom: 22px; z-index: 9990; width: auto !important;
+    }}
+    .st-key-finlens_chat_closed [data-testid="stButton"] > button {{
+        border-radius: 999px !important;
+        background: {palette["accent"]} !important;
+        color: #fff !important; border: none !important;
+        box-shadow: 0 10px 26px rgba(15,23,42,.22) !important;
+        font-weight: 700 !important; padding: .58rem 1.2rem !important;
+        transition: transform .12s ease, box-shadow .12s ease;
+    }}
+    .st-key-finlens_chat_closed [data-testid="stButton"] > button:hover {{
+        transform: translateY(-1px);
+        box-shadow: 0 14px 32px rgba(15,23,42,.28) !important;
+    }}
+    .st-key-finlens_chat_closed [data-testid="stButton"] > button p {{
+        color: #fff !important; -webkit-text-fill-color: #fff !important; font-weight: 700;
+    }}
+    .st-key-finlens_chat_open {{
+        position: fixed; right: 22px; bottom: 22px; z-index: 9990;
+        width: 405px !important; max-width: 92vw;
+        max-height: 82vh; overflow-y: auto; overflow-x: hidden;
+        background: {palette["content_bg"]};
+        border: 1px solid {palette["border"]};
+        border-radius: 18px;
+        box-shadow: 0 20px 52px rgba(15,23,42,.30);
+        padding: .7rem .85rem .45rem;
+    }}
+    .finlens-chat-title {{
+        font-weight: 800; font-size: 1.05rem; color: {palette["text_main"]};
+        padding-top: .15rem;
+    }}
+    .st-key-finlens_chat_open [data-testid="stChatMessage"] {{
+        padding: .25rem .15rem; background: transparent;
+    }}
     </style>
     """

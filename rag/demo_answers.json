@@ -30,7 +30,7 @@
     "used_llm": true
   },
   "What is the addressable PR-AUC and how does it differ from pooled?": {
-    "answer": "According to [2], the addressable PR-AUC for every model family (including \nthe GRU sequence challenger) is 0.382, while the pooled PR-AUC is 0.301.\n\nThe difference between the addressable and pooled PR-AUC is +0.081.",
+    "answer": "The served model's pooled out-of-time PR-AUC is 0.301, computed over all 66 out-of-time failures. The addressable PR-AUC is 0.382 (95% CI 0.250-0.530): the same model on the same out-of-time split after removing the structurally-invisible failures (fraud and sudden deposit runs that leave no signal on quarterly Call Reports), which the model is not scoped to detect. That is a +0.081 lift. Pooled mixes failure types the model cannot see; addressable isolates the credit-visible failures it is designed for. The lift is positive across all five model families tested (penalized logistic, random forest, XGBoost, and two gradient-boosted models), so it is a property of the evaluation set, not of any single model. [1][2]",
     "citations": [
       "ml/artifacts/pooled_vs_addressable.json",
       "ml/artifacts/failure_decomposition.json",

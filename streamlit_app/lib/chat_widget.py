@@ -1,0 +1,132 @@
+"""Floating, rate-limited FinLens assistant, shown bottom-right on every page.
+
+Backed by the local $0 RAG path (rag.trace.traced_answer): retrieval and citations are real,
+synthesis is a local Ollama model with a fully-cited extractive fallback. Common questions are
+answered instantly from a committed cache; live questions are capped per session. When a question
+names a bank, the assistant offers a one-click full institutional report.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import streamlit as st
+
+MAX_LIVE_QUERIES = 10
+_PROJECT_ROOT = next(
+    p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").exists()
+)
+
+_EXAMPLES = [
+    "Why did Silicon Valley Bank fail?",
+    "What is the addressable PR-AUC and how does it differ from pooled?",
+    "Did the GRU sequence model beat the gradient-boosted model?",
+]
+
+
+@st.cache_resource(show_spinner=False)
+def _backend():
+    from rag.trace import traced_answer
+    return traced_answer
+
+
+@st.cache_data(show_spinner=False)
+def _demo_cache() -> dict:
+    import json
+    p = _PROJECT_ROOT / "rag" / "demo_answers.json"
+    return json.loads(p.read_text()) if p.exists() else {}
+
+
+def _ask(question: str, *, example: bool) -> dict:
+    """Cached questions answer instantly and do not count against the live budget."""
+    demo = _demo_cache()
+    if example and question in demo:
+        return {**demo[question], "question": question}
+    st.session_state["chat_live_count"] = st.session_state.get("chat_live_count", 0) + 1
+    try:
+        return _backend()(question)
+    except Exception as exc:  # noqa: BLE001
+        return {"question": question, "answer": f"The local assistant is unavailable: {exc}",
+                "citations": [], "used_llm": False}
+
+
+def _render_answer(out: dict, idx: int) -> None:
+    st.markdown(out.get("answer", ""))
+    mp = out.get("model_pred")
+    if mp:
+        st.caption(
+            f"Live model score for {out.get('bank_name', 'the named bank')} as of "
+            f"{mp.get('quarter')}: {mp.get('probability', 0):.2%} four-quarter distress "
+            f"probability (review threshold {mp.get('threshold', 0):.0%})."
+        )
+    cits = out.get("citations") or []
+    if cits:
+        with st.expander(f"Sources ({len(cits)})"):
+            for c in cits:
+                if isinstance(c, str) and c.startswith("http"):
+                    st.markdown(f"- [{c}]({c})")
+                else:
+                    st.markdown(f"- `{c}`")
+    bank = out.get("bank_name")
+    cert = out.get("bank_cert")
+    if bank:
+        if st.button(f"Open full report on {bank}", key=f"chat_report_{idx}",
+                     use_container_width=True):
+            st.session_state["report_bank"] = bank
+            if cert is not None:
+                st.session_state["report_cert"] = cert
+            st.switch_page("pages/8_Bank_Report.py")
+
+
+def render_chat_widget() -> None:
+    ss = st.session_state
+    ss.setdefault("chat_open", False)
+    ss.setdefault("chat_history", [])
+    ss.setdefault("chat_live_count", 0)
+
+    if not ss.chat_open:
+        with st.container(key="finlens_chat_closed"):
+            if st.button("Ask FinLens", key="chat_launch_btn"):
+                ss.chat_open = True
+                st.rerun()
+        return
+
+    with st.container(key="finlens_chat_open"):
+        head_l, head_r = st.columns([5, 1], vertical_alignment="center")
+        head_l.markdown('<div class="finlens-chat-title">FinLens Assistant</div>',
+                        unsafe_allow_html=True)
+        if head_r.button("✕", key="chat_close_btn", help="Close"):
+            ss.chat_open = False
+            st.rerun()
+        st.caption("Grounded in regulator filings and the live model. Local, $0.")
+
+        for i, msg in enumerate(ss.chat_history):
+            with st.chat_message(msg["role"]):
+                if msg["role"] == "assistant" and isinstance(msg.get("out"), dict):
+                    _render_answer(msg["out"], i)
+                else:
+                    st.markdown(msg["content"])
+
+        if not ss.chat_history:
+            st.caption("Try one of these:")
+            for j, ex in enumerate(_EXAMPLES):
+                if st.button(ex, key=f"chat_ex_{j}", use_container_width=True):
+                    out = _ask(ex, example=True)
+                    ss.chat_history.append({"role": "user", "content": ex})
+                    ss.chat_history.append({"role": "assistant", "content": out.get("answer", ""),
+                                            "out": out})
+                    st.rerun()
+
+        remaining = MAX_LIVE_QUERIES - ss.chat_live_count
+        if remaining <= 0:
+            st.info(f"Live-question limit reached ({MAX_LIVE_QUERIES} per session). "
+                    "Refresh the page to start a new session.")
+        else:
+            prompt = st.chat_input(f"Ask a question  ·  {remaining} live left")
+            if prompt:
+                with st.spinner("Retrieving filings, scoring the bank, synthesizing locally…"):
+                    out = _ask(prompt, example=False)
+                ss.chat_history.append({"role": "user", "content": prompt})
+                ss.chat_history.append({"role": "assistant", "content": out.get("answer", ""),
+                                        "out": out})
+                st.rerun()

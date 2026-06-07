@@ -124,15 +124,12 @@ status_ribbon("Machine Learning Engineering")
 page_intro("AI Engineering", _title, _copy, wiki_slug=_WIKI_SLUG.get(section))
 
 try:
-    _lc1, _lc2 = st.columns(2)
-    with _lc1:
-        st.page_link("pages/8_Analyst_Assistant.py",
-                     label="Open the Analyst Assistant (cited RAG chatbot)", icon="💬")
-    with _lc2:
-        _paper = PROJECT_ROOT / "docs" / "ml" / "PAPER.md"
-        if _paper.exists():
-            with st.expander("Research write-up (measurement paper)"):
-                st.markdown(_paper.read_text(encoding="utf-8"))
+    _paper = PROJECT_ROOT / "docs" / "ml" / "PAPER.md"
+    if _paper.exists():
+        with st.expander("Research write-up (measurement paper)"):
+            st.markdown(_paper.read_text(encoding="utf-8"))
+    st.caption("Ask the cited assistant anything about the model or a specific bank using the "
+               "**Ask FinLens** button in the bottom-right corner of any page.")
 except Exception:
     pass
 

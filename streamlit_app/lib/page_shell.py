@@ -206,6 +206,12 @@ def page_footer() -> None:
         '</div>',
         unsafe_allow_html=True,
     )
+    # Floating assistant, present on every page (rendered last so it overlays the footer).
+    try:
+        from streamlit_app.lib.chat_widget import render_chat_widget
+        render_chat_widget()
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def page_intro(eyebrow: str, title: str, copy: str, wiki_slug: str | None = None) -> None:
