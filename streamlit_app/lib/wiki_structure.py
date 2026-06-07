@@ -11,6 +11,7 @@ AI Engineering, then Reference.
 
 from __future__ import annotations
 
+from streamlit_app.lib.wiki_architecture import ARCHITECTURE_ARTICLES as _ARCH
 from streamlit_app.lib.wiki_content import ARTICLES as _BASE
 from streamlit_app.lib.wiki_extra import EXTRA_ARTICLES as _EXTRA
 
@@ -36,7 +37,7 @@ _SUPERSEDED = {
 }
 ARTICLES: dict[str, dict] = {
     t: a
-    for t, a in {**_BASE, **_EXTRA, **_DE, **_AI}.items()
+    for t, a in {**_BASE, **_EXTRA, **_DE, **_AI, **_ARCH}.items()
     if "(Coming Soon)" not in t and t not in _SUPERSEDED
 }
 
@@ -65,6 +66,7 @@ SECTIONS: list[tuple[str, str, list[tuple[str | None, list[str]]]]] = [
     ]),
     ("architecture", "Architecture", [
         (None, [
+            "System Architecture",
             "Platform Architecture",
             "The Three Surfaces",
             "Bronze, Silver, Intermediate, Gold",

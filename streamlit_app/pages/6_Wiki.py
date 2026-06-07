@@ -12,6 +12,7 @@ PROJECT_ROOT = next(
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from streamlit_app.lib import wiki_architecture as wa
 from streamlit_app.lib import wiki_structure as ws
 from streamlit_app.lib.page_shell import home_navigation, page_footer
 from streamlit_app.lib.telemetry import record_page_view
@@ -105,6 +106,9 @@ with main:
             f'<div class="wiki-art-lead">{a.get("summary", "")}</div>',
             unsafe_allow_html=True,
         )
+        # an article may declare a native diagram (real Graphviz, rendered before the prose)
+        if a.get("diagram") == "system_architecture":
+            st.graphviz_chart(wa.ARCHITECTURE_DOT, use_container_width=True)
         with st.container(key="wiki_article_body"):
             st.markdown(_wikilinks(a["body"]), unsafe_allow_html=True)
         # contextual index tables retained from the legacy wiki

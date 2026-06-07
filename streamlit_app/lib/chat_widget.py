@@ -127,12 +127,12 @@ def render_chat_widget() -> None:
                 else:
                     st.markdown(msg["content"])
 
-        remaining = MAX_LIVE_QUERIES - ss.chat_live_count
-        if remaining <= 0:
-            st.info(f"Live-question limit reached ({MAX_LIVE_QUERIES} per session). "
-                    "Refresh the page to start a new session.")
+        # Rate limit is enforced silently: no live counter is shown. Only when a session goes
+        # past the cap (someone exploiting it) do we surface a plain "rate limited" notice.
+        if ss.chat_live_count >= MAX_LIVE_QUERIES:
+            st.info("You've been rate limited.")
         else:
-            prompt = st.chat_input(f"Ask a question  ·  {remaining} live left")
+            prompt = st.chat_input("Ask a question")
             if prompt:
                 with st.spinner("Retrieving filings, scoring the bank, synthesizing locally…"):
                     out = _ask(prompt, example=False)

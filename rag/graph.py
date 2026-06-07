@@ -1,9 +1,9 @@
 """R2: the FullLens Analyst Assistant RAG path, orchestrated with LangGraph ($0, local).
 
 Pipeline: retrieve (Chroma) -> ground_model (pull the LIVE Capstone-2 model prediction for any
-bank named in the question) -> synthesize (local Ollama llama3.2:3b, instructed to answer ONLY
-from the retrieved context and to cite source URLs). If Ollama is unavailable the synthesis
-falls back to an extractive, fully-cited answer, so the path always runs $0 with no paid API.
+bank named in the question) -> synthesize (OpenRouter, instructed to answer ONLY from the
+retrieved context and to cite source URLs). If OpenRouter is unreachable or unconfigured the
+synthesis falls back to an extractive, fully-cited answer, so the path always returns an answer.
 
 Public entry point: answer_question(question) -> dict with answer, citations, retrieved, and
 the model prediction used (if any). Run a demo: python -m rag.graph "Why did SVB fail?"
@@ -22,7 +22,7 @@ for p in (REPO, REPO / "src", REPO / "ml"):
 
 from rag.ingest import CHROMA_DIR, COLLECTION  # noqa: E402
 
-OLLAMA_MODEL = "llama3.2:3b"
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 TOP_K = 4
 
 
@@ -308,43 +308,32 @@ def _context_block(state: State) -> str:
     return "\n".join(lines)
 
 
-import os  # noqa: E402
-
-OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "127.0.0.1:11434").replace("http://", "")
-OLLAMA_URL = f"http://{OLLAMA_HOST}/api/chat"
-
-
-def _strip_ansi(s: str) -> str:
-    import re
-    return re.sub(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b\][^\x07]*\x07", "", s).replace("\r", "")
-
-
-def _ollama_cli(prompt: str) -> str:
-    """Generate via the local Ollama CLI (`ollama run`). On this machine the HTTP server on
-    :11434 has an empty model set but the CLI store has llama3.2:3b, so the CLI path is the one
-    that actually serves the model. Strips terminal control codes from the output."""
-    import subprocess
-    # encoding=utf-8 + errors=replace: Ollama emits UTF-8 spinner/ANSI bytes that the Windows
-    # default cp1252 decoder chokes on (UnicodeDecodeError in the reader thread). Force UTF-8.
-    r = subprocess.run(["ollama", "run", OLLAMA_MODEL, prompt],
-                       capture_output=True, encoding="utf-8", errors="replace", timeout=240)
-    out = _strip_ansi(r.stdout or "").strip()
-    if not out:
-        raise RuntimeError(f"empty ollama-cli output (rc={r.returncode}): {r.stderr[:120]}")
-    return out
-
-
-def _ollama_chat(prompt: str) -> str:
-    """Call the local Ollama HTTP API directly. Raises on any failure -> next fallback."""
+def _openrouter(prompt: str) -> str:
+    """Synthesize via OpenRouter using the OPENROUTER_API_KEY env credential (never hardcoded).
+    Raises on any failure (missing key, network, bad response) -> extractive fallback."""
     import json
     import urllib.request
-    body = json.dumps({"model": OLLAMA_MODEL, "stream": False,
-                       "messages": [{"role": "user", "content": prompt}],
-                       "options": {"temperature": 0.1}}).encode()
-    req = urllib.request.Request(OLLAMA_URL, data=body,
-                                 headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=180) as r:
-        return json.loads(r.read())["message"]["content"].strip()
+
+    from finlens.config import get_settings
+
+    settings = get_settings()
+    key = settings.openrouter_api_key
+    if not key:
+        raise RuntimeError("OPENROUTER_API_KEY not configured")
+    body = json.dumps({
+        "model": settings.openrouter_model,
+        "temperature": 0.1,
+        "messages": [{"role": "user", "content": prompt}],
+    }).encode()
+    req = urllib.request.Request(
+        OPENROUTER_URL, data=body,
+        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=60) as r:
+        out = json.loads(r.read())["choices"][0]["message"]["content"].strip()
+    if not out:
+        raise RuntimeError("empty OpenRouter response")
+    return out
 
 
 def synthesize(state: State) -> State:
@@ -354,17 +343,16 @@ def synthesize(state: State) -> State:
         "context below. Cite the context items you use like [1], [2]. If the context does not "
         "support an answer, say so plainly. Do not invent facts or numbers.\n\n"
         f"Context:\n{context}\n\nQuestion: {state['question']}\n\nCited answer:")
-    for backend in (_ollama_cli, _ollama_chat):  # CLI first (the path that works here), then HTTP
-        try:
-            return {"answer": backend(prompt), "used_llm": True}
-        except Exception:  # noqa: BLE001
-            continue
-    # extractive, fully-cited fallback ($0, no LLM needed)
+    try:
+        return {"answer": _openrouter(prompt), "used_llm": True}
+    except Exception:  # noqa: BLE001 -> extractive, fully-cited fallback (no external call)
+        pass
+    # extractive, fully-cited fallback
     bullets = "\n".join(f"- {d}" for d in state.get("docs", [])[:3])
     mp = state.get("model_pred")
     extra = (f"\nLive model score for {state.get('bank_name')}: "
              f"{mp['probability']:.3f} as of {mp['quarter']}." if mp else "")
-    return {"answer": f"(extractive, no local LLM available)\n{bullets}{extra}",
+    return {"answer": f"Answering from the retrieved sources:\n{bullets}{extra}",
             "used_llm": False}
 
 

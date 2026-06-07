@@ -34,6 +34,8 @@ class Settings(BaseSettings):
         "filters=ACTIVE:1&fields=CERT,NAME,ACTIVE,BKCLASS,STALP,REGAGNT,ASSET,DEP,ROA,ROE,DATEUPDT&"
         "sort_by=ASSET&sort_order=DESC&limit=10000&format=json"
     )
+    openrouter_api_key: str | None = None
+    openrouter_model: str = "openai/gpt-4o-mini"
     postgres_sync_dsn: str | None = None
     postgres_sync_schema: str = "finlens"
     cloudflare_turnstile_site_key: str | None = None

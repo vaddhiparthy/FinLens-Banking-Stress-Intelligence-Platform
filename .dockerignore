@@ -16,3 +16,9 @@ logs
 site
 private_notes
 FinLens_private_notes
+audit
+docs
+tests
+ml/tests
+test-results
+.claude
