@@ -76,6 +76,21 @@ def _cert_to_name() -> dict:
     return {cert: disp for _nl, cert, disp, _q in _bank_index()}
 
 
+@lru_cache(maxsize=1)
+def _bank_cores() -> dict:
+    """Distinctive core name (generic words stripped) -> entities, for typo-tolerant matching.
+    e.g. 'fifth third bank, national association' -> core 'fifth third'."""
+    import re
+    cores: dict = {}
+    for nl, cert, disp, qtr in _bank_index():
+        toks = [t for t in re.findall(r"[a-z0-9]+", nl)
+                if t not in _GENERIC_NAME_WORDS and len(t) >= 3]
+        if not toks:
+            continue
+        cores.setdefault(" ".join(toks), []).append((nl, cert, disp, qtr))
+    return cores
+
+
 _COMMON_WORD_BANKS = {
     "regions", "discover", "commerce", "valley", "citizens", "heritage", "premier", "summit",
     "pinnacle", "liberty", "century", "pacific", "provident", "sterling", "independence",
@@ -157,7 +172,13 @@ def _detect_bank(question: str):
                 phrase = " ".join(seg)
                 if len(phrase) < 6:
                     continue
-                if any(nl.startswith(phrase) for nl, _c, _d, _qt in idx):
+                # the phrase must carry a distinctive (non-generic) token, else "bank of" /
+                # "first national" prefix-match nearly every bank
+                if not any(t not in _GENERIC_NAME_WORDS and t not in _STOP_FIRST for t in seg):
+                    continue
+                # word-boundary prefix only, so "morgan" does not match "morganton ..."
+                if any(nl == phrase or nl.startswith(phrase + " ") or nl.startswith(phrase + ",")
+                       for nl, _c, _d, _qt in idx):
                     matched = phrase
                     break
             if matched:
@@ -167,8 +188,8 @@ def _detect_bank(question: str):
         cands = [(nl, cert, disp, qtr) for (nl, cert, disp, qtr) in idx if nl.startswith(matched)]
         return _pick_primary(cands, matched)
 
-    # 3) token-subset (last resort): a bank whose >=2 distinctive tokens all appear in the
-    # question. Requiring two tokens avoids a single common word (e.g. "america") mis-matching.
+    # 3) token-subset: a bank whose >=2 distinctive tokens all appear in the question.
+    # Requiring two tokens avoids a single common word (e.g. "america") mis-matching.
     qtokens = set(re.findall(r"[a-z0-9]+", q))
     best = None  # ((n_tokens, char_len, quarter), cert, disp)
     for nl, cert, disp, qtr in idx:
@@ -178,7 +199,48 @@ def _detect_bank(question: str):
         key = (len(toks), sum(len(t) for t in toks), qtr)
         if best is None or key > best[0]:
             best = (key, cert, disp)
-    return (best[1], best[2]) if best else None
+    if best:
+        return best[1], best[2]
+
+    # 4) fuzzy (typo-tolerant): close-match a question phrase to a distinctive bank core, so
+    # "fifth thord" -> "fifth third", "wells fargp" -> "wells fargo". Strict cutoff to avoid
+    # matching ordinary words; resolve to the freshest entity for the matched core.
+    import difflib
+    cores = _bank_cores()
+    core_keys = list(cores)
+    # Work only on DISTINCTIVE tokens (drop generic words like bank/of and common English-word
+    # bank names), so a typo of a real bank name resolves but ordinary prose does not.
+    dwords = [w for w in re.findall(r"[a-z0-9]+", q)
+              if w not in _GENERIC_NAME_WORDS and w not in _STOP_FIRST
+              and len(w) >= 3 and w not in _COMMON_WORD_BANKS]
+
+    def _ratio(a, b):
+        return difflib.SequenceMatcher(None, a, b).ratio()
+
+    best_core = None  # (ratio, core_key)
+    # multi-token phrases (>=2 distinctive tokens): robust against false positives
+    for n in (3, 2):
+        for i in range(len(dwords) - n + 1):
+            phrase = " ".join(dwords[i:i + n])
+            m = difflib.get_close_matches(phrase, core_keys, n=1, cutoff=0.86)
+            if m and (best_core is None or _ratio(phrase, m[0]) > best_core[0]):
+                best_core = (_ratio(phrase, m[0]), m[0])
+    # single distinctive token: only as a TYPO (ratio < 1.0; exact single words are handled
+    # earlier), length-guarded, so e.g. "comerca"/"citibnk" resolve but stray words do not
+    if best_core is None:
+        for w in dwords:
+            if len(w) < 6:
+                continue
+            m = difflib.get_close_matches(w, core_keys, n=1, cutoff=0.86)
+            if not m:
+                continue
+            r = _ratio(w, m[0])
+            if 0.86 <= r < 1.0 and (best_core is None or r > best_core[0]):
+                best_core = (r, m[0])
+    if best_core:
+        # resolve to the PRIMARY active entity for that core (not a Trust/regional sub-charter)
+        return _pick_primary(cores[best_core[1]], best_core[1])
+    return None
 
 
 # ---- nodes ----
