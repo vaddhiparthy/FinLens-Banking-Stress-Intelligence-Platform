@@ -44,6 +44,7 @@ from streamlit_app.lib.ui_components import (
     inject_styles,
     metric_card,
     section_heading,
+    status_tone,
     styled_table,
     tech_bulletin,
 )
@@ -1192,29 +1193,37 @@ if active_section == "pipeline":
             live_label("FDIC BankFind"),
             pipeline_frame.iloc[0]["status"],
             pipeline_frame.iloc[0]["note"],
+            tone=status_tone(pipeline_frame.iloc[0]["status"]),
         )
     with card2:
-        metric_card(live_label("FRED"), pipeline_frame.iloc[2]["status"], pipeline_frame.iloc[2]["note"])
+        metric_card(live_label("FRED"), pipeline_frame.iloc[2]["status"],
+                    pipeline_frame.iloc[2]["note"], tone=status_tone(pipeline_frame.iloc[2]["status"]))
     with card3:
-        metric_card(live_label("Gold Marts"), pipeline_frame.iloc[5]["status"], pipeline_frame.iloc[5]["note"])
+        metric_card(live_label("Gold Marts"), pipeline_frame.iloc[5]["status"],
+                    pipeline_frame.iloc[5]["note"], tone=status_tone(pipeline_frame.iloc[5]["status"]))
     with card4:
         metric_card(
             live_label("Dashboards"),
             pipeline_frame.iloc[6]["status"],
             pipeline_frame.iloc[6]["note"],
+            tone=status_tone(pipeline_frame.iloc[6]["status"]),
         )
     infra1, infra2, infra3, infra4 = st.columns(4)
     stack = platform_stack_frame()
     with infra1:
-        metric_card("AWS S3", stack.iloc[0]["Status"], "Bronze mirror readiness")
+        metric_card("AWS S3", stack.iloc[0]["Status"], "Bronze mirror readiness",
+                    tone=status_tone(stack.iloc[0]["Status"]))
     with infra2:
-        metric_card(live_label("Airflow"), stack.iloc[1]["Status"], "DAG orchestration scaffold")
+        metric_card(live_label("Airflow"), stack.iloc[1]["Status"], "DAG orchestration scaffold",
+                    tone=status_tone(stack.iloc[1]["Status"]))
     with infra3:
-        metric_card(live_label("dbt"), stack.iloc[2]["Status"], "Silver and gold models")
+        metric_card(live_label("dbt"), stack.iloc[2]["Status"], "Silver and gold models",
+                    tone=status_tone(stack.iloc[2]["Status"]))
     with infra4:
-        metric_card("Snowflake", stack.iloc[4]["Status"], "Warehouse contract readiness")
+        metric_card("Snowflake", stack.iloc[4]["Status"], "Warehouse contract readiness",
+                    tone=status_tone(stack.iloc[4]["Status"]))
     section_heading(
-        "Live Pipeline",
+        "Run status by flow",
         "Real-time run status by flow. The chart shows the movement across sources, bronze, "
         "silver, gold, and dashboard serving; the table names the runtime responsible for each "
         "movement.",
@@ -1254,7 +1263,8 @@ elif active_section == "status":
         with gq1:
             metric_card("Suite result",
                         "PASS" if _gx.get("success") else "FAIL",
-                        f"{_gx.get('n_success', 0)}/{_gx.get('n_expectations', 0)} expectations")
+                        f"{_gx.get('n_success', 0)}/{_gx.get('n_expectations', 0)} expectations",
+                        tone="ok" if _gx.get("success") else "bad")
         with gq2:
             metric_card("Table", "gold mart", _gx.get("table", ", "))
         with gq3:

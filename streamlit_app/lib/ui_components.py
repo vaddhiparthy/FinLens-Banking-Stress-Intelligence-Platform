@@ -9,10 +9,14 @@ def inject_styles(css: str) -> None:
     st.markdown(css, unsafe_allow_html=True)
 
 
-def metric_card(label: str, value: str, subtext: str) -> None:
+def metric_card(label: str, value: str, subtext: str, tone: str | None = None) -> None:
+    """tone in {"ok","warn","bad"} adds a status-colored left edge so a Failed/Deferred card is
+    scannable at a glance against the Success cards (defaults to the neutral card)."""
+    edge = {"ok": "#2f8f6b", "warn": "#bf6d47", "bad": "#be123c"}.get(tone or "")
+    style = f' style="border-left:4px solid {edge}"' if edge else ""
     st.markdown(
         f"""
-        <div class="metric-card">
+        <div class="metric-card"{style}>
             <div class="metric-label">{label}</div>
             <div class="metric-value">{value}</div>
             <div class="metric-sub">{subtext}</div>
@@ -20,6 +24,18 @@ def metric_card(label: str, value: str, subtext: str) -> None:
         """,
         unsafe_allow_html=True,
     )
+
+
+def status_tone(status: str | None) -> str | None:
+    """Map a pipeline/platform status string to a metric_card tone."""
+    s = (status or "").strip().lower()
+    if s in {"success", "ready", "pass", "active", "live"}:
+        return "ok"
+    if s in {"failed", "missing data", "missing", "unavailable", "blocked"}:
+        return "bad"
+    if s in {"deferred", "not activated", "scaffolded", "pending", "running"}:
+        return "warn"
+    return None
 
 
 def section_heading(title: str, copy: str | None = None) -> None:

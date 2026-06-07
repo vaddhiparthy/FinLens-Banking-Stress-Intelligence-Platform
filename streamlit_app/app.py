@@ -139,7 +139,8 @@ def _legal_disclaimer() -> None:
         on official U.S. government and regulator sources.
         """,
     )
-    if st.button("I understand", key="accept_home_disclaimer", use_container_width=True):
+    if st.button("I understand", key="accept_home_disclaimer", use_container_width=True,
+                 type="primary"):
         st.session_state["home_disclaimer_accepted"] = True
         st.rerun()
 
