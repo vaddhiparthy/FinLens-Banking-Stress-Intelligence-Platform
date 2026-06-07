@@ -90,7 +90,10 @@ def _render_preview(out: dict) -> None:
         f'{thr * 100:.0f}%.</div>', unsafe_allow_html=True)
     gcol, scol = st.columns([1, 1.5], vertical_alignment="top")
     with gcol:
-        st.plotly_chart(mc.probability_gauge(prob, thr, MODE), use_container_width=True,
+        # zoom the dial so the small probability + the threshold bands are readable, not crushed
+        # near zero on a 0-100% axis (the gauge's cap is built for exactly this)
+        cap = max(thr * 100 * 1.5, prob * 100 * 3, 15.0)
+        st.plotly_chart(mc.probability_gauge(prob, thr, MODE, cap=cap), use_container_width=True,
                         key="inf_gauge")
     with scol:
         fig = _shap_diverging(result.get("reasons", []))
