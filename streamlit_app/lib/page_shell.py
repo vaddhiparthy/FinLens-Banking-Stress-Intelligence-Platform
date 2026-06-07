@@ -234,9 +234,9 @@ def page_intro(eyebrow: str, title: str, copy: str, wiki_slug: str | None = None
 
 
 _SURFACES = [
-    (BUSINESS_PAGE, "Business", "pages/0_Stress_Pulse.py"),
-    (TECHNICAL_PAGE, "Data Engineering", "pages/4_Data_Engineering.py"),
     (AI_PAGE, "AI Engineering", "pages/7_AI_Engineering.py"),
+    (TECHNICAL_PAGE, "Data Engineering", "pages/4_Data_Engineering.py"),
+    (BUSINESS_PAGE, "Business", "pages/0_Stress_Pulse.py"),
 ]
 
 
@@ -377,10 +377,14 @@ def set_meta_description(mode: str) -> None:
     )
 
 
-def top_navigation(active_page: str, mode: str) -> None:
+def top_navigation(active_page: str, mode: str, intro_render=None) -> None:
     _set_surface_mode(mode)
     set_meta_description(mode)
     _render_top_bar(active_page, mode)
+    # optional hero (e.g. a pillar flow diagram) rendered ABOVE the section menu so a surface
+    # opens on its flow chart, not a row of collapsed tabs
+    if intro_render is not None:
+        intro_render()
     _render_section_tabs(active_page, mode)
 
 

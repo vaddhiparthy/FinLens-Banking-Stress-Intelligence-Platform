@@ -12,7 +12,7 @@ async function settle(page) {
 test("chat -> open full report navigates to the report for that bank", async ({ page }) => {
   await page.goto("/AI_Engineering");
   await settle(page);
-  await page.getByRole("button", { name: "Ask FinLens" }).click();
+  await page.getByRole("button", { name: "Research a bank" }).click();
   await settle(page);
   const panel = page.locator(".st-key-finlens_chat_open");
   const input = page.getByPlaceholder(/Ask a question/i);

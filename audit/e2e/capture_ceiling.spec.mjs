@@ -135,7 +135,7 @@ test("bank report svb", async ({ page }) => {
 });
 test("chat open", async ({ page }) => {
   await page.goto("/AI_Engineering"); await settle(page);
-  await page.getByRole("button", { name: "Ask FinLens" }).click(); await settle(page);
+  await page.getByRole("button", { name: "Research a bank" }).click(); await settle(page);
   const input = page.getByPlaceholder(/Ask a question/i);
   await input.fill("Tell me about Fifth Third Bank"); await input.press("Enter"); await settle(page);
   await text(page, "operating institution"); await page.waitForTimeout(600);

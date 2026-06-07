@@ -18,11 +18,11 @@ test("floating assistant opens and answers a cached example", async ({ page }) =
   await page.goto("/AI_Engineering");
   await settle(page);
   // Launcher present bottom-right on every page.
-  const launch = page.getByRole("button", { name: "Ask FinLens" });
+  const launch = page.getByRole("button", { name: "Research a bank" });
   await expect(launch).toBeVisible();
   await launch.click();
   await settle(page);
-  await expect(page.getByText("FinLens Assistant").first()).toBeVisible();
+  await expect(page.getByText("FinLens Analyst").first()).toBeVisible();
   // A cached question answers instantly (no live model needed).
   const panel = page.locator(".st-key-finlens_chat_open");
   const input = page.getByPlaceholder(/Ask a question/i);
@@ -36,7 +36,7 @@ test("floating assistant opens and answers a cached example", async ({ page }) =
 test("assistant handles an operating bank by name (Comerica), not a failure dump", async ({ page }) => {
   await page.goto("/AI_Engineering");
   await settle(page);
-  await page.getByRole("button", { name: "Ask FinLens" }).click();
+  await page.getByRole("button", { name: "Research a bank" }).click();
   await settle(page);
   const input = page.getByPlaceholder(/Ask a question/i);
   await input.fill("What happened to Comerica Bank?");

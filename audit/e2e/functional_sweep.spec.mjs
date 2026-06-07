@@ -14,7 +14,7 @@ async function ack(page) {
 }
 async function openChat(page) {
   await page.goto("/AI_Engineering"); await settle(page);
-  await page.getByRole("button", { name: "Ask FinLens" }).click(); await settle(page);
+  await page.getByRole("button", { name: "Research a bank" }).click(); await settle(page);
   return page.locator(".st-key-finlens_chat_open");
 }
 async function askChat(page, panel, q) {

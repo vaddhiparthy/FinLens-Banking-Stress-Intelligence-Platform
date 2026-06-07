@@ -1,9 +1,9 @@
 """Floating, rate-limited FinLens assistant, shown bottom-right on every page.
 
-Backed by the local $0 RAG path (rag.trace.traced_answer): retrieval and citations are real,
-synthesis is a local Ollama model with a fully-cited extractive fallback. Common questions are
-answered instantly from a committed cache; live questions are capped per session. When a question
-names a bank, the assistant offers a one-click full institutional report.
+Backed by the RAG path (rag.trace.traced_answer): retrieval and citations are real, synthesis is
+via OpenRouter with a fully-cited extractive fallback. Common questions are answered instantly from
+a committed cache; live questions are capped per session. When a question names a bank, the
+assistant offers a one-click full institutional report.
 """
 
 from __future__ import annotations
@@ -99,14 +99,14 @@ def render_chat_widget() -> None:
 
     if not ss.chat_open:
         with st.container(key="finlens_chat_closed"):
-            if st.button("Ask FinLens", key="chat_launch_btn"):
+            if st.button("Research a bank", key="chat_launch_btn"):
                 ss.chat_open = True
                 st.rerun()
         return
 
     with st.container(key="finlens_chat_open"):
         head_l, head_r = st.columns([5, 1], vertical_alignment="center")
-        head_l.markdown('<div class="finlens-chat-title">FinLens Assistant</div>',
+        head_l.markdown('<div class="finlens-chat-title">FinLens Analyst</div>',
                         unsafe_allow_html=True)
         if head_r.button("✕", key="chat_close_btn", help="Close"):
             ss.chat_open = False
@@ -116,8 +116,7 @@ def render_chat_widget() -> None:
                 st.markdown(
                     "Hi. Ask me about any U.S. bank (for example, _Tell me about Comerica Bank_ "
                     "or _Why did Silicon Valley Bank fail?_), or about the model and the data. "
-                    "Answers are grounded in the live model and regulator filings, and run "
-                    "locally at no cost."
+                    "Answers are grounded in the live model and regulator filings, with sources cited."
                 )
 
         for i, msg in enumerate(ss.chat_history):
@@ -134,7 +133,7 @@ def render_chat_widget() -> None:
         else:
             prompt = st.chat_input("Ask a question")
             if prompt:
-                with st.spinner("Retrieving filings, scoring the bank, synthesizing locally…"):
+                with st.spinner("Retrieving filings, scoring the bank, synthesizing…"):
                     out = _ask(prompt, example=False)
                 ss.chat_history.append({"role": "user", "content": prompt})
                 ss.chat_history.append({"role": "assistant", "content": out.get("answer", ""),

@@ -25,6 +25,7 @@ for sub in ("", "src", "ml"):
         sys.path.insert(0, p)
 
 from streamlit_app.lib import ml_charts as mc
+from streamlit_app.lib import wiki_architecture as wa
 from streamlit_app.lib.page_shell import (
     AI_PAGE,
     get_ai_section,
@@ -58,7 +59,13 @@ st.set_page_config(
 )
 ensure_theme_state()
 inject_styles(app_css(get_theme_mode(), sidebar_open=True))
-top_navigation("ai", AI_PAGE)
+
+
+def _render_ai_flow() -> None:
+    st.graphviz_chart(wa.AI_FLOW_DOT, use_container_width=True)
+
+
+top_navigation("ai", AI_PAGE, intro_render=_render_ai_flow)
 record_page_view("ai_engineering", AI_PAGE)
 
 MODE = get_theme_mode()
@@ -140,7 +147,7 @@ try:
         with st.expander("Research write-up (measurement paper)"):
             st.markdown(_render_repo_md(_paper.read_text(encoding="utf-8")))
     st.caption("Ask the cited assistant anything about the model or a specific bank using the "
-               "**Ask FinLens** button in the bottom-right corner of any page.")
+               "**Research a bank** button in the bottom-right corner of any page.")
 except Exception:
     pass
 

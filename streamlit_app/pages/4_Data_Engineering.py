@@ -30,6 +30,7 @@ from finlens.pipeline_status import pipeline_status_rows
 from finlens.state import load_state
 from finlens.telemetry import telemetry_summary
 from finlens.warehouse import stress_pulse_source_mode
+from streamlit_app.lib import wiki_architecture as wa
 from streamlit_app.lib.architecture_docs import render_architecture_decisions
 from streamlit_app.lib.page_shell import (
     TECHNICAL_PAGE,
@@ -1114,7 +1115,11 @@ inject_styles(
     """,
     )
 )
-top_navigation("hood", TECHNICAL_PAGE)
+def _render_de_flow() -> None:
+    st.graphviz_chart(wa.DE_FLOW_DOT, use_container_width=True)
+
+
+top_navigation("hood", TECHNICAL_PAGE, intro_render=_render_de_flow)
 record_page_view("control_room", TECHNICAL_PAGE)
 status_ribbon("Data Engineering surface")
 active_section = get_technical_section()

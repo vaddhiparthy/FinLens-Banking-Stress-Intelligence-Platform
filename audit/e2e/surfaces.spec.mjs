@@ -75,7 +75,7 @@ test("floating assistant launcher is present on a content page", async ({ page }
   await page.goto("/AI_Engineering");
   await settle(page);
   // The Analyst Assistant is now a floating widget on every page, not a standalone page.
-  await expect(page.getByRole("button", { name: "Ask FinLens" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Research a bank" })).toBeVisible();
   await shot(page, "e2e_ai_chat_launcher");
 });
 
