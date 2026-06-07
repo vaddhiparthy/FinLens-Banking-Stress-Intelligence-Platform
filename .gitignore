@@ -58,3 +58,4 @@ dbt/dbt_packages/
 .coverage
 test-results/
 audit/screenshots/_crops/
+COMMIT_MSG.tmp
