@@ -104,7 +104,7 @@ def _qnum(repdte: str) -> int:
 
 def parse_period(zip_path: Path) -> pd.DataFrame:
     repdte = re.search(r"call_(\d{8})", zip_path.name).group(1)  # YYYYMMDD
-    yyyy, mm = repdte[:4], repdte[4:6]
+    yyyy = repdte[:4]
     quarter = f"{yyyy}Q{_qnum(repdte)}"
     qnum = _qnum(repdte)
     ann = 4.0 / qnum  # YTD income annualization factor

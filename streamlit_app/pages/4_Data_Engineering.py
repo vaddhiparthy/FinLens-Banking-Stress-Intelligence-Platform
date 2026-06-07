@@ -466,7 +466,6 @@ def platform_stack_frame() -> pd.DataFrame:
 
 
 def tool_evidence_frame() -> pd.DataFrame:
-    settings = get_settings()
     probes = load_state("platform_probe_report", default={})
     dbt_report = load_state("dbt_build_report", default={})
     latest_run = latest_pipeline_run()
@@ -1037,7 +1036,6 @@ def control_sync_frame() -> pd.DataFrame:
         "postgres",
         "Success" if settings.postgres_sync_dsn else "Waiting on DSN",
     )
-    sync_state = load_state("postgres_sync_state", default={})
     telemetry = telemetry_summary()
     # The Home Postgres control DB is not reachable in this portfolio environment.
     # Report that honestly as "Deferred" rather than a red "Failed" that reads as broken.
