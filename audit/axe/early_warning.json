@@ -1,5 +1,6 @@
 {
-  "url": "http://localhost:8601/Early_Warning",
-  "n_violations": 0,
-  "violations": []
+  "url": "/Early_Warning",
+  "nViolations": 0,
+  "violations": [],
+  "passes": 28
 }

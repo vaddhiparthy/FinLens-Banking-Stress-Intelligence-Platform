@@ -1,5 +1,6 @@
 {
-  "url": "http://localhost:8601/",
-  "n_violations": 0,
-  "violations": []
+  "url": "/",
+  "nViolations": 0,
+  "violations": [],
+  "passes": 23
 }

@@ -1,5 +1,6 @@
 {
-  "url": "http://localhost:8601/AI_Engineering",
-  "n_violations": 0,
-  "violations": []
+  "url": "/AI_Engineering",
+  "nViolations": 0,
+  "violations": [],
+  "passes": 16
 }
