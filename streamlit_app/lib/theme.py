@@ -1357,6 +1357,11 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         line-height: 1.1;
         margin-top: .12rem;
     }}
+    .metric-value-text {{
+        font-size: .82rem;
+        font-weight: 600;
+        color: {palette["text_soft"]};
+    }}
     .metric-sub {{
         color: {palette["text_muted"]};
         font-size: .72rem;

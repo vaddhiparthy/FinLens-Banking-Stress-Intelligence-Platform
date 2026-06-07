@@ -14,11 +14,14 @@ def metric_card(label: str, value: str, subtext: str, tone: str | None = None) -
     scannable at a glance against the Success cards (defaults to the neutral card)."""
     edge = {"ok": "#2f8f6b", "warn": "#bf6d47", "bad": "#be123c"}.get(tone or "")
     style = f' style="border-left:4px solid {edge}"' if edge else ""
+    # Non-numeric states (e.g. "Not published", "Deferred") render in a quieter, smaller
+    # treatment so they don't compete typographically with the big numeric values in a KPI row.
+    vcls = "metric-value" if any(ch.isdigit() for ch in str(value)) else "metric-value metric-value-text"
     st.markdown(
         f"""
         <div class="metric-card"{style}>
             <div class="metric-label">{label}</div>
-            <div class="metric-value">{value}</div>
+            <div class="{vcls}">{value}</div>
             <div class="metric-sub">{subtext}</div>
         </div>
         """,
