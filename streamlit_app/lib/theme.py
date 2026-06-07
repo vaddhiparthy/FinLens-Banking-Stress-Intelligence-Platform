@@ -2192,6 +2192,37 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         }}
     }}
 
+    /* ---- Wiki article typography: a readable measure + heading rhythm (no giant blocks) ---- */
+    .st-key-wiki_article_body {{ max-width: 760px; }}
+    .st-key-wiki_article_body [data-testid="stMarkdownContainer"] p {{
+        text-align: left;
+        line-height: 1.74;
+        font-size: 1.02rem;
+        margin: 0 0 1.05rem 0;
+        color: {palette["text_main"]};
+    }}
+    .st-key-wiki_article_body h2 {{
+        font-size: 1.32rem; font-weight: 750; letter-spacing: -.01em;
+        color: {palette["text_main"]};
+        margin: 1.9rem 0 .55rem 0; padding-bottom: .3rem;
+        border-bottom: 1px solid {palette["border"]};
+    }}
+    .st-key-wiki_article_body h3 {{
+        font-size: 1.08rem; font-weight: 700; color: {palette["text_main"]};
+        margin: 1.35rem 0 .4rem 0;
+    }}
+    .st-key-wiki_article_body ul, .st-key-wiki_article_body ol {{
+        margin: 0 0 1.05rem 1.1rem; line-height: 1.7;
+    }}
+    .st-key-wiki_article_body li {{ margin: .2rem 0; }}
+    .st-key-wiki_article_body code {{
+        background: {palette["sand"]}; border: 1px solid {palette["border"]};
+        border-radius: 5px; padding: .04rem .3rem; font-size: .9em;
+    }}
+    .st-key-wiki_article_body a {{ color: {palette["link"]}; }}
+    .wiki-art-title, .wiki-art-lead, .wiki-art-crumb {{ max-width: 760px; }}
+    .wiki-art-lead {{ font-size: 1.12rem; line-height: 1.6; color: {palette["text_soft"]}; }}
+
     /* ---- Floating assistant widget (bottom-right, every page) ---- */
     .st-key-finlens_chat_closed {{
         position: fixed; right: 22px; bottom: 22px; z-index: 9990; width: auto !important;

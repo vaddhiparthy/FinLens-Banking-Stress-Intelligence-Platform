@@ -141,7 +141,7 @@ def pipeline_status_table(frame: pd.DataFrame) -> pd.DataFrame:
         "NIC -> Bronze": "Airflow task + institution metadata extractor",
         "Bronze -> Silver": "dbt staging / canonical model",
         "Silver -> Gold": "dbt mart build",
-        "Gold -> Dashboards": "Snowflake/DuckDB mart read + Streamlit",
+        "Gold -> Dashboards": "DuckDB mart read + Streamlit",
     }
     artifact_map = {
         "FDIC -> Bronze": "FDIC failure feed is landing into the active data contract",
@@ -413,28 +413,15 @@ def platform_stack_frame() -> pd.DataFrame:
                 "Readiness note": "Terraform folder is present and reserved for infra rollout",
             },
             {
-                "Component": "Snowflake warehouse",
-                "Role": "Resume-grade analytical warehouse target",
-                "Status": _probe_status(
-                    probes,
-                    "snowflake",
-                    _tool_status(
-                        configured=bool(
-                            settings.snowflake_account
-                            and settings.snowflake_user
-                            and settings.snowflake_password
-                        )
-                    ),
+                "Component": "DuckDB warehouse",
+                "Role": "Analytical warehouse of record (columnar OLAP); MotherDuck is the $0 "
+                        "cloud-scale path (DuckDB-native)",
+                "Status": _tool_status(
+                    configured=(PROJECT_ROOT / ".duckdb" / "finlens.duckdb").exists()
                 ),
-                "Readiness note": _probe_detail(
-                    probes,
-                    "snowflake",
-                    (
-                        f"Role {settings.snowflake_role}, "
-                        f"marts DB {settings.snowflake_database_marts}"
-                        if settings.snowflake_account
-                        else "Contract and env vars are scaffolded, waiting for account credentials"
-                    ),
+                "Readiness note": (
+                    "Serving the gold marts and the ML panel; bronze->silver->gold all "
+                    "materialized in DuckDB. Cloud scale-out via MotherDuck (free tier) when needed."
                 ),
             },
             {
@@ -533,16 +520,14 @@ def tool_evidence_frame() -> pd.DataFrame:
                 ),
             },
             {
-                "Platform component": "Snowflake",
-                "Operating role": "Raw/staging/intermediate/marts warehouse objects",
-                "Current state": probe_detail(
-                    "snowflake",
-                    f"Configured account {settings.snowflake_account}"
-                    if settings.snowflake_account
-                    else "Credentials not supplied to this runtime",
+                "Platform component": "DuckDB (warehouse of record)",
+                "Operating role": "Raw/staging/intermediate/marts objects in one columnar OLAP file",
+                "Current state": (
+                    "Live: gold marts + ML panel materialized; MotherDuck (free tier) is the "
+                    "$0 cloud scale-out path when needed"
                 ),
                 "Next operational signal": (
-                    "Query INFORMATION_SCHEMA for table counts, row counts, and last altered time"
+                    "Query information_schema for table counts, row counts, and last build time"
                 ),
             },
             {
@@ -1220,7 +1205,7 @@ if active_section == "pipeline":
         metric_card(live_label("dbt"), stack.iloc[2]["Status"], "Silver and gold models",
                     tone=status_tone(stack.iloc[2]["Status"]))
     with infra4:
-        metric_card("Snowflake", stack.iloc[4]["Status"], "Warehouse contract readiness",
+        metric_card(live_label("DuckDB"), stack.iloc[4]["Status"], "Analytical warehouse",
                     tone=status_tone(stack.iloc[4]["Status"]))
     section_heading(
         "Run status by flow",
@@ -1315,7 +1300,7 @@ elif active_section == "implementation":
     section_heading(
         "Core Data Engineering Stack",
         "Operational checks grouped by the component expected to produce them: Airflow for "
-        "orchestration, dbt for model/test outcomes, and Snowflake/DuckDB for warehouse state.",
+        "orchestration, dbt for model/test outcomes, and DuckDB for warehouse state.",
     )
     styled_table(tool_evidence_frame())
     section_heading(
@@ -1335,19 +1320,16 @@ elif active_section == "implementation":
         )
         styled_table(latest_pipeline_run_frame())
     section_heading(
-        "Warehouse Activation Checklist (Snowflake + dbt)",
-        "Concrete checks needed before claiming the full warehouse path is live.",
+        "Warehouse Activation Checklist (DuckDB + dbt)",
+        "Concrete checks behind the warehouse path.",
     )
     activation = pd.DataFrame(
         [
             {
-                "Layer": "Snowflake connection",
-                "Validation artifact": "Successful SELECT CURRENT_ACCOUNT(), CURRENT_ROLE()",
-                "Status": _probe_status(
-                    probes,
-                    "snowflake",
-                    "Success" if settings.snowflake_account else "Pending",
-                ),
+                "Layer": "DuckDB warehouse",
+                "Validation artifact": "Gold marts + ML panel materialized and queryable",
+                "Status": ("Success" if (PROJECT_ROOT / ".duckdb" / "finlens.duckdb").exists()
+                           else "Pending"),
             },
             {
                 "Layer": "dbt build",

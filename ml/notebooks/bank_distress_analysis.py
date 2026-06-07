@@ -13,10 +13,10 @@
 # %% [markdown]
 # # Bank-Distress Early-Warning: analysis notebook
 #
-# This is the working notebook behind the FinLens AI surface. I build a discrete-time
-# hazard model on a per-bank-quarter FDIC Call Report panel, evaluate it strictly
-# out-of-time, and look at what drives it. Everything runs on the real DuckDB panel and
-# the real trained artifacts. I'm Surya Vaddhiparthy; this is how I actually built it.
+# This is the working notebook behind the FinLens AI surface. A discrete-time hazard
+# model is built on a per-bank-quarter FDIC Call Report panel, evaluated strictly
+# out-of-time, with a look at what drives it. Everything runs on the real DuckDB panel
+# and the real trained artifacts.
 
 # %%
 import sys
@@ -55,8 +55,8 @@ print(f"positives (fail within 4q): {df['label_4'].sum():,} "
 df[["cert", "quarter", "label_4"] + FEATURE_COLUMNS[:4]].head()
 
 # %% [markdown]
-# A <1% base rate is the whole challenge: accuracy is useless here, so I lead with
-# precision-recall, recall@k, and calibration instead.
+# A <1% base rate is the whole challenge: accuracy is useless here, so the analysis leads
+# with precision-recall, recall@k, and calibration instead.
 
 # %%
 fails = df[df["fail_qord"].notna()].drop_duplicates("cert")
@@ -72,7 +72,7 @@ plt.show()
 # %% [markdown]
 # ## 2. Features and the monotone contract
 # 34 CAMELS-aligned ratios, trends, and peer z-scores. Each feature carries an
-# economic monotone direction I enforce in the model so it can't learn a perverse
+# economic monotone direction enforced in the model so it cannot learn a perverse
 # relationship (more capital must never raise predicted risk).
 
 # %%
@@ -85,9 +85,9 @@ contract.head(12)
 
 # %% [markdown]
 # ## 3. Out-of-time evaluation
-# I reuse the exact shipped protocol: train on the early panel, hold out the last 28
+# The exact shipped protocol is reused: train on the early panel, hold out the last 28
 # quarters (which contain real failures, including the 2023 cluster), with a reporting
-# lag embargo so nothing leaks. Then I calibrate the probabilities.
+# lag embargo so nothing leaks. The probabilities are then calibrated.
 
 # %%
 from finlens_ml.splits import final_holdout_split
@@ -133,13 +133,13 @@ axp.legend(); axr.legend(); plt.tight_layout(); plt.show()
 
 # %% [markdown]
 # The LGBM beats the regulatory-style penalized logit on PR-AUC, which is the metric
-# that matters at this base rate. ROC looks strong for both, which is exactly why I
-# don't lead with it.
+# that matters at this base rate. ROC looks strong for both, which is why ROC is not the
+# headline metric.
 
 # %% [markdown]
 # ## 4. Calibration
-# A served probability should mean what it says. I bin the OOT predictions and compare
-# predicted vs observed failure rate.
+# A served probability should mean what it says. The OOT predictions are binned and the
+# predicted vs observed failure rate is compared.
 
 # %%
 bins = np.linspace(0, p_cal.max(), 11)
@@ -160,13 +160,20 @@ plt.legend(); plt.tight_layout(); plt.show()
 import shap
 import lightgbm as lgb
 
+from finlens_ml.scenario import humanize_feature
+
 booster = lgb.Booster(model_file=str(REPO / "ml" / "artifacts" / "booster_h4.txt"))
 sample = df.sample(n=min(2000, len(df)), random_state=42)[FEATURE_COLUMNS].astype(float)
 expl = shap.TreeExplainer(booster, feature_perturbation="tree_path_dependent")
 sv = expl.shap_values(sample)
 if isinstance(sv, list):
     sv = sv[1] if len(sv) > 1 else sv[0]
-shap.summary_plot(sv, sample, max_display=15, show=False)
+# Readable labels + a clean horizontal mean-|SHAP| importance bar (the beeswarm crammed
+# all 34 raw feature names onto the left axis). Top 12 drivers, plain-English names.
+disp = sample.rename(columns={c: humanize_feature(c) for c in sample.columns})
+shap.summary_plot(sv, disp, max_display=12, plot_type="bar", show=False, plot_size=(9, 6))
+plt.title("What drives the model: mean absolute SHAP impact (out-of-time sample)")
+plt.xlabel("mean |SHAP| (impact on predicted distress)")
 plt.tight_layout(); plt.show()
 
 # %% [markdown]

@@ -24,11 +24,6 @@ inject_styles(app_css(get_theme_mode(), sidebar_open=False))
 record_page_view("wiki", "shared")
 home_navigation()
 
-# Wiki-only: justify article prose for an encyclopedia feel (scoped to this page).
-st.markdown(
-    "<style>.block-container .stMarkdown p{text-align:justify;text-justify:inter-word;}</style>",
-    unsafe_allow_html=True,
-)
 
 _LINK = re.compile(r"\[\[([^\]]+)\]\]")
 
@@ -105,7 +100,8 @@ with main:
             f'<div class="wiki-art-lead">{a.get("summary", "")}</div>',
             unsafe_allow_html=True,
         )
-        st.markdown(_wikilinks(a["body"]), unsafe_allow_html=True)
+        with st.container(key="wiki_article_body"):
+            st.markdown(_wikilinks(a["body"]), unsafe_allow_html=True)
         # contextual index tables retained from the legacy wiki
         if current == "How This Wiki Is Organized":
             rows = [{"Section": s, "Articles": len([t for _x, ts in g for t in ts if t in ws.ARTICLES])}
