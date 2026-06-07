@@ -782,10 +782,14 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
         border-bottom-color: {palette["border"]} !important;
     }}
     div[class*="st-key-tab_"] button:disabled {{
-        background: transparent !important;
+        background: linear-gradient(180deg,
+            color-mix(in srgb, {palette["accent"]} 10%, transparent),
+            color-mix(in srgb, {palette["accent"]} 4%, transparent)) !important;
         color: {palette["accent"]} !important;
         -webkit-text-fill-color: {palette["accent"]} !important;
-        border-bottom: 2px solid {palette["accent"]} !important;
+        border-bottom: 3px solid {palette["accent"]} !important;
+        border-top-left-radius: 8px !important;
+        border-top-right-radius: 8px !important;
         opacity: 1 !important;
         font-weight: 800 !important;
     }}

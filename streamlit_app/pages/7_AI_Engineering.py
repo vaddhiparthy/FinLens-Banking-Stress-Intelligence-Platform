@@ -33,7 +33,12 @@ from streamlit_app.lib.page_shell import (
 )
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
-from streamlit_app.lib.ui_components import inject_styles, metric_card, section_heading
+from streamlit_app.lib.ui_components import (
+    inject_styles,
+    metric_card,
+    pipeline_stage_flow,
+    section_heading,
+)
 
 ART = PROJECT_ROOT / "ml" / "artifacts"
 
@@ -132,6 +137,29 @@ except Exception:
 
 if section == "pipeline":
     section_heading("Training & scoring pipeline", "Discrete-time hazard model on the FDIC bank-quarter panel.")
+    _pr = None
+    if m:
+        try:
+            _pr = m["oot_test"]["calibrated_lgbm"]["pr_auc"]
+        except Exception:
+            _pr = None
+    _ece = (m.get("oot_calibration", {}) or {}).get("ece") if m else None
+    _npanel = f"{viz['n_oot'] + (m.get('final_model', {}).get('n_train', 0) if m else 0):,}" if viz else "448k+"
+    _nfail = viz.get("n_oot_failures") if viz else 66
+    pipeline_stage_flow([
+        {"name": "Ingest", "copy": "FDIC Call Reports → DuckDB point-in-time panel",
+         "metric_1": "448,661 bank-quarters", "metric_2": "~8,800 banks", "metric_3": "2008–2026Q1"},
+        {"name": "Features", "copy": "CAMELS-aligned ratios, trends, peer z-scores",
+         "metric_1": f"{N_FEATURES} features", "metric_2": "point-in-time", "metric_3": "monotone-signed"},
+        {"name": "Label", "copy": "fails-within-4q, merger/end-of-data censored",
+         "metric_1": f"{_nfail} OOT failures", "metric_2": "leakage-free", "metric_3": "forward-looking"},
+        {"name": "Split", "copy": "rolling-origin out-of-time, reporting-lag embargo",
+         "metric_1": "28-quarter holdout", "metric_2": "embargoed", "metric_3": "no leakage"},
+        {"name": "Train + calibrate", "copy": "monotone LightGBM, 12-seed bag, isotonic",
+         "metric_1": f"PR-AUC {_pr:.3f}" if _pr else "calibrated", "metric_2": f"ECE {_ece:.0e}" if _ece else "calibrated", "metric_3": "monotone"},
+        {"name": "Serve + monitor", "copy": "FastAPI (prob + SHAP), Evidently drift watch",
+         "metric_1": "/predict-failure-risk", "metric_2": "calibrated prob", "metric_3": "drift-watched"},
+    ])
     st.markdown(
         "- **Ingest** per-CERT FDIC Call Report financials (free API) into a DuckDB panel\n"
         f"- **Features** {N_FEATURES} CAMELS-aligned ratios, trends, and peer z-scores "
@@ -342,53 +370,52 @@ elif section == "quality":
         # ---- Tuning & optimism (the search made auditable) ----
         study = (tune or {}).get("study") or viz.get("study") or {}
         if study:
-            section_heading("How the model was tuned",
-                            "The hyperparameter search, made auditable: search progress, "
-                            "what mattered, per-trial stability, and the inner-vs-OOT "
-                            "optimism gap.")
-            if study.get("optimism"):
-                o = study["optimism"]
-                metric_card("Optimism ratio", f"{o.get('ratio', 0):.1f}×",
-                            f"inner-CV {o.get('inner_pr_auc')} vs OOT {o.get('oot_pr_auc')} "
-                            "(expected and acceptable, not a defect)")
-                st.plotly_chart(mc.optimism_fig(study, MODE), use_container_width=True)
-            tc1, tc2 = st.columns(2)
-            with tc1:
-                st.plotly_chart(mc.optuna_history_fig(study, MODE), use_container_width=True)
-            with tc2:
-                st.plotly_chart(mc.optuna_importance_fig(study, MODE), use_container_width=True)
-            st.plotly_chart(mc.trial_stability_fig(study, MODE), use_container_width=True)
-            slice_fig = mc.optuna_slice_fig(study, MODE, n=4)
-            if slice_fig is not None:
-                st.plotly_chart(slice_fig, use_container_width=True)
-            else:
-                st.caption("Slice PR-AUC is noise-dominated at n_pos≤4 per inner fold; "
-                           "importance shown instead.")
+            with st.expander("How the model was tuned — hyperparameter search, made auditable"):
+                st.caption("Search progress, what mattered, per-trial stability, and the "
+                           "inner-vs-OOT optimism gap.")
+                if study.get("optimism"):
+                    o = study["optimism"]
+                    metric_card("Optimism ratio", f"{o.get('ratio', 0):.1f}×",
+                                f"inner-CV {o.get('inner_pr_auc')} vs OOT {o.get('oot_pr_auc')} "
+                                "(expected and acceptable, not a defect)")
+                    st.plotly_chart(mc.optimism_fig(study, MODE), use_container_width=True)
+                tc1, tc2 = st.columns(2)
+                with tc1:
+                    st.plotly_chart(mc.optuna_history_fig(study, MODE), use_container_width=True)
+                with tc2:
+                    st.plotly_chart(mc.optuna_importance_fig(study, MODE), use_container_width=True)
+                st.plotly_chart(mc.trial_stability_fig(study, MODE), use_container_width=True)
+                slice_fig = mc.optuna_slice_fig(study, MODE, n=4)
+                if slice_fig is not None:
+                    st.plotly_chart(slice_fig, use_container_width=True)
+                else:
+                    st.caption("Slice PR-AUC is noise-dominated at n_pos≤4 per inner fold; "
+                               "importance shown instead.")
         # ---- G0: how we know the gate is calibrated (honesty instrumentation) ----
         g0 = viz.get("g0") or {}
         gp = g0.get("gate_power") or {}
         cov = g0.get("interval_coverage_sim") or {}
         if gp or cov:
-            section_heading("How the intervals were coverage-validated",
-                            "An external-truth simulation (not a bootstrap of the holdout) "
-                            "measures whether the CIs actually cover and how much power the "
-                            "gate has at this positive count.")
-            if gp.get("mde_statement"):
-                st.markdown(f"**Minimum detectable effect.** {gp['mde_statement']}")
-            if cov.get("chosen_method"):
-                bd = cov.get("by_dgp", {})
-                cells = []
-                for dgp, d in bd.items():
-                    c = d.get("coverage", {})
-                    cells.append(f"{dgp}: " + ", ".join(f"{k} {v:.0%}" for k, v in c.items()))
-                rc = cov.get("recall_jeffreys_coverage")
-                recall_clause = (f" recall@k Jeffreys coverage {rc:.0%}." if isinstance(rc, (int, float))
-                                 else " " + cov.get("recall_note", ""))
-                st.caption(
-                    f"Chosen interval method: **{cov['chosen_method']}** (nominal "
-                    f"{cov.get('nominal', 0.95):.0%}). Measured coverage under external-truth "
-                    f"DGPs: " + " · ".join(cells) + "." + recall_clause
-                )
+            with st.expander("How the intervals were coverage-validated"):
+                st.caption("An external-truth simulation (not a bootstrap of the holdout) "
+                           "measures whether the CIs actually cover and how much power the "
+                           "gate has at this positive count.")
+                if gp.get("mde_statement"):
+                    st.markdown(f"**Minimum detectable effect.** {gp['mde_statement']}")
+                if cov.get("chosen_method"):
+                    bd = cov.get("by_dgp", {})
+                    cells = []
+                    for dgp, d in bd.items():
+                        c = d.get("coverage", {})
+                        cells.append(f"{dgp}: " + ", ".join(f"{k} {v:.0%}" for k, v in c.items()))
+                    rc = cov.get("recall_jeffreys_coverage")
+                    recall_clause = (f" recall@k Jeffreys coverage {rc:.0%}." if isinstance(rc, (int, float))
+                                     else " " + cov.get("recall_note", ""))
+                    st.caption(
+                        f"Chosen interval method: **{cov['chosen_method']}** (nominal "
+                        f"{cov.get('nominal', 0.95):.0%}). Measured coverage under external-truth "
+                        f"DGPs: " + " · ".join(cells) + "." + recall_clause
+                    )
         c1, c2 = st.columns(2)
         with c1:
             st.plotly_chart(mc.pr_curve_fig(viz, MODE), use_container_width=True)
