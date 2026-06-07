@@ -71,15 +71,12 @@ test("AI Decisions surface exposes the methodology write-ups", async ({ page }) 
   await shot(page, "e2e_ai_decisions");
 });
 
-test("analyst assistant renders a cited cached answer", async ({ page }) => {
-  await page.goto("/Analyst_Assistant");
+test("floating assistant launcher is present on a content page", async ({ page }) => {
+  await page.goto("/AI_Engineering");
   await settle(page);
-  await expect(page.getByText("Analyst Assistant").first()).toBeVisible();
-  // A cached demonstration answer renders without invoking the live model.
-  await expect(page.getByText("Answer").first()).toBeVisible();
-  // The live-ask affordance exists.
-  await expect(page.getByRole("button", { name: "Ask live" })).toBeVisible();
-  await shot(page, "e2e_assistant");
+  // The Analyst Assistant is now a floating widget on every page, not a standalone page.
+  await expect(page.getByRole("button", { name: "Ask FinLens" })).toBeVisible();
+  await shot(page, "e2e_ai_chat_launcher");
 });
 
 test("early warning surface renders", async ({ page }) => {
