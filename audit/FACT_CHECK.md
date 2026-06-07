@@ -123,3 +123,24 @@ grep -rnoE "\b(I|I'm|I've|my)\b" streamlit_app --include=*.py | grep -vE "%I|I u
 # 6. E2E surfaces + widget + report
 cd audit/e2e && npx playwright test --config playwright.config.mjs
 ```
+
+---
+
+## Faithfulness hardening (no fabricated data anywhere)
+The app previously carried a `load_demo_bundle()` / "mock"-mode fallback (early-dev scaffolding so a
+fresh clone would render before ingestion). It was never the active source, but the capability was a
+fraud risk. **Removed entirely:**
+- Deleted `src/finlens/datasets.py` (the inline demo bundle).
+- `src/finlens/warehouse.py`, `streamlit_app/lib/data.py`, and `api/services/repository.py` now read the
+  real Gold warehouse only; a missing table returns an empty frame (honest "no data"), never demo.
+- `finlens_data_mode` default → `live`; `read_table` builds the local DuckDB from real ingested payloads
+  only if missing.
+- Verified: `read_table('marts.fct_bank_failures')` = 574 real failures (incl. 2026); zero
+  `load_demo`/`datasets` references remain; pytest 82 pass; 27 E2E pass.
+
+## Wiki factuality sweep (every article cross-checked vs the codebase/data)
+Four parallel reviewers fact-checked all 55 articles. Fixes: "two surfaces" → three everywhere; live
+counts (574 failures, 353 acquirers, 31,269 FRED rows, five marts, 11 dbt models / 7 tests, removed a
+fabricated accepted_values test); DuckDB as warehouse of record (Snowflake trial expired); corrected
+FRED series list, failure history (since 2000, not 1934/S&L), QBP annual grain, FDIC field set, and the
+scale_pos_weight cap (25 → tuned ~18.5). 0 "two surfaces" phrases remain; all modules AST-valid.
