@@ -2224,12 +2224,22 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
     /* ---- Wiki article typography: a readable measure + heading rhythm (no giant blocks) ---- */
     .st-key-wiki_article_body {{ max-width: 760px; }}
     .st-key-wiki_article_body [data-testid="stMarkdownContainer"] p {{
-        text-align: left;
+        text-align: justify;
+        text-justify: inter-word;
+        hyphens: auto;
+        -webkit-hyphens: auto;
         line-height: 1.74;
         font-size: 1.02rem;
         margin: 0 0 1.05rem 0;
         color: {palette["text_main"]};
     }}
+    /* short items (list entries, the lead) keep their natural left edge — never force-justified */
+    .st-key-wiki_article_body li,
+    .st-key-wiki_article_body [data-testid="stMarkdownContainer"] li {{
+        text-align: left;
+        hyphens: none;
+    }}
+    .wiki-art-lead {{ text-align: left; }}
     .st-key-wiki_article_body h2 {{
         font-size: 1.32rem; font-weight: 750; letter-spacing: -.01em;
         color: {palette["text_main"]};

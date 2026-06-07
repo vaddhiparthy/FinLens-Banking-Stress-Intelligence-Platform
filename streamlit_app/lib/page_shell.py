@@ -65,7 +65,6 @@ def _technical_sections() -> list[tuple[str, str]]:
         ("implementation", "Engineering Stack"),
         ("status", "Data Quality"),
         ("decisions", "Architecture Decisions"),
-        ("administration", "Administration"),
         ("wiki", "Wiki"),
     ]
 
@@ -78,19 +77,20 @@ def _ai_sections() -> list[tuple[str, str]]:
         ("stack", "AI Stack"),
         ("quality", "Model Quality"),
         ("decisions", "Model Decisions"),
-        ("administration", "Administration"),
         ("wiki", "Wiki"),
     ]
 
 
 def get_technical_section() -> str:
-    if "technical_section" not in st.session_state:
+    valid = {k for k, _ in _technical_sections()}
+    if st.session_state.get("technical_section") not in valid:
         st.session_state["technical_section"] = "pipeline"
     return st.session_state["technical_section"]
 
 
 def get_ai_section() -> str:
-    if "ai_section" not in st.session_state:
+    valid = {k for k, _ in _ai_sections()}
+    if st.session_state.get("ai_section") not in valid:
         st.session_state["ai_section"] = "pipeline"
     return st.session_state["ai_section"]
 

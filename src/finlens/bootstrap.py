@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 from finlens.config import Settings, get_settings
@@ -172,38 +173,27 @@ def run_active_sources(
 
 
 def _status_fields_for_result(key: str, result: Any) -> dict[str, str]:
+    # Real wall-clock completion time, recorded the moment ingestion returns (never a placeholder).
+    now = datetime.now(UTC).isoformat()
     if key == "fdic":
-        return {
-            "status": "Success",
-            "last_run": "Completed",
-            "rows": str(getattr(result, "record_count", "—")),
-            "note": "Latest ingest complete",
-        }
+        rc = getattr(result, "record_count", None)
+        if rc is None:
+            rc = getattr(result, "size_bytes", None)
+            rows = f"{rc:,} bytes" if rc else "n/a"
+        else:
+            rows = f"{rc:,} records"
+        return {"status": "Success", "last_run": now, "rows": rows,
+                "note": "Latest ingest complete"}
     if key == "fred":
         updated_count = sum(1 for item in result if getattr(item, "updated", False))
-        return {
-            "status": "Success",
-            "last_run": "Completed",
-            "rows": f"{len(result)} series",
-            "note": f"{updated_count} series updated",
-        }
+        return {"status": "Success", "last_run": now, "rows": f"{len(result)} series",
+                "note": f"{updated_count} series updated"}
     if key == "qbp":
-        return {
-            "status": "Success",
-            "last_run": "Completed",
-            "rows": f"{getattr(result, 'size_bytes', 0):,} bytes",
-            "note": "Quarterly workbook landed",
-        }
+        return {"status": "Success", "last_run": now,
+                "rows": f"{getattr(result, 'size_bytes', 0):,} bytes",
+                "note": "Quarterly workbook landed"}
     if key == "nic":
-        return {
-            "status": "Success",
-            "last_run": "Completed",
-            "rows": f"{getattr(result, 'size_bytes', 0):,} bytes",
-            "note": "Current parent metadata landed",
-        }
-    return {
-        "status": "Success",
-        "last_run": "Completed",
-        "rows": "—",
-        "note": "Run complete",
-    }
+        return {"status": "Success", "last_run": now,
+                "rows": f"{getattr(result, 'size_bytes', 0):,} bytes",
+                "note": "Current parent metadata landed"}
+    return {"status": "Success", "last_run": now, "rows": "n/a", "note": "Run complete"}

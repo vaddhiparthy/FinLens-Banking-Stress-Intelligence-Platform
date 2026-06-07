@@ -1,6 +1,8 @@
-<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="15.514151">
-<testsuite name="capture_ceiling.spec.mjs" timestamp="2026-06-07T10:31:20.905Z" hostname="" tests="1" failures="0" skipped="0" time="13.592" errors="0">
-<testcase name="ai notebook" classname="capture_ceiling.spec.mjs" time="13.592">
+<testsuites id="" name="" tests="2" failures="0" skipped="0" errors="0" time="13.986250999999998">
+<testsuite name="capture_ceiling.spec.mjs" timestamp="2026-06-07T12:37:28.058Z" hostname="" tests="2" failures="0" skipped="0" time="13" errors="0">
+<testcase name="de pipeline" classname="capture_ceiling.spec.mjs" time="3.601">
+</testcase>
+<testcase name="wiki article" classname="capture_ceiling.spec.mjs" time="9.399">
 </testcase>
 </testsuite>
 </testsuites>

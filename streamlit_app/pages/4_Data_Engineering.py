@@ -134,11 +134,13 @@ def pipeline_status_table(frame: pd.DataFrame) -> pd.DataFrame:
         "Deferred": "⚪ Deferred",
         "Not Activated": "⚪ Not Activated",
     }
+    # Honest runtime: the extractors were run by scripts/run_local_pipeline.py (Python), not a
+    # live Airflow scheduler. The Airflow DAGs are defined (airflow/dags/) for scheduled runs.
     tool_map = {
-        "FDIC -> Bronze": "Airflow task + Python extractor",
-        "QBP -> Bronze": "Airflow task + FDIC summary extractor",
-        "FRED -> Bronze": "Airflow task + FRED extractor",
-        "NIC -> Bronze": "Airflow task + institution metadata extractor",
+        "FDIC -> Bronze": "Python extractor (local run; Airflow DAG defined)",
+        "QBP -> Bronze": "FDIC summary extractor (local run; Airflow DAG defined)",
+        "FRED -> Bronze": "FRED extractor (local run; Airflow DAG defined)",
+        "NIC -> Bronze": "Institution-metadata extractor (local run; Airflow DAG defined)",
         "Bronze -> Silver": "dbt staging / canonical model",
         "Silver -> Gold": "dbt mart build",
         "Gold -> Dashboards": "DuckDB mart read + Streamlit",
@@ -1345,42 +1347,6 @@ elif active_section == "implementation":
     )
     styled_table(activation)
     render_code_excerpts()
-
-elif active_section == "administration":
-    section_heading(
-        "Service Endpoint Catalog",
-        "Administration-facing routes for health checks, telemetry intake, and runtime summaries. "
-        "These are operational controls, not business analytics.",
-    )
-    styled_table(service_endpoints_frame())
-    section_heading(
-        "Control Sync (Postgres)",
-        "Telemetry and pipeline snapshots that can sync to the home control database.",
-    )
-    styled_table(control_sync_frame())
-    section_heading(
-        "Source Freshness",
-        "Current readiness and freshness posture from the connector report.",
-    )
-    styled_table(freshness_table())
-    section_heading(
-        "Source Landing Artifacts",
-        "Raw files and source volumes retained from connector runs.",
-    )
-    styled_table(source_landing_frame())
-    section_heading(
-        "Containerization & Kubernetes Deployment",
-        "The ML serving API is containerized and has a committed local-Kubernetes (kind) "
-        "deployment recipe with readiness/liveness probes. Manifests live under deploy/k8s/; "
-        "the Dockerfiles sit beside each service.",
-    )
-    styled_table(deploy_artifacts_frame())
-    st.caption(
-        "Deploy recipe (committed in deploy/k8s/ml-serve.yaml): `kind create cluster` → "
-        "`docker build -f ml/Dockerfile -t fulllens-ml-serve` → `kind load docker-image` → "
-        "`kubectl apply -f deploy/k8s/ml-serve.yaml` → `kubectl port-forward svc/fulllens-ml-serve "
-        "8077:8077`. NodePort 30077, probes on /ready and /health."
-    )
 
 elif active_section == "decisions":
     render_architecture_decisions()

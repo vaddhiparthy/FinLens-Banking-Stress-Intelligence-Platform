@@ -75,12 +75,6 @@ test("de data quality", async ({ page }) => {
   await page.waitForTimeout(600);
   await page.screenshot({ path: `${SHOTS}de_data_quality.png`, ...FULL });
 });
-test("de administration", async ({ page }) => {
-  await page.goto("/Data_Engineering"); await settle(page);
-  await sectionTab(page, "Administration"); await text(page, "Containerization & Kubernetes");
-  await page.waitForTimeout(600);
-  await page.screenshot({ path: `${SHOTS}de_administration.png`, ...FULL });
-});
 test("de engineering stack", async ({ page }) => {
   await page.goto("/Data_Engineering"); await settle(page);
   await sectionTab(page, "Engineering Stack"); await text(page, "Platform Stack Readiness");

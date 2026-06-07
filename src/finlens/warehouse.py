@@ -354,7 +354,7 @@ def initialise_local_duckdb() -> Path:
             "gold_to_dashboards",
             status="Success",
             last_run=datetime.now(UTC).isoformat(),
-            rows="4 surfaces",
+            rows="3 surfaces",
             note="Dashboard contracts ready",
         )
 

@@ -29,7 +29,6 @@ const DE_SECTIONS = [
   ["Data Quality", /Great Expectations Suite/i],
   ["Source Contracts", /Source Classification/i],
   ["Engineering Stack", /Platform Stack Readiness/i],
-  ["Administration", /Service Endpoint Catalog/i],
   ["Architecture Decisions", /Architecture/i],
 ];
 for (const [tab, marker] of DE_SECTIONS) {
@@ -48,7 +47,6 @@ const AI_SECTIONS = [
   ["AI Stack", /ML stack/i],
   ["Model Quality", /PR-AUC \(OOT\)/i],
   ["Model Decisions", /Key model decisions/i],
-  ["Administration", /Model administration/i],
 ];
 for (const [tab, marker] of AI_SECTIONS) {
   test(`AI section "${tab}" renders its content`, async ({ page }) => {

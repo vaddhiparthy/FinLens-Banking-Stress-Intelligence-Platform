@@ -732,20 +732,6 @@ elif section == "decisions":
             with st.expander(_label):
                 st.markdown(_fp.read_text(encoding="utf-8"))
 
-elif section == "administration":
-    from finlens_ml import registry
-
-    section_heading("Model administration", "Registry, promotion, retraining, rollback.")
-    st.markdown(
-        "- **Registry**: MLflow champion/challenger via aliases (not deprecated stages)\n"
-        "- **Promotion**: manual to champion after shadow + a CI metric gate\n"
-        "- **Retrain**: scheduled quarterly + drift-triggered\n"
-        "- **Rollback**: repoint the champion alias to the prior version (instant, auditable)\n"
-        "- **$0 guard**: CI fails if ML code imports any billable service"
-    )
-    _show_code(registry.set_champion, "Champion promotion via alias (registry.set_champion)")
-    _show_code(registry.promote_latest_to_champion, "Promote latest (registry.promote_latest_to_champion)")
-
 from streamlit_app.lib.page_shell import page_footer  # noqa: E402
 
 page_footer()
