@@ -64,8 +64,8 @@ _PROFILE_LITE = [
 def _render_bank_facts(cert: int, bank: str, row: dict, result: dict) -> None:
     """Deeper insights for the resolved bank: what actually happened + key ratios vs peers,
     using the same governed sources as the full Bank Report."""
-    import pandas as pd
     import finlens_ml.scenario as scenario
+    import pandas as pd
 
     # ---- what actually happened (real backtest outcome + regulator-stated cause if it failed) ----
     label = row.get("actual_label_4")
@@ -128,7 +128,8 @@ def _render_preview(out: dict) -> None:
     try:
         import finlens_ml.scenario as scenario
         # Same source as the full Bank Report so the read matches across surfaces.
-        row = scenario.latest_row_for_cert(int(cert)) or scenario.latest_known_row_for_cert(int(cert))
+        row = (scenario.latest_row_for_cert(int(cert))
+               or scenario.latest_known_row_for_cert(int(cert)))
         result = scenario.score_features(row["features"]) if row else None
     except Exception:  # noqa: BLE001
         row, result = None, None

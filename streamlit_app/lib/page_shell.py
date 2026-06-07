@@ -288,55 +288,85 @@ def _render_section_tabs(active_page: str, mode: str) -> None:
                 _navigate_section(mode, key)
 
 
-def _render_top_bar(active_page: str, mode: str) -> None:
-    """The single persistent chrome used on every page: surface dropdown (left),
-    centred FinLens wordmark, credit (right). Identical placement everywhere."""
-    is_home = mode == "home"
-    # Always label it as a switcher so the control reads as a dropdown, and name the current
-    # surface so the user knows where they are.
-    if is_home:
-        trigger = "Switch surface  ▾"
-    else:
-        trigger = f"Switch surface: {_SURFACE_META.get(mode, _SURFACE_META[BUSINESS_PAGE])[0]}  ▾"
+# The persistent hamburger nav: groups, each expandable to its sitemap. Lives in the native
+# sidebar so its open/closed state survives Streamlit reruns (expanders/popovers do not).
+_NAV_GROUPS = [
+    ("Business", [
+        ("Business Dashboard", "pages/10_Business_Dashboard.py"),
+        ("Stress Pulse", "pages/0_Stress_Pulse.py"),
+        ("Failure Forensics", "pages/1_Failure_Forensics.py"),
+        ("Macro Transmission", "pages/2_Macro_Transmission.py"),
+        ("Early Warning (ML)", "pages/3_Early_Warning.py"),
+        ("Bank Report", "pages/8_Bank_Report.py"),
+    ]),
+    ("AI Engineering", [
+        ("AI Inference", "pages/9_AI_Inference.py"),
+        ("AI Pipeline", "pages/7_AI_Engineering.py"),
+        ("Technical Dashboard", "pages/11_Technical_Dashboard.py"),
+    ]),
+    ("Data Engineering", [
+        ("Data Engineering Pipeline", "pages/4_Data_Engineering.py"),
+    ]),
+    ("Architecture", [
+        ("Architecture Diagram", "WIKI:system-architecture"),
+        ("Wiki", "pages/6_Wiki.py"),
+    ]),
+]
 
-    st.markdown('<div class="topbar-anchor"></div>', unsafe_allow_html=True)
-    bar_left, bar_center, bar_right = st.columns([1.25, 2.5, 1.25], vertical_alignment="center")
-    with bar_left:
-        st.markdown('<div class="surface-pop-anchor"></div>', unsafe_allow_html=True)
-        with st.expander(trigger, expanded=False, icon=":material/grid_view:"):
-            st.markdown('<div class="pop-title">Go to surface</div>', unsafe_allow_html=True)
-            if not is_home and st.button(
-                "Home", key=f"pop_home_{active_page}", use_container_width=True
-            ):
-                st.switch_page(_page_path("home"))
-            for smode, slabel, spath in _SURFACES:
-                if st.button(
-                    slabel,
-                    key=f"pop_{smode}_{active_page}",
-                    use_container_width=True,
-                    disabled=(mode == smode),
-                ):
-                    _set_surface_mode(smode)
-                    st.switch_page(spath)
-    with bar_center:
-        if is_home:
+
+def _nav_go(target: str) -> None:
+    """Navigate via Streamlit's router (base-path safe under the /finlens/ subpath)."""
+    if target.startswith("WIKI:"):
+        st.session_state["wiki_article"] = target.split(":", 1)[1]
+        st.switch_page(_page_path("wiki"))
+    else:
+        st.switch_page(target)
+
+
+def render_nav(active_page: str, mode: str) -> None:
+    """Persistent hamburger nav for every page: a top-left ``Menu`` popover that opens a floating
+    panel with Home, identity, a Navigation list whose groups expand (+) to their sitemap, and
+    Chat as its own item. Replaces the old top bar + 'Switch surface'; makes Home reachable
+    everywhere. A popover (not the native sidebar) is used because expander toggles inside it are
+    client-side, so the panel stays open while a group expands."""
+    _set_surface_mode(mode)
+    set_meta_description("home" if mode == "home" else mode)
+    st.markdown('<div class="nav-anchor"></div>', unsafe_allow_html=True)
+    bar_l, _bar_r = st.columns([1, 5], vertical_alignment="center")
+    with bar_l:
+        with st.popover("Menu", icon=":material/menu:", use_container_width=True):
+            now = datetime.now(ZoneInfo("America/New_York"))
             st.markdown(
-                '<div class="brandbar">'
-                '<span class="brandbar-name">FinLens</span>'
-                '<span class="brandbar-tag">Banking Stress Intelligence</span></div>',
+                '<div class="ham-brand"><span class="ham-brand-name">FinLens</span>'
+                '<span class="ham-brand-tag">Banking Stress Intelligence</span></div>',
                 unsafe_allow_html=True,
             )
-        else:
-            # the persistent wordmark doubles as a Home button; switch_page is base-path-safe
-            # (a raw <a href="/"> would break under the /finlens/ subpath deployment)
-            if st.button("FinLens", key=f"brand_home_{active_page}", help="Back to home"):
+            mc_l, mc_r = st.columns([1.25, 1], vertical_alignment="center")
+            with mc_l:
+                st.markdown(
+                    f'<div class="ham-meta">{now.strftime("%a, %b %d %Y")}<br>'
+                    f'{now.strftime("%I:%M %p ET")}</div>', unsafe_allow_html=True,
+                )
+            with mc_r:
+                st.markdown('<div class="ham-meta ham-meta-r">Surya<br>Vaddhiparthy</div>',
+                            unsafe_allow_html=True)
+            st.markdown('<div class="ham-navlabel">Navigation</div>', unsafe_allow_html=True)
+            if st.button("Home", key=f"ham_home_{active_page}", use_container_width=True,
+                         icon=":material/home:"):
                 st.switch_page(_page_path("home"))
-    with bar_right:
-        st.markdown(
-            '<a class="topbar-credit topbar-credit-solo" href="https://surya.vaddhiparthy.com" '
-            'target="_blank">Built by Surya Vaddhiparthy</a>',
-            unsafe_allow_html=True,
-        )
+            for gname, subs in _NAV_GROUPS:
+                with st.expander(gname, expanded=False, icon=":material/add:"):
+                    for slabel, starget in subs:
+                        if st.button(slabel, key=f"ham_{gname}_{slabel}_{active_page}",
+                                     use_container_width=True):
+                            _nav_go(starget)
+            if st.button("Chat", key=f"ham_chat_{active_page}", use_container_width=True,
+                         icon=":material/forum:"):
+                st.switch_page("pages/9_AI_Inference.py")
+            st.markdown(
+                '<a class="ham-credit" href="https://surya.vaddhiparthy.com" target="_blank">'
+                'Built by Surya Vaddhiparthy</a>', unsafe_allow_html=True,
+            )
 
 
 _META_DESCRIPTIONS = {
@@ -374,13 +404,10 @@ def set_meta_description(mode: str) -> None:
 
 
 def top_navigation(active_page: str, mode: str) -> None:
-    _set_surface_mode(mode)
-    set_meta_description(mode)
-    _render_top_bar(active_page, mode)
+    render_nav(active_page, mode)
     _render_section_tabs(active_page, mode)
 
 
 def home_navigation() -> None:
-    """Top bar for the landing page: same chrome, no section tabs."""
-    set_meta_description("home")
-    _render_top_bar("home", "home")
+    """Persistent hamburger nav for the landing and the standalone dashboards; no section tabs."""
+    render_nav("home", "home")

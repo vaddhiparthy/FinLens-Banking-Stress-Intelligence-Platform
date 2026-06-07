@@ -20,9 +20,12 @@ test("DE pipeline shows VPS storage card, not AWS S3", async ({ page }) => {
   await page.screenshot({ path: `${SHOTS}de_vps_card.png`, fullPage: true });
 });
 
-test("FinLens brand wordmark navigates back to home", async ({ page }) => {
+test("hamburger Home navigates back to home", async ({ page }) => {
+  // The centered brand wordmark + 'Switch surface' were replaced by the persistent Menu hamburger;
+  // Home now lives inside that panel and must work from any sub-page.
   await page.goto("/Data_Engineering"); await settle(page);
-  await page.locator('div[class*="st-key-brand_home_"] button').first().click();
+  await page.getByRole("button", { name: "Menu" }).click();
+  await page.locator('[class*="st-key-ham_home"] button').first().click();
   await settle(page);
   // navigating home may surface the use-notice gate; ack it so the hero can paint
   const ack = page.getByRole("button", { name: "I understand" });

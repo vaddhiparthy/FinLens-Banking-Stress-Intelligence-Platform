@@ -36,7 +36,7 @@ for (const [tab, marker] of DE_SECTIONS) {
     await page.goto("/Data_Engineering"); await settle(page);
     const btn = page.getByRole("button", { name: tab, exact: false }).first();
     if (await btn.isEnabled()) { await btn.click(); await settle(page); }  // default tab is disabled
-    await expect(page.getByText(marker).first()).toBeVisible();
+    await expect(page.getByText(marker).and(page.locator(":visible")).first()).toBeVisible();
   });
 }
 
@@ -53,7 +53,7 @@ for (const [tab, marker] of AI_SECTIONS) {
     await page.goto("/AI_Engineering"); await settle(page);
     const btn = page.getByRole("button", { name: tab, exact: false }).first();
     if (await btn.isEnabled()) { await btn.click(); await settle(page); }  // default tab is disabled
-    await expect(page.getByText(marker).first()).toBeVisible();
+    await expect(page.getByText(marker).and(page.locator(":visible")).first()).toBeVisible();
   });
 }
 

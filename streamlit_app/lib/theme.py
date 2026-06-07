@@ -69,12 +69,9 @@ def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
 @lru_cache(maxsize=8)
 def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
     palette = get_palette(mode)
-    # The left rail was retired: sections now live as top tabs and the surface
-    # switch is a dropdown, so content is always full width and the sidebar hidden.
-    sidebar_width = "14rem"
+    # Navigation lives in the native sidebar (the persistent hamburger panel); content is full
+    # width and the sidebar overlays it when opened.
     content_offset = "0"
-    sidebar_translate = "-14.5rem"
-    sidebar_shadow = "none"
     return f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
@@ -211,53 +208,7 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         margin-right: 0;
         transition: margin-left 240ms ease, width 240ms ease;
     }}
-    [data-testid="stAppViewContainer"] > .main,
-    section.main {{
-        margin-left: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
-    }}
-    button[kind="header"],
-    [data-testid="stSidebarCollapsedControl"],
-    [title="Open sidebar"],
-    [title="Close sidebar"],
-    [aria-label="Close sidebar"],
-    [aria-label="Open sidebar"],
-    [data-testid="stBaseButton-headerNoPadding"],
-    [data-testid="stBaseButton-header"],
-    [data-testid="stSidebarCollapseButton"],
-    [data-testid="stSidebarHeader"] button,
-    [data-testid="stSidebarHeader"] [data-testid="stSidebarCollapseButton"],
-    button[data-testid="stSidebarCollapseButton"],
-    section[data-testid="stSidebar"] button[aria-label*="idebar"],
-    section[data-testid="stSidebar"] [data-testid="stSidebarHeader"],
-    section[data-testid="stSidebar"] > div > button {{
-        display: none !important;
-    }}
-    section[data-testid="stSidebar"] {{
-        display: none !important;
-        position: fixed !important;
-        left: 0;
-        top: 0;
-        height: 100vh !important;
-        width: {sidebar_width} !important;
-        min-width: {sidebar_width} !important;
-        max-width: {sidebar_width} !important;
-        background:
-            linear-gradient(180deg, {palette["content_bg"]}, {palette["sidebar_bg"]}) !important;
-        border-right: 1px solid {palette["border"]};
-        transform: translateX({sidebar_translate});
-        transition: transform 240ms ease;
-        box-shadow: {sidebar_shadow};
-        z-index: 1200;
-        overflow: hidden;
-    }}
-    section[data-testid="stSidebar"] > div {{
-        background: transparent !important;
-    }}
-    [data-testid="stSidebarUserContent"] {{
-        padding-top: 0;
-    }}
+    section[data-testid="stSidebar"] {{ display: none !important; }}
     section[data-testid="stSidebar"] div[data-testid="stPageLink"] svg,
     section[data-testid="stSidebar"] div[data-testid="stPageLink"] img,
     section[data-testid="stSidebar"] a[data-testid="stPageLink-NavLink"] svg,
@@ -903,6 +854,73 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
     }}
     .topbar-author [data-testid="stToggle"] > label {{
         gap:.35rem;
+    }}
+    /* ---- persistent hamburger nav panel ---- */
+    .ham-brand {{
+        display: flex; flex-direction: column;
+        padding: .2rem 0 .55rem; margin-bottom: .35rem;
+        border-bottom: 1px solid {palette["border"]};
+    }}
+    .ham-brand-name {{
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-weight: 800; font-size: 1.3rem; color: {palette["text_main"]}; letter-spacing: -.01em;
+    }}
+    .ham-brand-tag {{
+        font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .13em;
+        color: {palette["accent"]}; margin-top: .1rem;
+    }}
+    .ham-meta {{
+        color: {palette["text_soft"]}; font-size: .67rem; font-weight: 600; line-height: 1.4;
+    }}
+    .ham-meta-r {{ text-align: right; color: {palette["text_muted"]}; }}
+    .ham-navlabel {{
+        color: {palette["text_soft"]}; text-transform: uppercase; letter-spacing: .12em;
+        font-size: .63rem; font-weight: 800; margin: .8rem 0 .2rem;
+    }}
+    .ham-credit {{
+        display: block; margin-top: 1rem; padding-top: .55rem;
+        border-top: 1px solid {palette["border"]};
+        color: {palette["text_soft"]} !important; font-size: .65rem; font-weight: 600;
+        text-decoration: none;
+    }}
+    /* The hamburger trigger: a clean accent button, top-left, persistent on every page. */
+    div[data-testid="stPopover"] > div > button {{
+        background: {palette["content_bg"]} !important;
+        border: 1px solid {palette["border"]} !important;
+        border-radius: 11px !important;
+        box-shadow: 0 4px 14px rgba(15,23,42,.08) !important;
+        color: {palette["accent_deep"]} !important; font-weight: 700 !important;
+    }}
+    div[data-testid="stPopover"] > div > button:hover {{
+        border-color: {palette["accent"]} !important; color: {palette["accent"]} !important;
+    }}
+    /* The floating nav panel. */
+    div[data-testid="stPopoverBody"] {{
+        min-width: 21rem !important; max-width: 23rem !important;
+        background: linear-gradient(180deg, {palette["content_bg"]}, {palette["sand"]}) !important;
+        border: 1px solid {palette["border"]} !important; border-radius: 16px !important;
+        box-shadow: 0 18px 48px rgba(15,23,42,.16) !important;
+    }}
+    div[data-testid="stPopoverBody"] div[data-testid="stButton"] > button {{
+        text-align: left !important; justify-content: flex-start !important;
+        border: none !important; background: transparent !important; box-shadow: none !important;
+        color: {palette["text_main"]} !important; font-weight: 600 !important;
+        padding: .3rem .25rem !important; min-height: 0 !important;
+    }}
+    div[data-testid="stPopoverBody"] div[data-testid="stButton"] > button:hover {{
+        color: {palette["accent"]} !important; background: {palette["content_bg"]} !important;
+        border-radius: 8px !important;
+    }}
+    div[data-testid="stPopoverBody"] [data-testid="stExpander"],
+    div[data-testid="stPopoverBody"] [data-testid="stExpander"] details {{
+        border: none !important; background: transparent !important; box-shadow: none !important;
+    }}
+    div[data-testid="stPopoverBody"] [data-testid="stExpander"] summary {{
+        padding: .3rem .15rem !important; font-weight: 700 !important;
+        color: {palette["text_main"]} !important; font-size: .9rem !important;
+    }}
+    div[data-testid="stPopoverBody"] [data-testid="stExpander"] summary:hover {{
+        color: {palette["accent"]} !important;
     }}
     .sidebar-title {{
         font-family: "Inter", system-ui, -apple-system, sans-serif;

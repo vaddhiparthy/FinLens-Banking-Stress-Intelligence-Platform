@@ -75,7 +75,7 @@ test("AI Inference page exposes the chat console", async ({ page }) => {
   await page.goto("/AI_Inference");
   await settle(page);
   // The assistant now lives on its own AI Inference page (the floating widget was removed).
-  await expect(page.getByText("AI Inference").first()).toBeVisible();
+  await expect(page.getByText("AI Inference").and(page.locator(":visible")).first()).toBeVisible();
   await expect(page.getByPlaceholder(/Ask a question/i)).toBeVisible();
   await shot(page, "e2e_ai_chat_launcher");
 });
@@ -83,6 +83,6 @@ test("AI Inference page exposes the chat console", async ({ page }) => {
 test("early warning surface renders", async ({ page }) => {
   await page.goto("/Early_Warning");
   await settle(page);
-  await expect(page.getByText(/Early Warning/i).first()).toBeVisible();
+  await expect(page.getByText(/Early Warning/i).and(page.locator(":visible")).first()).toBeVisible();
   await shot(page, "e2e_early_warning");
 });
