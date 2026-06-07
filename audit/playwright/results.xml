@@ -1,42 +1,6 @@
-<testsuites id="" name="" tests="19" failures="0" skipped="0" errors="0" time="188.875638">
-<testsuite name="functional_sweep.spec.mjs" timestamp="2026-06-07T10:08:24.449Z" hostname="" tests="19" failures="0" skipped="0" time="187.087" errors="0">
-<testcase name="DE section &quot;Live Pipeline&quot; renders its content" classname="functional_sweep.spec.mjs" time="8.106">
-</testcase>
-<testcase name="DE section &quot;Data Quality&quot; renders its content" classname="functional_sweep.spec.mjs" time="8.322">
-</testcase>
-<testcase name="DE section &quot;Source Contracts&quot; renders its content" classname="functional_sweep.spec.mjs" time="8.093">
-</testcase>
-<testcase name="DE section &quot;Engineering Stack&quot; renders its content" classname="functional_sweep.spec.mjs" time="10.752">
-</testcase>
-<testcase name="DE section &quot;Administration&quot; renders its content" classname="functional_sweep.spec.mjs" time="10.357">
-</testcase>
-<testcase name="DE section &quot;Architecture Decisions&quot; renders its content" classname="functional_sweep.spec.mjs" time="2.585">
-</testcase>
-<testcase name="AI section &quot;AI Pipeline&quot; renders its content" classname="functional_sweep.spec.mjs" time="11.007">
-</testcase>
-<testcase name="AI section &quot;Feature Contracts&quot; renders its content" classname="functional_sweep.spec.mjs" time="2.509">
-</testcase>
-<testcase name="AI section &quot;AI Stack&quot; renders its content" classname="functional_sweep.spec.mjs" time="15.746">
-</testcase>
-<testcase name="AI section &quot;Model Quality&quot; renders its content" classname="functional_sweep.spec.mjs" time="9.352">
-</testcase>
-<testcase name="AI section &quot;Model Decisions&quot; renders its content" classname="functional_sweep.spec.mjs" time="8.298">
-</testcase>
-<testcase name="AI section &quot;Administration&quot; renders its content" classname="functional_sweep.spec.mjs" time="10.36">
-</testcase>
-<testcase name="Early Warning what-if: moving a lever changes the probability" classname="functional_sweep.spec.mjs" time="12.336">
-</testcase>
-<testcase name="chat: typo resolves (fifth thord -&gt; Fifth Third)" classname="functional_sweep.spec.mjs" time="12.536">
-</testcase>
-<testcase name="chat: operating bank reads as operating" classname="functional_sweep.spec.mjs" time="12.487">
-</testcase>
-<testcase name="chat: failed bank reads as failed (not safe)" classname="functional_sweep.spec.mjs" time="12.188">
-</testcase>
-<testcase name="chat: nonsense does not crash and gives a response" classname="functional_sweep.spec.mjs" time="15.388">
-</testcase>
-<testcase name="bank report: failed bank shows the failed-but-low reconciliation" classname="functional_sweep.spec.mjs" time="7.626">
-</testcase>
-<testcase name="wiki: article renders real content" classname="functional_sweep.spec.mjs" time="9.039">
+<testsuites id="" name="" tests="1" failures="0" skipped="0" errors="0" time="15.514151">
+<testsuite name="capture_ceiling.spec.mjs" timestamp="2026-06-07T10:31:20.905Z" hostname="" tests="1" failures="0" skipped="0" time="13.592" errors="0">
+<testcase name="ai notebook" classname="capture_ceiling.spec.mjs" time="13.592">
 </testcase>
 </testsuite>
 </testsuites>

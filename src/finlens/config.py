@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     finlens_environment: str = "local"
     root_domain: str = "vaddhiparthy.com"
     project_domain: str = "surya.vaddhiparthy.com"
-    finlens_data_mode: str = "mock"
+    finlens_data_mode: str = "live"
     finlens_active_sources: str = "fdic,fred,qbp,nic"
     finlens_artifact_dir: str = "data"
     finlens_public_base_url: str | None = None

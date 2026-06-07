@@ -7,7 +7,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from finlens.config import get_settings
-from finlens.datasets import load_demo_bundle, load_demo_stress_pulse
 from finlens.paths import RAW_DATA_DIR, ROOT_DIR
 from finlens.pipeline_status import update_flow_status
 
@@ -69,7 +68,7 @@ def _clean_public_text(value: object) -> str:
 def _fdic_failures_frame():
     payload = _latest_source_json("fdic")
     if not payload or not payload.get("records"):
-        return load_demo_bundle().failures.copy()
+        return pd.DataFrame(columns=["bank_id","bank_name","city","state","cert","acquirer","closing_date","year","assets_millions"])
 
     rows = []
     for record in payload["records"]:
@@ -93,13 +92,13 @@ def _fdic_failures_frame():
 
     frame = pd.DataFrame(rows)
     if frame.empty:
-        return load_demo_bundle().failures.copy()
+        return pd.DataFrame(columns=["bank_id","bank_name","city","state","cert","acquirer","closing_date","year","assets_millions"])
     return frame.sort_values(["year", "bank_name"], ascending=[False, True]).reset_index(drop=True)
 
 
 def _fdic_acquirers_frame(failures):
     if failures.empty:
-        return load_demo_bundle().acquirers.copy()
+        return pd.DataFrame(columns=["acquirer","decade","failure_count","assets_absorbed_millions"])
     grouped = (
         failures.assign(
             decade=lambda data: (data["year"].fillna(0).astype(int) // 10 * 10).astype(str) + "s"
@@ -115,7 +114,7 @@ def _fdic_acquirers_frame(failures):
 def _fred_metrics_frame():
     payloads = _latest_source_payloads("fred")
     if not payloads:
-        return load_demo_bundle().metrics.copy()
+        return pd.DataFrame(columns=["series_id","date","value","metric_name"])
 
     latest_by_series: dict[str, dict] = {}
     for payload in payloads:
@@ -150,7 +149,7 @@ def _fred_metrics_frame():
 
     frame = pd.DataFrame(rows)
     if frame.empty:
-        return load_demo_bundle().metrics.copy()
+        return pd.DataFrame(columns=["series_id","date","value","metric_name"])
     frame["date"] = pd.to_datetime(frame["date"])
     return frame.sort_values(["series_id", "date"]).reset_index(drop=True)
 
@@ -174,19 +173,19 @@ def _stress_pulse_frame():
     if not payload:
         if settings.finlens_data_mode == "live":
             return pd.DataFrame(columns=expected_columns)
-        return load_demo_stress_pulse().copy()
+        return pd.DataFrame(columns=expected_columns)
 
     artifact_path = payload.get("artifact_path")
     if not artifact_path:
         if settings.finlens_data_mode == "live":
             return pd.DataFrame(columns=expected_columns)
-        return load_demo_stress_pulse().copy()
+        return pd.DataFrame(columns=expected_columns)
 
     path = Path(artifact_path)
     if not path.exists():
         if settings.finlens_data_mode == "live":
             return pd.DataFrame(columns=expected_columns)
-        return load_demo_stress_pulse().copy()
+        return pd.DataFrame(columns=expected_columns)
 
     if path.suffix.lower() == ".json":
         frame = pd.DataFrame(json.loads(path.read_text(encoding="utf-8")))
@@ -195,13 +194,13 @@ def _stress_pulse_frame():
     else:
         if settings.finlens_data_mode == "live":
             return pd.DataFrame(columns=expected_columns)
-        return load_demo_stress_pulse().copy()
+        return pd.DataFrame(columns=expected_columns)
 
     required = set(expected_columns)
     if not required.issubset(frame.columns):
         if settings.finlens_data_mode == "live":
             return pd.DataFrame(columns=expected_columns)
-        return load_demo_stress_pulse().copy()
+        return pd.DataFrame(columns=expected_columns)
     return frame.copy()
 
 
@@ -365,8 +364,7 @@ def initialise_local_duckdb() -> Path:
 def read_table(name: str) -> pd.DataFrame:
     import duckdb
 
-    settings = get_settings()
-    if settings.finlens_data_mode == "mock":
-        initialise_local_duckdb()
+    if not local_duckdb_path().exists():
+        initialise_local_duckdb()  # builds from real ingested payloads only (no demo data)
     with duckdb.connect(str(local_duckdb_path())) as conn:
         return conn.execute(f"select * from {name}").df()
