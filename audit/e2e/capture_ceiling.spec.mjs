@@ -38,6 +38,12 @@ test("home", async ({ page }) => {
 });
 test("use-notice gate", async ({ page }) => {
   await page.goto("/"); await settle(page);
+  // wait for the dialog's primary CTA to paint its accent fill before capturing
+  await page.waitForFunction(() => {
+    const b = document.querySelector('[role="dialog"] button[kind="primary"]');
+    return b && getComputedStyle(b).backgroundColor === "rgb(191, 109, 71)";
+  }, { timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(500);
   await page.screenshot({ path: `${SHOTS}use_notice_gate.png` });
 });
 test("stress pulse", async ({ page }) => {

@@ -118,7 +118,32 @@ st.markdown(
         display: none !important;
     }
     div[role="dialog"] [data-testid="stVerticalBlock"] {
-        gap: .65rem !important;
+        gap: .6rem !important;
+    }
+    /* Filled accent primary CTA (overrides the global ghost button styling with a more
+       specific selector that mirrors the global one, prefixed by the dialog) */
+    div[role="dialog"] div[data-testid="stButton"] > button {
+        background: #bf6d47 !important;
+        border: 1px solid #bf6d47 !important;
+        border-radius: 11px !important;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, .16) !important;
+        margin-top: .2rem;
+    }
+    div[role="dialog"] div[data-testid="stButton"] > button:hover {
+        background: #a85b38 !important; border-color: #a85b38 !important;
+    }
+    div[role="dialog"] div[data-testid="stButton"] > button,
+    div[role="dialog"] div[data-testid="stButton"] > button * {
+        color: #ffffff !important; -webkit-text-fill-color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+    /* children only: clear any inner white fill so the button's accent shows (NOT the button) */
+    div[role="dialog"] div[data-testid="stButton"] > button * {
+        background: transparent !important;
+    }
+    .gate-brand {
+        font-weight: 800; letter-spacing: .02em; color: #bf6d47;
+        font-size: .82rem; text-transform: uppercase; margin-bottom: .1rem;
     }
     </style>
     """,
@@ -128,6 +153,8 @@ st.markdown(
 
 @st.dialog("Important Use Notice", width="small", dismissible=False)
 def _legal_disclaimer() -> None:
+    st.markdown('<div class="gate-brand">FinLens · Banking Stress Intelligence</div>',
+                unsafe_allow_html=True)
     st.markdown(
         """
         FinLens is a personal portfolio project built to demonstrate data engineering,
