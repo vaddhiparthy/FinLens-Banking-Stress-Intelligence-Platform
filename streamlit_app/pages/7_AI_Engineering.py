@@ -81,6 +81,8 @@ N_FEATURES = len(FEATURE_COLUMNS)
 
 m = _metrics()
 viz = mc.load_viz_pack()
+PANEL_FACTS = mc.load_panel_facts() or {}
+N_OOT_FAIL = PANEL_FACTS.get("oot_failures") or (viz.get("n_oot_failures") if viz else 66)
 section = get_ai_section()
 
 _AI_INTRO = {
@@ -144,16 +146,22 @@ if section == "pipeline":
         except Exception:
             _pr = None
     _ece = (m.get("oot_calibration", {}) or {}).get("ece") if m else None
-    _nfail = viz.get("n_oot_failures") if viz else 66
+    _pf = mc.load_panel_facts() or {}
+    _nfail = _pf.get("oot_failures") or (viz.get("n_oot_failures") if viz else 66)
+    _nrows = f"{_pf['n_panel_rows']:,}" if _pf.get("n_panel_rows") else "448k+"
+    _nbanks = f"~{round(_pf['n_banks'], -2):,.0f}" if _pf.get("n_banks") else "~8,800"
+    _qrange = (f"{_pf.get('min_quarter')}–{_pf.get('max_quarter')}"
+               if _pf.get("min_quarter") else "2008Q1–2026Q1")
+    _window = _pf.get("oot_window_quarters") or 28
     pipeline_stage_flow([
         {"name": "Ingest", "copy": "FDIC Call Reports → DuckDB point-in-time panel",
-         "metric_1": "448,661 bank-quarters", "metric_2": "~8,800 banks", "metric_3": "2008–2026Q1"},
+         "metric_1": f"{_nrows} bank-quarters", "metric_2": f"{_nbanks} banks", "metric_3": _qrange},
         {"name": "Features", "copy": "CAMELS-aligned ratios, trends, peer z-scores",
          "metric_1": f"{N_FEATURES} features", "metric_2": "point-in-time", "metric_3": "monotone-signed"},
         {"name": "Label", "copy": "fails-within-4q, merger/end-of-data censored",
          "metric_1": f"{_nfail} OOT failures", "metric_2": "leakage-free", "metric_3": "forward-looking"},
         {"name": "Split", "copy": "rolling-origin out-of-time, reporting-lag embargo",
-         "metric_1": "28-quarter holdout", "metric_2": "embargoed", "metric_3": "no leakage"},
+         "metric_1": f"{_window}-quarter holdout", "metric_2": "embargoed", "metric_3": "no leakage"},
         {"name": "Train + calibrate", "copy": "monotone LightGBM, 12-seed bag, isotonic",
          "metric_1": f"PR-AUC {_pr:.3f}" if _pr else "calibrated", "metric_2": f"ECE {_ece:.0e}" if _ece else "calibrated", "metric_3": "monotone"},
         {"name": "Serve + monitor", "copy": "FastAPI (prob + SHAP), Evidently drift watch",
@@ -343,7 +351,7 @@ elif section == "quality":
                     st.caption(
                         f"The unconstrained GBM scores higher (PR-AUC {u['pr_auc']:.3f} vs "
                         f"{t['pr_auc']:.3f}, a {gap:.3f} / {rel:.0%} gap) - the deliberate "
-                        f"price of those constraints. {base} At 66 OOT positives that gap is "
+                        f"price of those constraints. {base} At {N_OOT_FAIL} OOT positives that gap is "
                         "not statistically separable (see G0), and the validator-defensible "
                         "model is the one served."
                     )
@@ -454,7 +462,7 @@ elif section == "quality":
             tc = decomp.get("type_counts", {})
             section_heading(
                 "Why the by-year number collapses: failure-type decomposition",
-                "The 66 out-of-time failures are not one kind of event. Classified by "
+                f"The {N_OOT_FAIL} out-of-time failures are not one kind of event. Classified by "
                 "model-independent financial signature, the calm-year collapse splits into "
                 "two distinct causes, not noise.")
             d1, d2 = st.columns(2)
@@ -597,15 +605,23 @@ elif section == "quality":
                     res = mx.get("results", {})
                     bagged = res.get("bagged", {})
                     base = res.get("baseline_light", {})
+                    _served_pr = None
+                    if m:
+                        try:
+                            _served_pr = m["oot_test"]["calibrated_lgbm"]["pr_auc"]
+                        except Exception:
+                            _served_pr = None
                     st.caption(
                         f"Progressively heavier modelling on the same {mx.get('holdout_quarters', 28)}-"
-                        f"quarter out-of-time holdout ({mx.get('test_positives', 66)} positives): light "
-                        f"baseline {base.get('pr_auc', 0):.3f} → heavy tuning → bagged "
-                        f"{bagged.get('pr_auc', 0):.3f} (the served config) → blend → stack. The bagged "
-                        "ensemble is best, but every interval overlaps every other: at this positive "
-                        "count more modelling effort does not separate. Compute was never the limit; "
-                        "the rare-event count is. This is why the served model is the bagged one and "
-                        "why the headline number does not chase the unconstrained maxima.")
+                        f"quarter out-of-time holdout ({mx.get('test_positives', N_OOT_FAIL)} positives): "
+                        f"light baseline {base.get('pr_auc', 0):.3f} → heavy tuning → bagged "
+                        f"{bagged.get('pr_auc', 0):.3f} → blend → stack. The bagged ensemble wins, and "
+                        "the served champion uses that same bagged design"
+                        + (f" (re-fit with the OOT-validated tree count, headline PR-AUC "
+                           f"{_served_pr:.3f}); these ladder values are a quick single-run sweep so "
+                           "they sit a touch below the champion." if _served_pr else ".")
+                        + " Every interval overlaps every other: at this positive count more modelling "
+                        "effort does not separate. Compute was never the limit; the rare-event count is.")
             if cbk:
                 with st.expander("Calibration bake-off — why isotonic was chosen"):
                     st.plotly_chart(mc.calibration_bakeoff_fig(cbk, MODE),

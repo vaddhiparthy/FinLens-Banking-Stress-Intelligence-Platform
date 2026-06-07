@@ -94,14 +94,24 @@ def warehouse_table_rows() -> list[dict[str, Any]]:
     with duckdb.connect(str(db_path), read_only=True) as conn:
         tables = conn.execute(
             """
-            select table_schema, table_name
+            select table_schema, table_name, table_type
             from information_schema.tables
-            where table_type = 'BASE TABLE'
+            where table_type in ('BASE TABLE', 'VIEW')
               and table_schema not in ('information_schema', 'pg_catalog')
             order by table_schema, table_name
             """
         ).fetchall()
-        for schema, table in tables:
+        # Map each DuckDB schema to its medallion layer rather than the old
+        # "raw -> Bronze, everything-else -> Gold" rule that mislabelled staging/ml as Gold.
+        layer_by_schema = {
+            "raw": "Bronze / raw",
+            "staging": "Silver / staging",
+            "snapshots": "Silver / snapshots",
+            "intermediate": "Intermediate",
+            "marts": "Gold / mart",
+            "ml": "ML feature store",
+        }
+        for schema, table, table_type in tables:
             count = conn.execute(f'select count(*) from "{schema}"."{table}"').fetchone()[0]
             column_count = conn.execute(
                 """
@@ -111,10 +121,10 @@ def warehouse_table_rows() -> list[dict[str, Any]]:
                 """,
                 [schema, table],
             ).fetchone()[0]
-            layer = "Bronze/raw" if schema == "raw" else "Gold mart"
             rows.append(
                 {
-                    "Layer": layer,
+                    "Layer": layer_by_schema.get(schema, schema),
+                    "Object": "view" if table_type == "VIEW" else "table",
                     "Schema": schema,
                     "Table": table,
                     "Rows": int(count),
@@ -129,7 +139,49 @@ def dbt_artifact_summary() -> dict[str, Any]:
     manifest_path = ROOT_DIR / "dbt" / "target" / "manifest.json"
     report = load_state("dbt_build_report", default={})
     report_summary = report.get("artifact_summary", {}) if isinstance(report, dict) else {}
-    summary: dict[str, Any] = {
+
+    # When the live dbt artifact exists, count ONLY from it. Do NOT seed the counts from the
+    # stored snapshot's artifact_summary: that snapshot is itself produced by this function, so
+    # seeding from it makes each build accumulate on the previous one (the double-count bug).
+    if run_results_path.exists():
+        run_results = json.loads(run_results_path.read_text(encoding="utf-8"))
+        manifest = (
+            json.loads(manifest_path.read_text(encoding="utf-8"))
+            if manifest_path.exists()
+            else {"nodes": {}}
+        )
+        nodes = manifest.get("nodes", {})
+        models_success = tests_success = failures = total_nodes = 0
+        for result in run_results.get("results", []):
+            unique_id = result.get("unique_id", "")
+            status = result.get("status")
+            node = nodes.get(unique_id, {})
+            resource_type = node.get("resource_type") or unique_id.split(".")[0]
+            if status not in {"success", "pass"}:
+                failures += 1
+            if resource_type == "model" and status == "success":
+                models_success += 1
+            if resource_type == "test" and status == "pass":
+                tests_success += 1
+            total_nodes += 1
+        generated_at = run_results.get("metadata", {}).get("generated_at")
+        return {
+            "build_status": "Success" if failures == 0 else "Failed",
+            "target": (run_results.get("args", {}) or {}).get("target")
+            or (report.get("target") if isinstance(report, dict) else None)
+            or "local",
+            "captured_at": generated_at
+            or (report.get("captured_at", "—") if isinstance(report, dict) else "—"),
+            "models_success": models_success,
+            "tests_success": tests_success,
+            "failures": failures,
+            "total_nodes": total_nodes,
+            "artifact_available": True,
+        }
+
+    # No live artifact (e.g. fresh deploy): fall back to the last recorded snapshot, clearly
+    # carrying its own captured_at so the surface can label it as a prior run, not "now".
+    return {
         "build_status": report_summary.get("build_status")
         or (report.get("status", "Unknown") if isinstance(report, dict) else "Unknown"),
         "target": report_summary.get("target")
@@ -140,33 +192,8 @@ def dbt_artifact_summary() -> dict[str, Any]:
         "tests_success": int(report_summary.get("tests_success") or 0),
         "failures": int(report_summary.get("failures") or 0),
         "total_nodes": int(report_summary.get("total_nodes") or 0),
-        "artifact_available": run_results_path.exists(),
+        "artifact_available": bool(report_summary.get("artifact_available", False)),
     }
-    if not run_results_path.exists():
-        if report_summary:
-            summary["artifact_available"] = bool(report_summary.get("artifact_available", True))
-        return summary
-
-    run_results = json.loads(run_results_path.read_text(encoding="utf-8"))
-    manifest = (
-        json.loads(manifest_path.read_text(encoding="utf-8"))
-        if manifest_path.exists()
-        else {"nodes": {}}
-    )
-    nodes = manifest.get("nodes", {})
-    for result in run_results.get("results", []):
-        unique_id = result.get("unique_id", "")
-        status = result.get("status")
-        node = nodes.get(unique_id, {})
-        resource_type = node.get("resource_type") or unique_id.split(".")[0]
-        if status not in {"success", "pass"}:
-            summary["failures"] += 1
-        if resource_type == "model" and status == "success":
-            summary["models_success"] += 1
-        if resource_type == "test" and status == "pass":
-            summary["tests_success"] += 1
-        summary["total_nodes"] += 1
-    return summary
 
 
 def dbt_result_rows() -> list[dict[str, Any]]:

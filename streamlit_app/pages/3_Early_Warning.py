@@ -21,6 +21,7 @@ for sub in ("", "src", "ml"):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+from finlens_ml.features import FEATURE_COLUMNS
 from streamlit_app.lib import ml_charts as mc
 from streamlit_app.lib.page_shell import BUSINESS_PAGE, page_intro, status_ribbon, top_navigation
 from streamlit_app.lib.telemetry import record_page_view
@@ -125,8 +126,8 @@ page_intro(
 )
 st.markdown(
     '<div class="ew-flow">'
-    '<span class="ew-flow-step"><b>1. Inputs</b><br>34 CAMELS-style Call Report ratios '
-    'for the chosen bank-quarter</span>'
+    f'<span class="ew-flow-step"><b>1. Inputs</b><br>{len(FEATURE_COLUMNS)} CAMELS-style '
+    'Call Report ratios for the chosen bank-quarter</span>'
     '<span class="ew-flow-arrow">&rarr;</span>'
     '<span class="ew-flow-step"><b>2. Model</b><br>calibrated, monotone-constrained '
     'gradient-boosted hazard model</span>'
@@ -216,10 +217,11 @@ with tab_live:
         _pr_txt = f"~{_served_pr:.2f}"
     except Exception:
         _pr_txt = "~0.30"
+    _nfail = (mc.load_panel_facts() or {}).get("oot_failures", 66)
     st.write(
         "Score a live U.S. bank as of its **latest available quarter**, whose 4-quarter "
         f"outcome has not yet elapsed. The model's out-of-time track record (PR-AUC {_pr_txt} "
-        "on 66 real failures, with wide intervals) is on the AI Engineering surface; treat "
+        f"on {_nfail} real failures, with wide intervals) is on the AI Engineering surface; treat "
         "this as a screening estimate, nothing more."
     )
     live = scenario.live_bank_directory()

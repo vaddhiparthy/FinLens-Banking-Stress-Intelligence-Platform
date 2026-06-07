@@ -227,7 +227,7 @@ def freshness_table() -> pd.DataFrame:
     sources = connector_report.get("sources", [])
     if not sources:
         return pd.DataFrame(
-            [{"Source": "No connector report", "Freshness": ", ", "SLA": ", ", "Status": "Missing"}]
+            [{"Source": "No connector report", "Freshness": "—", "SLA": "—", "Status": "Missing"}]
         )
     return pd.DataFrame(
         [
@@ -237,7 +237,7 @@ def freshness_table() -> pd.DataFrame:
                 "SLA": item["cadence"],
                 "Status": item["status"],
                 "Required input": ", ".join(item.get("required_env", [])) or "None required",
-                "Missing input": ", ".join(item.get("missing_env", [])) or ", ",
+                "Missing input": ", ".join(item.get("missing_env", [])) or "—",
             }
             for item in sources
         ]
@@ -267,7 +267,7 @@ def source_activation_frame() -> pd.DataFrame:
                     "Source": "No connector report",
                     "Activation": "Missing",
                     "Reason": "Run connector readiness",
-                    "Cadence": ", ",
+                    "Cadence": "—",
                 }
             ]
         )
@@ -643,7 +643,7 @@ def render_code_excerpts() -> None:
     cast(closing_date as date) as closing_date,
     extract(year from closing_date) as failure_year,
     acquirer
-from {{ ref('stg_fdic_failures') }}
+from {{ ref('stg_fdic_failed_banks') }}
 where closing_date is not null""",
             language="sql",
         )
@@ -666,7 +666,7 @@ def latest_pipeline_run_frame() -> pd.DataFrame:
                 {
                     "Step": "No run recorded",
                     "Status": "Pending",
-                    "Duration": ", ",
+                    "Duration": "—",
                     "Detail": "Run scripts/run_local_pipeline.py --probe-platform",
                 }
             ]
@@ -692,8 +692,8 @@ def dbt_build_frame() -> pd.DataFrame:
                 {
                     "Target": "local",
                     "Status": "Pending",
-                    "Return code": ", ",
-                    "Captured at": ", ",
+                    "Return code": "—",
+                    "Captured at": "—",
                     "Summary": "Run scripts/run_local_pipeline.py --run-dbt-build",
                 }
             ]
@@ -815,7 +815,7 @@ def dbt_results_frame() -> pd.DataFrame:
                     "Resource type": "No artifact",
                     "Name": "Run dbt build",
                     "Status": "Pending",
-                    "Execution seconds": ", ",
+                    "Execution seconds": "—",
                     "Adapter response": "dbt target/run_results.json is not present",
                 }
             ]
@@ -830,10 +830,10 @@ def warehouse_inventory_frame() -> pd.DataFrame:
             [
                 {
                     "Layer": "No warehouse",
-                    "Schema": ", ",
+                    "Schema": "—",
                     "Table": "Run pipeline",
-                    "Rows": ", ",
-                    "Columns": ", ",
+                    "Rows": "—",
+                    "Columns": "—",
                 }
             ]
         )
@@ -848,9 +848,9 @@ def source_landing_frame() -> pd.DataFrame:
                 {
                     "Source": "No raw files",
                     "Raw files": 0,
-                    "Latest artifact": ", ",
-                    "Latest record count": ", ",
-                    "Ingested at": ", ",
+                    "Latest artifact": "—",
+                    "Latest record count": "—",
+                    "Ingested at": "—",
                     "Storage path": "Run ingestion",
                 }
             ]
@@ -971,8 +971,8 @@ def airflow_runs_frame() -> pd.DataFrame:
                     "DAG": "No run artifact",
                     "Latest run": "Run Airflow collector",
                     "State": "Pending",
-                    "Started": ", ",
-                    "Ended": ", ",
+                    "Started": "—",
+                    "Ended": "—",
                 }
             ]
         )
