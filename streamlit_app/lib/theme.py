@@ -48,7 +48,8 @@ def ensure_theme_state() -> None:
 
 
 def get_theme_mode() -> str:
-    return "dark" if st.session_state.get("theme_dark", False) else "light"
+    # Dark mode is intentionally disabled: the app ships a single, polished light theme.
+    return "light"
 
 
 def get_palette(mode: str | None = None) -> dict[str, str]:

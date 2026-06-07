@@ -13,6 +13,8 @@ from pathlib import Path
 import streamlit as st
 
 MAX_LIVE_QUERIES = 10
+# Custom chat avatars (replaces Streamlit's default robot icon).
+_AVATAR = {"assistant": "🏦", "user": "🙋"}
 _PROJECT_ROOT = next(
     p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").exists()
 )
@@ -109,7 +111,7 @@ def render_chat_widget() -> None:
             ss.chat_open = False
             st.rerun()
         if not ss.chat_history:
-            with st.chat_message("assistant"):
+            with st.chat_message("assistant", avatar=_AVATAR["assistant"]):
                 st.markdown(
                     "Hi. Ask me about any U.S. bank (for example, _Tell me about Comerica Bank_ "
                     "or _Why did Silicon Valley Bank fail?_), or about the model and the data. "
@@ -118,7 +120,7 @@ def render_chat_widget() -> None:
                 )
 
         for i, msg in enumerate(ss.chat_history):
-            with st.chat_message(msg["role"]):
+            with st.chat_message(msg["role"], avatar=_AVATAR.get(msg["role"])):
                 if msg["role"] == "assistant" and isinstance(msg.get("out"), dict):
                     _render_answer(msg["out"], i)
                 else:
