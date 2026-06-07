@@ -60,18 +60,23 @@ st.markdown(
     .browse-col-h { font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
         color: #bf6d47; margin: .2rem 0 .7rem; }
     .browse-div { border-left: 1px solid #e4d7c6; height: 100%; min-height: 320px; margin: 0 auto; width: 1px; }
-    .nav-card { border: 1px solid #e4d7c6; border-bottom: none; border-radius: 12px 12px 0 0;
-        background: #ffffff; padding: .7rem .9rem .55rem; }
-    .nav-card-t { font-family: "Inter", system-ui, sans-serif; font-weight: 800; font-size: 1.02rem;
+    .nav-card { border: 1px solid #e0d2bf; border-left: 3px solid #bf6d47; border-bottom: none;
+        border-radius: 10px 10px 0 0; background: #ffffff; padding: .8rem .95rem .6rem;
+        box-shadow: 0 6px 18px rgba(15,23,42,.05); }
+    .nav-card-t { font-family: "Inter", system-ui, sans-serif; font-weight: 800; font-size: 1.05rem;
         color: #1f2933; }
     .nav-card-d { color: #6a6b74; font-size: .82rem; line-height: 1.35; margin-top: .15rem; }
     div[class*="st-key-nav_"] button {
-        border: 1px solid #e4d7c6 !important; border-top: none !important;
-        border-radius: 0 0 12px 12px !important; background: #fbf5ee !important;
-        color: #bf6d47 !important; font-weight: 700 !important; margin: 0 0 .8rem !important;
+        border: 1px solid #e0d2bf !important; border-left: 3px solid #bf6d47 !important;
+        border-top: none !important; border-radius: 0 0 10px 10px !important;
+        background: #fbf3ec !important; color: #bf6d47 !important; font-weight: 800 !important;
+        font-size: .9rem !important; margin: 0 0 .85rem !important;
+        box-shadow: 0 6px 18px rgba(15,23,42,.05) !important;
+        transition: background .12s ease, transform .12s ease !important;
     }
     div[class*="st-key-nav_"] button:hover {
         background: #bf6d47 !important; color: #fff !important; border-color: #bf6d47 !important;
+        transform: translateY(-1px) !important;
     }
     div[class*="st-key-nav_"] button:hover * { color: #fff !important; -webkit-text-fill-color: #fff !important; }
     </style>

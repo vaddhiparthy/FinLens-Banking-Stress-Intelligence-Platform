@@ -98,18 +98,22 @@ def roc_curve_fig(pack: dict, mode: str | None = None) -> go.Figure:
 def calibration_fig(pack: dict, mode: str | None = None) -> go.Figure:
     pal = get_palette(mode)
     rows = pack["calibration"]
+    mx = max((r["pred"] for r in rows), default=1) or 1
     fig = go.Figure()
-    fig.add_scatter(x=[0, max(r["pred"] for r in rows) or 1], y=[0, max(r["pred"] for r in rows) or 1],
-                    mode="lines", name="perfect", line=dict(color=pal["border"], width=1, dash="dash"))
+    fig.add_scatter(x=[0, mx], y=[0, mx], mode="lines", name="perfect",
+                    line=dict(color=pal["border"], width=1, dash="dash"))
     fig.add_scatter(
         x=[r["pred"] for r in rows], y=[r["obs"] for r in rows],
         mode="lines+markers", name="observed",
         line=dict(color=pal["accent"], width=2),
-        marker=dict(size=[max(5, min(18, (r["n"] ** 0.5) / 3)) for r in rows], color=pal["accent"]),
+        marker=dict(size=[max(6, min(22, (r["n"] ** 0.5) / 2.5)) for r in rows], color=pal["accent"]),
+        customdata=[r["n"] for r in rows],
+        hovertemplate="predicted %{x:.1%}<br>observed %{y:.1%}<br>bin size n=%{customdata}<extra></extra>",
     )
-    fig.update_xaxes(title="Predicted probability")
-    fig.update_yaxes(title="Observed failure rate")
-    return _base(fig, pal, title="Calibration reliability (bubble = bin size)")
+    # explicit padded ranges so the top tick label is not clipped, and a sane y window
+    fig.update_xaxes(title="Predicted probability", range=[-mx * 0.03, mx * 1.08], tickformat=".0%")
+    fig.update_yaxes(title="Observed failure rate", range=[-0.03, 1.03], tickformat=".0%")
+    return _base(fig, pal, title="Calibration reliability (bubble = bin size n; high-prob bins are tiny-n)")
 
 
 def score_dist_fig(pack: dict, mode: str | None = None) -> go.Figure:

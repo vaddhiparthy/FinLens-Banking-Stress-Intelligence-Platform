@@ -95,11 +95,9 @@ def _render_preview(out: dict) -> None:
     with scol:
         fig = _shap_diverging(result.get("reasons", []))
         if fig is not None:
-            st.markdown("**What drives this score** "
-                        "<span title='Each bar is a feature\\'s SHAP contribution to THIS score. "
-                        "Red bars (right) pushed the risk up; green bars (left) pulled it down. "
-                        "Longer = bigger influence.' style='cursor:help;color:#bf6d47;'>ⓘ</span>",
-                        unsafe_allow_html=True)
+            st.markdown("**What drives this score**")
+            st.caption("Each bar is a feature's push on THIS bank's score: red (right) raised the "
+                       "risk, green (left) lowered it; longer = bigger effect.")
             st.plotly_chart(fig, use_container_width=True, key="inf_shap")
 
 
