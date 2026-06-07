@@ -13,8 +13,15 @@ async function settle(page) {
   await page.waitForTimeout(1200);
 }
 async function ack(page) {
+  // the use-notice gate is an st.dialog that paints a beat AFTER settle(); wait for it to
+  // appear, click it, then wait for it to DETACH so screenshots capture the page, not the modal
   const b = page.getByRole("button", { name: "I understand" });
-  if (await b.isVisible().catch(() => false)) { await b.click(); await settle(page); }
+  await b.waitFor({ state: "visible", timeout: 8000 }).catch(() => {});
+  if (await b.isVisible().catch(() => false)) {
+    await b.click();
+    await b.waitFor({ state: "detached", timeout: 10000 }).catch(() => {});
+    await settle(page);
+  }
 }
 async function charts(page, n = 1) {
   await page.waitForFunction(
@@ -33,7 +40,13 @@ const FULL = { fullPage: true };
 
 test("home", async ({ page }) => {
   await page.goto("/"); await settle(page); await ack(page);
-  await text(page, "Spotting financial stress"); await page.waitForTimeout(600);
+  // clicking the gate triggers an st.rerun() that blanks then repaints; the hero subline
+  // "in U.S. banks" lives ONLY in the landing (not the gate), so its visibility proves the
+  // home page actually rendered. Wait for the dialog to be gone first.
+  await page.locator('[role="dialog"]').waitFor({ state: "detached", timeout: 10000 }).catch(() => {});
+  await page.getByText("in U.S. banks", { exact: false }).first()
+    .waitFor({ state: "visible", timeout: 30000 });
+  await page.waitForTimeout(800);
   await page.screenshot({ path: `${SHOTS}home.png`, ...FULL });
 });
 test("use-notice gate", async ({ page }) => {

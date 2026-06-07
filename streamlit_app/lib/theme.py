@@ -13,6 +13,7 @@ PALETTE = {
     "link": "#0f5f70",
     "link_hover": "#0b4855",
     "accent": "#bf6d47",
+    "accent_deep": "#a8501f",  # AA-passing accent for white-on-fill and text-on-cream (>=4.5:1)
     "accent_soft": "#f3dfcf",
     "teal": "#0f766e",
     "teal_soft": "#dbeceb",
@@ -34,6 +35,7 @@ DARK_PALETTE = {
     "link": "#539bf5",
     "link_hover": "#6cb6ff",
     "accent": "#539bf5",
+    "accent_deep": "#1f6feb",
     "accent_soft": "#1f2731",
     "teal": "#539bf5",
     "teal_soft": "#1f2731",
@@ -1719,16 +1721,18 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         color: {palette["text_muted"]} !important;
         text-decoration: none !important;
         line-height: 1.35;
-        padding: .12rem 0 .12rem .65rem;
+        /* >=24px touch target: .4rem vertical padding + line-height clears the WCAG 2.5.8 floor */
+        padding: .4rem .5rem .4rem .65rem;
         border-left: 2px solid transparent;
+        border-radius: 0 6px 6px 0;
     }}
     .wiki-tree-art:hover {{
         color: {palette["text_main"]} !important;
         border-left-color: {palette["border"]};
     }}
     .wiki-tree-art.active {{
-        color: {palette["accent"]} !important;
-        border-left-color: {palette["accent"]};
+        color: {palette["accent_deep"]} !important;
+        border-left-color: {palette["accent_deep"]};
         font-weight: 700;
     }}
     .wiki-art-crumb {{
@@ -2268,7 +2272,7 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
     }}
     .st-key-finlens_chat_closed [data-testid="stButton"] > button {{
         border-radius: 999px !important;
-        background: {palette["accent"]} !important;
+        background: {palette["accent_deep"]} !important;
         color: #fff !important; border: none !important;
         box-shadow: 0 10px 26px rgba(15,23,42,.22) !important;
         font-weight: 700 !important; padding: .58rem 1.2rem !important;
