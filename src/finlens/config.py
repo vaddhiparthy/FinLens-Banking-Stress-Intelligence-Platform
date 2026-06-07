@@ -19,15 +19,6 @@ class Settings(BaseSettings):
     finlens_public_base_url: str | None = None
     finlens_api_base_url: str | None = None
     finlens_telemetry_enabled: bool = True
-    aws_access_key_id: str | None = None
-    aws_secret_access_key: str | None = None
-    aws_default_region: str | None = None
-    aws_s3_mirror_enabled: bool = False
-    aws_s3_raw_bucket: str = "finlens-raw"
-    aws_s3_dlq_bucket: str = "finlens-dlq"
-    aws_s3_marts_bucket: str = "finlens-marts"
-    aws_s3_docs_bucket: str = "finlens-docs"
-    aws_s3_tfstate_bucket: str = "finlens-tfstate"
     fdic_failed_banks_url: str = "https://www.fdic.gov/bank-failures/download-data.csv"
     fdic_qbp_source_url: str | None = (
         "https://api.fdic.gov/banks/summary?"
@@ -99,16 +90,6 @@ class Settings(BaseSettings):
     @property
     def fred_series_id_list(self) -> list[str]:
         return [item.strip() for item in self.fred_series_ids.split(",") if item.strip()]
-
-    @property
-    def bucket_names(self) -> dict[str, str]:
-        return {
-            "raw": self.aws_s3_raw_bucket,
-            "dlq": self.aws_s3_dlq_bucket,
-            "marts": self.aws_s3_marts_bucket,
-            "docs": self.aws_s3_docs_bucket,
-            "tfstate": self.aws_s3_tfstate_bucket,
-        }
 
     @property
     def active_source_list(self) -> list[str]:

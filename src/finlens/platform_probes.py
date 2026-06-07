@@ -7,43 +7,23 @@ from finlens.config import get_settings
 from finlens.paths import ROOT_DIR
 
 
-def probe_s3_configuration() -> dict[str, Any]:
-    settings = get_settings()
-    configured = bool(
-        settings.aws_s3_mirror_enabled
-        and settings.aws_access_key_id
-        and settings.aws_secret_access_key
-        and settings.aws_default_region
-    )
+def probe_local_raw_storage() -> dict[str, Any]:
+    """Raw landing zone lives on the VPS local filesystem (no cloud object store)."""
+    from finlens.paths import RAW_DATA_DIR
+
+    raw_dir = RAW_DATA_DIR
+    sources = sorted(p.name.split("=", 1)[-1] for p in raw_dir.glob("source=*")) if raw_dir.exists() else []
     result: dict[str, Any] = {
-        "configured": configured,
-        "mirror_enabled": settings.aws_s3_mirror_enabled,
-        "region": settings.aws_default_region,
-        "raw_bucket": settings.aws_s3_raw_bucket,
-        "marts_bucket": settings.aws_s3_marts_bucket,
+        "configured": raw_dir.exists(),
+        "path": str(raw_dir),
+        "sources": sources,
     }
-    if not configured:
-        result["status"] = "Scaffolded"
-        result["detail"] = "S3 mirror is not fully enabled for this runtime"
+    if not raw_dir.exists():
+        result["status"] = "Pending"
+        result["detail"] = f"Raw landing zone not created yet at {raw_dir}"
         return result
-
-    try:
-        import boto3
-
-        client = boto3.client(
-            "s3",
-            aws_access_key_id=settings.aws_access_key_id,
-            aws_secret_access_key=settings.aws_secret_access_key,
-            region_name=settings.aws_default_region,
-        )
-        client.head_bucket(Bucket=settings.aws_s3_raw_bucket)
-    except Exception as exc:
-        result["status"] = "Failed"
-        result["detail"] = str(exc)
-        return result
-
     result["status"] = "Ready"
-    result["detail"] = f"Raw bucket reachable: {settings.aws_s3_raw_bucket}"
+    result["detail"] = f"VPS local raw storage at {raw_dir} ({len(sources)} sources)"
     return result
 
 
@@ -213,7 +193,7 @@ def probe_platform_stack() -> dict[str, Any]:
     return {
         "airflow": probe_airflow_project(),
         "dbt": probe_dbt_project(),
-        "s3": probe_s3_configuration(),
+        "raw_storage": probe_local_raw_storage(),
         "snowflake": probe_snowflake_connection(),
         "postgres": probe_postgres_sync(),
     }

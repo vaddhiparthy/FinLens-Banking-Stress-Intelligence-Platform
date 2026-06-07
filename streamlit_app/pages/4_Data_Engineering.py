@@ -353,29 +353,20 @@ def platform_stack_frame() -> pd.DataFrame:
     return pd.DataFrame(
         [
             {
-                "Component": "AWS S3 bronze mirror",
-                "Role": "Raw landing and durable artifact storage",
+                "Component": "VPS local raw storage",
+                "Role": "Raw landing and durable artifact storage (no cloud object store)",
                 "Status": _probe_status(
                     probes,
-                    "s3",
+                    "raw_storage",
                     _tool_status(
-                        configured=bool(
-                            settings.aws_s3_mirror_enabled
-                            and settings.aws_access_key_id
-                            and settings.aws_secret_access_key
-                        )
+                        configured=(PROJECT_ROOT / "data" / "raw").exists()
                     ),
                 ),
                 "Readiness note": _probe_detail(
                     probes,
-                    "s3",
-                    (
-                        "Buckets: "
-                        f"raw={settings.aws_s3_raw_bucket}, "
-                        f"marts={settings.aws_s3_marts_bucket}"
-                        if settings.aws_s3_mirror_enabled
-                        else "Scaffolded in code, waiting for AWS credentials and bucket wiring"
-                    ),
+                    "raw_storage",
+                    "Partitioned data/raw/source=*/ingestion_date=* on the VPS filesystem; "
+                    "one retained version per source via the rotation policy",
                 ),
             },
             {
@@ -407,12 +398,13 @@ def platform_stack_frame() -> pd.DataFrame:
                 ),
             },
             {
-                "Component": "Terraform infra",
-                "Role": "Provision buckets, IAM, and deployment infrastructure",
+                "Component": "VPS deployment (Caddy + containers)",
+                "Role": "Public ingress, TLS, and container runtime on the VPS",
                 "Status": _tool_status(
-                    configured=Path(PROJECT_ROOT / "terraform").exists()
+                    configured=Path(PROJECT_ROOT / "docker-compose.prod.yml").exists()
                 ),
-                "Readiness note": "Terraform folder is present and reserved for infra rollout",
+                "Readiness note": "Caddy ingress + docker-compose.prod.yml on the VPS; "
+                                  "Cloudflare at the edge",
             },
             {
                 "Component": "DuckDB warehouse",
@@ -1198,7 +1190,7 @@ if active_section == "pipeline":
     infra1, infra2, infra3, infra4 = st.columns(4)
     stack = platform_stack_frame()
     with infra1:
-        metric_card("AWS S3", stack.iloc[0]["Status"], "Bronze mirror readiness",
+        metric_card("VPS storage", stack.iloc[0]["Status"], "Local raw landing zone",
                     tone=status_tone(stack.iloc[0]["Status"]))
     with infra2:
         metric_card(live_label("Airflow"), stack.iloc[1]["Status"], "DAG orchestration scaffold",

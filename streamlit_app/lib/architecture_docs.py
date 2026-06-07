@@ -8,11 +8,12 @@ import streamlit as st
 from streamlit_app.lib.ui_components import section_heading, styled_table, tech_bulletin
 
 REFERENCE_LINKS = {
-    "AWS S3": "https://aws.amazon.com/documentation-overview/s3/",
+    "VPS local storage": "https://duckdb.org/docs/data/partitioning/hive_partitioning",
+    "DuckDB": "https://duckdb.org/docs/",
     "Airflow": "https://airflow.apache.org/docs/index.html",
     "dbt": "https://docs.getdbt.com/",
-    "Terraform": "https://developer.hashicorp.com/terraform/registry/providers",
-    "Terraform AWS Provider": "https://registry.terraform.io/providers/hashicorp/aws/latest/docs",
+    "Caddy": "https://caddyserver.com/docs/",
+    "Docker Compose": "https://docs.docker.com/compose/",
     "Snowflake": "https://docs.snowflake.com/en/",
     "Streamlit": "https://docs.streamlit.io/",
     "FastAPI": "https://fastapi.org/",
@@ -31,7 +32,7 @@ def _flow_html() -> str:
     <div class="arch-flow">
         <div class="arch-node">Source Contracts<br><span>FDIC, FRED, QBP, NIC</span></div>
         <div class="arch-arrow">-></div>
-        <div class="arch-node">Bronze Zone<br><span>Immutable raw snapshots in local/S3 storage</span></div>
+        <div class="arch-node">Bronze Zone<br><span>Immutable raw snapshots on VPS local storage</span></div>
         <div class="arch-arrow">-></div>
         <div class="arch-node">Silver Zone<br><span>Canonical entities, dates, and source contracts</span></div>
         <div class="arch-arrow">-></div>
@@ -84,10 +85,10 @@ def _component_catalog() -> pd.DataFrame:
     return pd.DataFrame(
         [
             {
-                "Component": "AWS S3",
-                "Architecture role": "Bronze object store and replay boundary",
-                "Data architect view": "Stores raw source artifacts by source and ingest date before warehouse loading.",
-                "Activation status": "Waiting on AWS credentials/buckets",
+                "Component": "VPS local storage",
+                "Architecture role": "Bronze landing zone and replay boundary",
+                "Data architect view": "Stores raw source artifacts on the VPS filesystem, partitioned by source and ingest date, before warehouse loading. One version retained per source via the rotation policy.",
+                "Activation status": "Active (data/raw on the VPS)",
             },
             {
                 "Component": "Airflow",
@@ -108,10 +109,10 @@ def _component_catalog() -> pd.DataFrame:
                 "Activation status": "Waiting on Snowflake credentials",
             },
             {
-                "Component": "Terraform",
-                "Architecture role": "Infrastructure-as-code boundary",
-                "Data architect view": "Codifies cloud resources so storage and warehouse dependencies are reproducible.",
-                "Activation status": "Modules scaffolded",
+                "Component": "VPS deployment (Caddy + containers)",
+                "Architecture role": "Public ingress and container runtime",
+                "Data architect view": "Caddy terminates TLS and proxies to the Streamlit/FastAPI containers defined in docker-compose.prod.yml; Cloudflare sits at the edge.",
+                "Activation status": "Active (docker-compose.prod.yml)",
             },
             {
                 "Component": "Runtime reconciliation",
@@ -179,7 +180,7 @@ def _warehouse_layers() -> pd.DataFrame:
                 "Layer": "Bronze",
                 "Primary concern": "Source fidelity",
                 "Typical object": "Raw JSON/CSV artifact with ingest metadata",
-                "Owned by": "Ingestion + S3 landing pattern",
+                "Owned by": "Ingestion + VPS local landing pattern",
             },
             {
                 "Layer": "Silver",
@@ -254,9 +255,9 @@ def _decision_register() -> pd.DataFrame:
                 "Data impact": "All business-facing metrics must pass through a modeled contract.",
             },
             {
-                "Decision": "S3 is the bronze system of record when activated",
-                "Rationale": "Raw files need an external replay and audit boundary.",
-                "Data impact": "Warehouse rebuilds can start from retained source artifacts.",
+                "Decision": "The VPS local filesystem is the bronze system of record",
+                "Rationale": "Raw files need a durable replay and audit boundary; a self-hosted filesystem keeps that at $0 with no cloud dependency.",
+                "Data impact": "Warehouse rebuilds start from the retained source artifacts; a rotation policy keeps one version per source.",
             },
             {
                 "Decision": "Airflow owns run order, not business logic",
@@ -357,7 +358,7 @@ def _render_platform(query: str) -> None:
         tech_bulletin(
             "Architecture posture",
             "The business UI is intentionally small. The engineering story is the platform beneath it: "
-            "S3 landing, Airflow scheduling, dbt modeling, Snowflake warehouse targeting, and a clear "
+            "VPS local landing, Airflow scheduling, dbt modeling, Snowflake warehouse targeting, and a clear "
             "contract boundary between data production and data consumption.",
         )
 
@@ -487,14 +488,15 @@ def _render_warehouse(query: str) -> None:
             )
         )
 
-    if _match(query, "s3 landing partition"):
+    if _match(query, "local landing partition raw storage"):
         section_heading(
-            "S3 Landing Pattern",
-            "S3 is the evidence boundary. Files are written by source and ingestion date so a run can "
-            "be replayed, audited, or loaded into Snowflake without depending on the app filesystem.",
+            "Local Landing Pattern",
+            "The VPS filesystem is the evidence boundary. Files are written by source and ingestion "
+            "date so a run can be replayed, audited, or loaded into Snowflake. A rotation policy keeps "
+            "exactly one version per source and purges older snapshots.",
         )
         st.code(
-            "s3://<raw-bucket>/source=<fdic|fred|qbp|nic>/ingestion_date=YYYY-MM-DD/<uuid>.json",
+            "data/raw/source=<fdic|fred|qbp|nic>/ingestion_date=YYYY-MM-DD/<uuid>.json",
             language="text",
         )
 
@@ -598,11 +600,13 @@ def _render_theory(query: str) -> None:
 
     topics = [
         (
-            "AWS S3",
-            "In a data platform, object storage is usually the first durable control point. FinLens "
-            "uses S3 as the intended Bronze zone so source pulls can be retained independently from "
-            "the warehouse, replayed during debugging, and inspected when downstream numbers look wrong. "
-            "That design matters because a dashboard without raw retention has no credible audit path.",
+            "VPS local storage",
+            "In a data platform, the raw landing zone is the first durable control point. FinLens keeps "
+            "it on the VPS filesystem (data/raw, Hive-partitioned by source and ingestion date) so "
+            "source pulls are retained independently from the warehouse, replayed during debugging, and "
+            "inspected when downstream numbers look wrong, all at $0 with no cloud object store. A "
+            "rotation policy retains one version per source. A dashboard without raw retention has no "
+            "credible audit path.",
         ),
         (
             "Airflow",
@@ -627,11 +631,11 @@ def _render_theory(query: str) -> None:
             "from a data engineering portfolio.",
         ),
         (
-            "Terraform",
-            "Terraform gives the infrastructure layer the same review discipline as application code. "
-            "Buckets, IAM boundaries, and warehouse-adjacent resources should be declared rather than "
-            "remembered. For FinLens, Terraform is less about complexity and more about showing that "
-            "cloud resources are reproducible.",
+            "Caddy",
+            "Caddy is the public ingress on the VPS. It terminates TLS automatically and reverse-proxies "
+            "to the Streamlit and FastAPI containers declared in docker-compose.prod.yml, with Cloudflare "
+            "at the edge for DNS and the branded domain. The deployment is reproducible from the compose "
+            "file rather than from a cloud-specific provisioning tool.",
         ),
         (
             "Runtime reconciliation",
@@ -670,7 +674,7 @@ def render_architecture_decisions() -> None:
     )
     query = st.text_input(
         "Search architecture knowledge base",
-        placeholder="Search S3, Airflow, dbt, Snowflake, contracts, lineage, quality...",
+        placeholder="Search storage, Airflow, dbt, Snowflake, contracts, lineage, quality...",
         key="architecture_decision_search",
     ).strip()
 

@@ -36,11 +36,11 @@ the repository-facing companion for code review, onboarding, and implementation 
 
 ## Resume Stack
 
-- AWS S3 for bronze artifacts
+- VPS local filesystem for raw storage (`data/raw`, partitioned by source and ingestion date; one retained version per source via the rotation policy)
 - Airflow for orchestration
 - dbt for transformations
-- Terraform for provisioning
-- Snowflake for warehouse-grade modeling
+- Caddy + docker-compose.prod.yml on the VPS for deployment (no infrastructure-as-code needed; no cloud resources to provision)
+- Snowflake for warehouse-grade modeling (optional, credential-gated)
 - FastAPI for health and telemetry
 - Streamlit for presentation
 - Cloudflare for the public edge

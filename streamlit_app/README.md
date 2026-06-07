@@ -33,5 +33,5 @@ Notes:
 Shared presentation logic lives in `streamlit_app/lib/`.
 
 The Architecture Decisions and Wiki sections are the in-app data architecture handbook. Their main
-emphasis is AWS S3, Airflow, dbt, Terraform, Snowflake, DuckDB, source contracts, lineage,
+emphasis is VPS-local raw storage (`data/raw`, partitioned by source and ingestion date), Airflow, dbt, Caddy + docker-compose.prod.yml deployment, optional credential-gated Snowflake, DuckDB, source contracts, lineage,
 warehouse layering, and data quality strategy. Web and monitoring details are kept secondary.

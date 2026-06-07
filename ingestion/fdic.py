@@ -7,7 +7,6 @@ from io import StringIO
 from pathlib import Path
 from typing import Any
 
-from finlens.aws import upload_artifact_if_configured
 from finlens.config import get_settings
 from finlens.http import build_session, get_text
 from finlens.ingestion.base import IngestionTarget, build_storage_path
@@ -22,7 +21,6 @@ class FdicIngestionResult:
     record_count: int
     output_path: Path
     source_url: str
-    s3_uri: str | None = None
 
 
 def fetch_failed_bank_rows() -> list[dict[str, str]]:
@@ -50,13 +48,11 @@ def ingest_fdic_failed_banks() -> FdicIngestionResult:
     payload = build_failed_bank_payload(rows)
     target = IngestionTarget.create("fdic")
     output_path = write_json(build_storage_path(target), payload)
-    s3_uri = upload_artifact_if_configured(output_path, target)
     LOGGER.info("fdic_ingestion_complete", output_path=str(output_path), record_count=len(rows))
     return FdicIngestionResult(
         record_count=len(rows),
         output_path=output_path,
         source_url=payload["source_url"],
-        s3_uri=s3_uri,
     )
 
 

@@ -13,7 +13,7 @@ Live presentation: <https://surya.vaddhiparthy.com/finlens/>
 - Great Expectations checks for source and serving-layer validation
 - FastAPI health and telemetry endpoints for machine-facing operations
 - Streamlit business and technical surfaces for recruiters, analysts, and engineers
-- Infrastructure scaffolding for S3, Snowflake, Terraform, Docker, and production deployment
+- VPS-local raw storage (`data/raw`, partitioned by source and ingestion date; one retained version per source via the rotation policy), optional credential-gated Snowflake, Docker, and Caddy + docker-compose.prod.yml production deployment
 
 ## Architecture
 
@@ -45,10 +45,10 @@ Detailed docs:
 | Language | Python, SQL |
 | Ingestion | FDIC, FRED/ALFRED, QBP, NIC source clients |
 | Orchestration | Airflow |
-| Transformation | dbt-style SQL models, DuckDB, Snowflake scaffolding |
+| Transformation | dbt-style SQL models, DuckDB, optional credential-gated Snowflake |
 | Quality | Great Expectations, schema checks, smoke tests |
 | Serving | Streamlit, FastAPI |
-| Infrastructure | Docker, Terraform, S3-oriented landing zones |
+| Infrastructure | Docker, Caddy + docker-compose.prod.yml on the VPS, VPS-local raw landing (`data/raw`, partitioned by source and ingestion date) |
 | Operations | Health checks, connector readiness, structured project docs |
 
 ## Repository Layout
@@ -64,7 +64,7 @@ Detailed docs:
 | `snowflake/` | Warehouse DDL and load scaffolding |
 | `api/` | FastAPI health, metrics, failure, and telemetry endpoints |
 | `streamlit_app/` | Business dashboard and technical documentation UI |
-| `terraform/` | Cloud infrastructure scaffolding |
+| `scripts/` | Pipeline and operational scripts, including `rotate_raw_data.py` raw-retention rotation |
 | `docs/` | Architecture, data model, validation, operations, and ADRs |
 | `tests/` | Unit and smoke coverage |
 
@@ -154,6 +154,6 @@ Operational shape:
 - Streamlit serves the business and technical interface.
 - FastAPI exposes health and telemetry endpoints.
 - DuckDB supports local Bronze/Silver/Gold mart materialization.
-- S3, Snowflake, and Terraform scaffolds show the intended cloud operating model.
+- Raw data lives on the VPS local filesystem (`data/raw`, partitioned by source and ingestion date; one retained version per source via the rotation policy); deployment is Caddy + docker-compose.prod.yml on the VPS, with optional credential-gated Snowflake as a warehouse target.
 
 Missing account-specific connector values are surfaced as readiness gaps instead of being hidden or hardcoded.

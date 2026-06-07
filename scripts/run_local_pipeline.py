@@ -45,6 +45,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Skip rebuilding the local DuckDB demo warehouse after ingestion.",
     )
     parser.add_argument(
+        "--skip-rotate",
+        action="store_true",
+        help="Skip the raw-data rotation policy (which retains one version per source).",
+    )
+    parser.add_argument(
+        "--retain-versions",
+        type=int,
+        default=1,
+        help="Versions of raw data to retain per source during rotation. Default: 1.",
+    )
+    parser.add_argument(
         "--start-streamlit",
         action="store_true",
         help="Start the Streamlit app after ingestion and warehouse bootstrap.",
@@ -224,6 +235,30 @@ def main() -> None:
             metadata=lambda path: {"duckdb_path": str(path)},
         )
         print(f"Local warehouse ready at: {db_path}")
+
+    if not args.skip_rotate:
+        from finlens.retention import rotate_raw_and_dlq
+
+        def _rotate() -> dict:
+            return rotate_raw_and_dlq(keep=args.retain_versions)
+
+        rotation = recorder.record(
+            "Raw data rotation",
+            _rotate,
+            detail=lambda report: (
+                "Retained "
+                f"{args.retain_versions} version(s) per source; purged "
+                f"{sum(len(r.removed) for rots in report.values() for r in rots)} stale partition(s)"
+            ),
+            metadata=lambda report: {
+                zone: {r.source: {"kept": r.kept, "removed": r.removed} for r in rots}
+                for zone, rots in report.items()
+            },
+            allow_failure=True,
+        )
+        if rotation is not None:
+            purged = sum(len(r.removed) for rots in rotation.values() for r in rots)
+            print(f"Raw rotation complete: purged {purged} stale partition(s).")
 
     if args.run_dbt_build:
         dbt_result = recorder.record(

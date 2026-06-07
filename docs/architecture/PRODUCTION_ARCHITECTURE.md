@@ -54,7 +54,7 @@ A real bank distress/credit model serving stack typically has:
 ### B.2 The $0 / single-VPS mapping (component-by-component, honestly labelled)
 | # | Production component | Chase-grade tool (reference) | FinLens $0 counterpart | Label |
 |---|---|---|---|---|
-| 1 | Raw ingestion / landing | Kafka + S3 data lake | FDIC BankFind + FRED/ALFRED APIs (free) → local raw JSON; S3 mirror optional-OFF | LIVE |
+| 1 | Raw ingestion / landing | Kafka + S3 data lake | FDIC BankFind + FRED/ALFRED APIs (free) → raw JSON on the VPS local filesystem (`data/raw`, partitioned by source and ingestion date; one retained version per source via the rotation policy) | LIVE |
 | 2 | Batch feature pipeline (PIT) | Spark + dbt | DuckDB + dbt + `finlens_ml.features` (PIT, embargo) | LOCAL |
 | 2b| Streaming features | Flink/Spark Structured Streaming | not needed (quarterly cadence) — REFERENCE; quarterly batch is the correct cadence | REFERENCE |
 | 3 | Feature store (online/offline) | Tecton / Feast (Redis online) | offline = DuckDB point-in-time snapshots; online = the bank-quarter row served by `scenario.py`/API. Single quarterly model → a full feature store is overkill (documented tradeoff) | LOCAL / REFERENCE |

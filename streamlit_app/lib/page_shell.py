@@ -323,12 +323,18 @@ def _render_top_bar(active_page: str, mode: str) -> None:
                     _set_surface_mode(smode)
                     st.switch_page(spath)
     with bar_center:
-        st.markdown(
-            '<div class="brandbar">'
-            '<span class="brandbar-name">FinLens</span>'
-            '<span class="brandbar-tag">Banking Stress Intelligence</span></div>',
-            unsafe_allow_html=True,
-        )
+        if is_home:
+            st.markdown(
+                '<div class="brandbar">'
+                '<span class="brandbar-name">FinLens</span>'
+                '<span class="brandbar-tag">Banking Stress Intelligence</span></div>',
+                unsafe_allow_html=True,
+            )
+        else:
+            # the persistent wordmark doubles as a Home button; switch_page is base-path-safe
+            # (a raw <a href="/"> would break under the /finlens/ subpath deployment)
+            if st.button("FinLens", key=f"brand_home_{active_page}", help="Back to home"):
+                st.switch_page(_page_path("home"))
     with bar_right:
         st.markdown(
             '<a class="topbar-credit topbar-credit-solo" href="https://surya.vaddhiparthy.com" '

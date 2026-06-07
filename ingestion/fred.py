@@ -5,7 +5,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from finlens.aws import upload_artifact_if_configured
 from finlens.config import get_settings
 from finlens.http import build_session, get_json
 from finlens.ingestion.base import IngestionTarget, build_storage_path
@@ -22,7 +21,6 @@ class FredSeriesResult:
     updated: bool
     output_path: Path | None
     last_updated: str | None
-    s3_uri: str | None = None
 
 
 def _series_url(series_id: str) -> str:
@@ -79,7 +77,6 @@ def ingest_fred_series(series_id: str) -> FredSeriesResult:
             updated=False,
             output_path=None,
             last_updated=last_updated,
-            s3_uri=None,
         )
 
     observations = fetch_series_observations(series_id)
@@ -93,7 +90,6 @@ def ingest_fred_series(series_id: str) -> FredSeriesResult:
 
     target = IngestionTarget.create("fred")
     output_path = write_json(build_storage_path(target), payload)
-    s3_uri = upload_artifact_if_configured(output_path, target)
     watermarks[series_id] = last_updated or datetime.now(UTC).isoformat()
     save_fred_watermarks(watermarks)
     LOGGER.info("fred_series_ingested", series_id=series_id, output_path=str(output_path))
@@ -102,7 +98,6 @@ def ingest_fred_series(series_id: str) -> FredSeriesResult:
         updated=True,
         output_path=output_path,
         last_updated=watermarks[series_id],
-        s3_uri=s3_uri,
     )
 
 

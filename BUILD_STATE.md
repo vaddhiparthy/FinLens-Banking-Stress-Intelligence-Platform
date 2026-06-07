@@ -4,11 +4,11 @@
 
 The project is aligned to the resume-grade stack:
 
-- AWS S3
+- VPS local filesystem raw storage (`data/raw`, partitioned by source and ingestion date; one retained version per source via the rotation policy)
 - Airflow
 - dbt
-- Terraform
-- Snowflake
+- Caddy + docker-compose.prod.yml on the VPS (no infrastructure-as-code needed; no cloud resources to provision)
+- Snowflake (optional, credential-gated)
 - FastAPI
 - Streamlit
 - Cloudflare
@@ -49,8 +49,10 @@ AI Engineering Surface (`pages/7_AI_Engineering.py`):
 - `AI Wiki`
 
 The Architecture Decisions tab now acts as the internal data architecture handbook. It emphasizes
-S3 bronze storage, Airflow orchestration, dbt modeling, Snowflake warehouse design, Terraform
-provisioning, data quality, source contracts, lineage, glossary, and official reference links.
+VPS-local raw storage (`data/raw`, partitioned by source and ingestion date; one retained version
+per source via the rotation policy), Airflow orchestration, dbt modeling, optional credential-gated
+Snowflake warehouse design, Caddy + docker-compose.prod.yml deployment on the VPS, data quality,
+source contracts, lineage, glossary, and official reference links.
 
 ## Active Source Scope
 

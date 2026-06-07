@@ -5,7 +5,6 @@ from uuid import uuid4
 
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from finlens.config import get_settings
 from finlens.paths import DLQ_DATA_DIR, RAW_DATA_DIR
 
 
@@ -30,16 +29,6 @@ class IngestionTarget:
             object_id=str(uuid4()),
             dead_letter=dead_letter,
         )
-
-
-def build_s3_key(target: IngestionTarget) -> str:
-    settings = get_settings()
-    bucket = settings.aws_s3_dlq_bucket if target.dead_letter else settings.aws_s3_raw_bucket
-    base = f"s3://{bucket}"
-    return (
-        f"{base}/source={target.source}/"
-        f"ingestion_date={target.ingestion_date.isoformat()}/{target.object_id}.json"
-    )
 
 
 def build_storage_path(target: IngestionTarget, *, extension: str = ".json") -> Path:

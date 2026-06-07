@@ -8,6 +8,7 @@ source code (pulled via inspect.getsource, so it can never drift from what runs)
 
 import inspect
 import json
+import re
 import sys
 import textwrap
 from pathlib import Path
@@ -41,6 +42,16 @@ from streamlit_app.lib.ui_components import (
 )
 
 ART = PROJECT_ROOT / "ml" / "artifacts"
+
+_REL_LINK = re.compile(r"\[([^\]]+)\]\((?!https?://|mailto:)[^)]*\)")
+
+
+def _render_repo_md(text: str) -> str:
+    """Repo docs cross-reference each other with relative .md links (e.g. [x](RELATED_WORK.md)).
+    Those 404 once deployed (the linked files are not served), so flatten any non-http link to
+    plain text, keeping the words. Real external (http/mailto) links are left intact."""
+    return _REL_LINK.sub(r"\1", text)
+
 
 st.set_page_config(
     page_title="FinLens | AI Engineering", layout="wide", initial_sidebar_state="collapsed"
@@ -127,7 +138,7 @@ try:
     _paper = PROJECT_ROOT / "docs" / "ml" / "PAPER.md"
     if _paper.exists():
         with st.expander("Research write-up (measurement paper)"):
-            st.markdown(_paper.read_text(encoding="utf-8"))
+            st.markdown(_render_repo_md(_paper.read_text(encoding="utf-8")))
     st.caption("Ask the cited assistant anything about the model or a specific bank using the "
                "**Ask FinLens** button in the bottom-right corner of any page.")
 except Exception:
@@ -712,7 +723,7 @@ elif section == "decisions":
     )
     if mcard.exists():
         with st.expander("Full model card (generated from the real metrics)"):
-            st.markdown(mcard.read_text(encoding="utf-8"))
+            st.markdown(_render_repo_md(mcard.read_text(encoding="utf-8")))
 
     section_heading("Methodology write-ups",
                     "The full technical documents behind the analyses on the Model Quality "
@@ -730,7 +741,7 @@ elif section == "decisions":
         _fp = _docdir / _fname
         if _fp.exists():
             with st.expander(_label):
-                st.markdown(_fp.read_text(encoding="utf-8"))
+                st.markdown(_render_repo_md(_fp.read_text(encoding="utf-8")))
 
 from streamlit_app.lib.page_shell import page_footer  # noqa: E402
 

@@ -627,6 +627,43 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         color: {palette["text_soft"]};
         margin-top: .12rem;
     }}
+    /* The persistent wordmark rendered as a Home button (sub-pages); styled to look identical
+       to .brandbar but clickable. */
+    div[class*="st-key-brand_home_"] {{ display: flex; justify-content: center; }}
+    div[class*="st-key-brand_home_"] button {{
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        min-height: 0 !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        line-height: 1.05;
+        cursor: pointer;
+    }}
+    div[class*="st-key-brand_home_"] button p {{
+        font-family: "Inter", system-ui, -apple-system, sans-serif !important;
+        font-size: 1.18rem !important;
+        font-weight: 800 !important;
+        letter-spacing: -.01em;
+        color: {palette["text_main"]} !important;
+        -webkit-text-fill-color: {palette["text_main"]} !important;
+        margin: 0 !important;
+    }}
+    div[class*="st-key-brand_home_"] button::after {{
+        content: "Banking Stress Intelligence";
+        font-size: .68rem;
+        font-weight: 600;
+        letter-spacing: .14em;
+        text-transform: uppercase;
+        color: {palette["text_soft"]};
+        margin-top: .12rem;
+    }}
+    div[class*="st-key-brand_home_"] button:hover p {{
+        color: {palette["accent_deep"]} !important;
+        -webkit-text-fill-color: {palette["accent_deep"]} !important;
+    }}
     .topbar-credit {{
         display: block;
         text-align: right;

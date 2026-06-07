@@ -6,7 +6,6 @@ from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
-from finlens.aws import upload_artifact_if_configured
 from finlens.config import get_settings
 from finlens.http import build_session, get_bytes
 from finlens.ingestion.base import IngestionTarget, build_storage_path
@@ -22,8 +21,6 @@ class QbpIngestionResult:
     metadata_path: Path
     source_url: str
     size_bytes: int
-    artifact_s3_uri: str | None = None
-    metadata_s3_uri: str | None = None
 
 
 def _artifact_extension(source_url: str) -> str:
@@ -151,7 +148,6 @@ def ingest_fdic_qbp() -> QbpIngestionResult:
         build_storage_path(target, extension=".data.json"),
         payload,
     )
-    artifact_s3_uri = upload_artifact_if_configured(artifact_path, target)
     metadata_path = write_json(
         build_storage_path(target),
         {
@@ -160,11 +156,9 @@ def ingest_fdic_qbp() -> QbpIngestionResult:
             "ingested_at": datetime.now(UTC).isoformat(),
             "source_url": source_url,
             "artifact_path": str(artifact_path),
-            "artifact_s3_uri": artifact_s3_uri,
             "size_bytes": len(payload),
         },
     )
-    metadata_s3_uri = upload_artifact_if_configured(metadata_path, target)
     LOGGER.info(
         "qbp_ingestion_complete",
         artifact_path=str(artifact_path),
@@ -176,8 +170,6 @@ def ingest_fdic_qbp() -> QbpIngestionResult:
         metadata_path=metadata_path,
         source_url=source_url,
         size_bytes=len(payload),
-        artifact_s3_uri=artifact_s3_uri,
-        metadata_s3_uri=metadata_s3_uri,
     )
 
 
