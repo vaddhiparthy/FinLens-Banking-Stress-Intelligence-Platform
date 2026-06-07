@@ -14,25 +14,37 @@ async function settle(page) {
 }
 
 test("floating assistant opens and answers a cached example", async ({ page }) => {
-  await page.goto("/");
+  // Use a non-gated page so the disclaimer modal never races the launcher click.
+  await page.goto("/AI_Engineering");
   await settle(page);
-  // Dismiss the first-visit use-notice gate if present.
-  const ack = page.getByRole("button", { name: "I understand" });
-  if (await ack.isVisible().catch(() => false)) {
-    await ack.click();
-    await settle(page);
-  }
-  // Launcher present bottom-right on the home page.
+  // Launcher present bottom-right on every page.
   const launch = page.getByRole("button", { name: "Ask FinLens" });
   await expect(launch).toBeVisible();
   await launch.click();
   await settle(page);
   await expect(page.getByText("FinLens Assistant").first()).toBeVisible();
   // A cached example answers instantly (no live model needed).
-  await page.getByRole("button", { name: /addressable PR-AUC/i }).click();
+  const panel = page.locator(".st-key-finlens_chat_open");
+  await panel.getByRole("button", { name: /addressable PR-AUC/i }).click();
   await settle(page);
-  await expect(page.getByText(/addressable/i).first()).toBeVisible();
+  // Assert within the chat panel (the AI page itself also contains "addressable" text).
+  await expect(panel.getByText(/pooled out-of-time PR-AUC/i).first()).toBeVisible();
   await page.screenshot({ path: `${SHOTS}e2e_chat_widget.png`, fullPage: false });
+});
+
+test("assistant handles an operating bank by name (Comerica), not a failure dump", async ({ page }) => {
+  await page.goto("/AI_Engineering");
+  await settle(page);
+  await page.getByRole("button", { name: "Ask FinLens" }).click();
+  await settle(page);
+  const input = page.getByPlaceholder(/Ask a question/i);
+  await input.fill("What happened to Comerica Bank?");
+  await input.press("Enter");
+  await settle(page);
+  // Must recognize it as operating, not say "no information" or dump unrelated failures.
+  await expect(page.getByText(/operating institution/i).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: /full report on COMERICA BANK/i })).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}e2e_chat_comerica.png` });
 });
 
 test("bank report page renders for an institution", async ({ page }) => {

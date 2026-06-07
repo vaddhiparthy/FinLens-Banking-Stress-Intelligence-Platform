@@ -18,9 +18,9 @@ _PROJECT_ROOT = next(
 )
 
 _EXAMPLES = [
+    "What happened to Comerica Bank?",
     "Why did Silicon Valley Bank fail?",
     "What is the addressable PR-AUC and how does it differ from pooled?",
-    "Did the GRU sequence model beat the gradient-boosted model?",
 ]
 
 
@@ -38,11 +38,14 @@ def _demo_cache() -> dict:
 
 
 def _ask(question: str, *, example: bool) -> dict:
-    """Cached questions answer instantly and do not count against the live budget."""
+    """Starter examples are free (cached or run without spending budget); user-typed questions
+    count against the per-session live budget. Bank questions answer instantly (deterministic,
+    model-grounded); only open-ended questions hit the local LLM."""
     demo = _demo_cache()
-    if example and question in demo:
+    if question in demo:
         return {**demo[question], "question": question}
-    st.session_state["chat_live_count"] = st.session_state.get("chat_live_count", 0) + 1
+    if not example:
+        st.session_state["chat_live_count"] = st.session_state.get("chat_live_count", 0) + 1
     try:
         return _backend()(question)
     except Exception as exc:  # noqa: BLE001
@@ -98,7 +101,8 @@ def render_chat_widget() -> None:
         if head_r.button("✕", key="chat_close_btn", help="Close"):
             ss.chat_open = False
             st.rerun()
-        st.caption("Grounded in regulator filings and the live model. Local, $0.")
+        st.caption("Ask about any U.S. bank, the model, or the data. Grounded in the live model "
+                   "and regulator filings. Local, $0.")
 
         for i, msg in enumerate(ss.chat_history):
             with st.chat_message(msg["role"]):

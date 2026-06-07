@@ -46,33 +46,49 @@ def _collection():
     return client.get_collection(COLLECTION, embedding_function=ef)
 
 
-def _bank_lookup() -> dict:
-    """lowercase name fragments -> (cert, canonical name), incl common short forms."""
-    from finlens_ml.failure_cause_labels import load_failure_causes
-    m = {}
-    for _, r in load_failure_causes().iterrows():
-        m[r["name"].lower()] = (int(r["cert"]), r["name"])
-    m.update({
-        "svb": (24735, "Silicon Valley Bank"),
-        "silicon valley": (24735, "Silicon Valley Bank"),
-        "first republic": (59017, "First Republic Bank"),
-        "signature": (57053, "Signature Bank"),
-        "republic first": (27332, "Republic First Bank"),
-        "pulaski": (28611, "Pulaski Savings Bank"),
-        "heartland": (25851, "Heartland Tri-State Bank"),
-    })
-    return m
+from functools import lru_cache
+
+# Common short forms -> CERT, so colloquial names resolve to the right institution.
+_SHORT_FORMS = {
+    "svb": 24735, "silicon valley": 24735, "first republic": 59017,
+    "signature bank": 57053, "republic first": 27332, "pulaski": 28611,
+    "heartland tri-state": 25851,
+}
+
+
+@lru_cache(maxsize=1)
+def _bank_index() -> list:
+    """Every bank in the panel as (name_lower, cert, display_name), longest name first, so a
+    question can name ANY institution (not just the failures) and be resolved by longest match."""
+    from finlens_ml import scenario
+    items = []
+    for _, r in scenario.live_bank_directory().iterrows():
+        nm = str(r.get("bank_name") or "").strip()
+        # multi-word, reasonably specific names only, to avoid matching generic words
+        if len(nm) >= 7 and " " in nm:
+            items.append((nm.lower(), int(r["cert"]), nm))
+    items.sort(key=lambda x: len(x[0]), reverse=True)
+    return items
+
+
+@lru_cache(maxsize=1)
+def _cert_to_name() -> dict:
+    return {cert: disp for _nl, cert, disp in _bank_index()}
+
+
+def _detect_bank(question: str):
+    """Resolve any bank the question names -> (cert, display_name), or None."""
+    q = question.lower()
+    for frag, cert in _SHORT_FORMS.items():
+        if frag in q:
+            return cert, _cert_to_name().get(cert, frag.title())
+    for name_lower, cert, disp in _bank_index():  # longest names first
+        if name_lower in q:
+            return cert, disp
+    return None
 
 
 # ---- nodes ----
-
-def _detect_bank(question: str):
-    q = question.lower()
-    for frag, (cert, name) in _bank_lookup().items():
-        if frag in q:
-            return cert, name
-    return None
-
 
 def retrieve(state: State) -> State:
     col = _collection()
@@ -229,7 +245,74 @@ def _cited_sources(answer: str, doc_sources: list, all_sources: list) -> list:
     return cited or list(all_sources)
 
 
+def _failure_record(cert: int):
+    """Return the regulator failure-cause row for a CERT, or None if the bank did not fail."""
+    try:
+        from finlens_ml.failure_cause_labels import load_failure_causes
+        df = load_failure_causes()
+        sub = df[df["cert"] == cert]
+        return None if sub.empty else sub.iloc[0].to_dict()
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _bank_answer(question: str, cert: int, name: str) -> dict:
+    """Deterministic, model-grounded answer for ANY named bank. Fast (no LLM): scores the bank
+    live; for a bank that actually failed it adds the regulator cause + citation, otherwise it
+    states plainly that the institution is operating. Always routes to the full report."""
+    from finlens_ml import scenario
+    from finlens_ml.scenario import humanize_feature
+
+    rec = scenario.latest_row_for_cert(cert)
+    if not rec:
+        return {"question": question, "bank_name": name, "bank_cert": cert, "used_llm": False,
+                "citations": [], "retrieved": [],
+                "answer": f"{name} (FDIC CERT {cert}) is in the directory but has no scorable "
+                          "filing on record."}
+    scored = scenario.score_features(rec["features"])
+    prob, thr = scored["probability"], scored["threshold"]
+    state = rec.get("state") or "—"
+    quarter = rec.get("quarter")
+    model_pred = {"quarter": quarter, "probability": prob, "threshold": thr}
+    top = next((r for r in scored.get("reasons", []) if r.get("shap") is not None), None)
+    driver = (f" The largest model risk driver is {humanize_feature(top['feature'])} "
+              f"({'raising' if top['shap'] > 0 else 'lowering'} estimated risk)." if top else "")
+
+    fail = _failure_record(cert)
+    citations = []
+    if fail:
+        cause = str(fail.get("cause", "—")).replace("_", "/")
+        year = fail.get("failure_year", "—")
+        quote = (fail.get("quote") or "").strip()
+        src = fail.get("source_url") or ""
+        if src:
+            citations = [src]
+        answer = (
+            f"{name} (FDIC CERT {cert}, {state}) failed in {year}. Regulator-determined primary "
+            f"cause: {cause}." + (f' "{quote}"' if quote else "") +
+            f" The model's last pre-failure score, as of {quarter}, was {prob:.2%} against the "
+            f"{thr:.0%} review threshold; a low score on a rate/liquidity or fraud failure is "
+            "expected, since those leave little signal on quarterly Call Reports (see the "
+            "failure-type decomposition).")
+    else:
+        rel = "above" if prob >= thr else "below"
+        answer = (
+            f"{name} (FDIC CERT {cert}, {state}) is an operating institution: it has not failed "
+            f"and has no failure on record. As of {quarter}, the model estimates a {prob:.2%} "
+            f"four-quarter distress probability, {rel} the {thr:.0%} review threshold. Bank "
+            "failure is a sub-1% base-rate event, so this is a screening estimate, not a "
+            "forecast of failure." + driver)
+    answer += " Open the full report below for the complete assessment."
+    return {"question": question, "answer": answer, "citations": citations, "retrieved": [],
+            "model_pred": model_pred, "used_llm": False, "bank_name": name, "bank_cert": cert}
+
+
 def answer_question(question: str) -> dict:
+    # A question that names any bank gets a fast, deterministic, model-grounded answer (and the
+    # report offer). Only open-ended/methodology questions go through the retrieval + LLM path.
+    hit = _detect_bank(question)
+    if hit:
+        return _bank_answer(question, hit[0], hit[1])
     global _GRAPH
     if _GRAPH is None:
         _GRAPH = _build_graph()
