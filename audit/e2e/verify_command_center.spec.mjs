@@ -43,22 +43,6 @@ test("home command center: ML Inference tab opens on peak distress", async ({ pa
   await page.screenshot({ path: `${SHOTS}cc_inference.png`, fullPage: true });
 });
 
-test("AI surface opens on a flow diagram", async ({ page }) => {
-  await page.goto("/AI_Engineering"); await settle(page);
-  await page.waitForFunction(
-    () => [...document.querySelectorAll("svg")].some((s) => /Train \+ calibrate/.test(s.textContent || "")),
-    { timeout: 30000 });
-  await page.screenshot({ path: `${SHOTS}ai_flow_hero.png`, fullPage: true });
-});
-
-test("DE surface opens on a flow diagram", async ({ page }) => {
-  await page.goto("/Data_Engineering"); await settle(page);
-  await page.waitForFunction(
-    () => [...document.querySelectorAll("svg")].some((s) => /Gold marts/.test(s.textContent || "")),
-    { timeout: 30000 });
-  await page.screenshot({ path: `${SHOTS}de_flow_hero.png`, fullPage: true });
-});
-
 test("chat launcher is renamed to Research a bank", async ({ page }) => {
   await page.goto("/AI_Engineering"); await settle(page);
   await expect(page.getByRole("button", { name: "Research a bank" })).toBeVisible({ timeout: 30000 });

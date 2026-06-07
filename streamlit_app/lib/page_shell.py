@@ -377,14 +377,10 @@ def set_meta_description(mode: str) -> None:
     )
 
 
-def top_navigation(active_page: str, mode: str, intro_render=None) -> None:
+def top_navigation(active_page: str, mode: str) -> None:
     _set_surface_mode(mode)
     set_meta_description(mode)
     _render_top_bar(active_page, mode)
-    # optional hero (e.g. a pillar flow diagram) rendered ABOVE the section menu so a surface
-    # opens on its flow chart, not a row of collapsed tabs
-    if intro_render is not None:
-        intro_render()
     _render_section_tabs(active_page, mode)
 
 

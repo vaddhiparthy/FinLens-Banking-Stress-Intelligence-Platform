@@ -105,36 +105,6 @@ digraph FinLens {
 }
 """
 
-_FLOW_HEADER = """
-  rankdir=LR; bgcolor="transparent"; splines=spline; nodesep=0.3; ranksep=0.55;
-  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11,
-        color="#e4d7c6", fillcolor="#fffaf3", penwidth=1.4, margin="0.20,0.12"];
-  edge [color="#a8501f", penwidth=1.3, arrowsize=0.8];
-"""
-
-# Compact per-pillar flow charts shown as the hero when you enter the DE / AI surface.
-DE_FLOW_DOT = "digraph DE {" + _FLOW_HEADER + """
-  src   [label="Sources\\nFDIC · FRED · QBP · NIC", fillcolor="#f5efe6"];
-  bronze[label="Bronze\\nVPS data/raw (Hive)", fillcolor="#f3dfcf"];
-  silver[label="Silver\\ndbt staging", fillcolor="#dbeceb"];
-  gold  [label="Gold marts\\nDuckDB warehouse", fillcolor="#dbeceb"];
-  serve [label="Serving\\nStreamlit · FastAPI", fillcolor="#f5efe6"];
-  qual  [label="Quality\\nGreat Expectations · dbt tests · reconciliation", fillcolor="#ffffff"];
-  src -> bronze -> silver -> gold -> serve;
-  qual -> bronze [style=dotted, dir=none]; qual -> gold [style=dotted, dir=none];
-}"""
-
-AI_FLOW_DOT = "digraph AI {" + _FLOW_HEADER + """
-  panel [label="Panel\\n448,661 bank-quarters", fillcolor="#f5efe6"];
-  feat  [label="Features\\n34 CAMELS · monotone", fillcolor="#efe3f3"];
-  label [label="Label\\nfails-within-4q · censored", fillcolor="#efe3f3"];
-  split [label="Split\\nout-of-time · embargo", fillcolor="#efe3f3"];
-  train [label="Train + calibrate\\nLightGBM · 12-seed bag · isotonic", fillcolor="#efe3f3"];
-  serve [label="Serve + monitor\\nFastAPI prob+SHAP · drift", fillcolor="#f5efe6"];
-  panel -> feat -> label -> split -> train -> serve;
-}"""
-
-
 _BODY = """\
 The diagram above is the whole platform on one page. It is real Graphviz, not a screenshot, so it
 cannot drift from the description below. Read it left to right: public data enters on the left,

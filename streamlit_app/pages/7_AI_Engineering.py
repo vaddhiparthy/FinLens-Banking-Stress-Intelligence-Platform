@@ -25,7 +25,6 @@ for sub in ("", "src", "ml"):
         sys.path.insert(0, p)
 
 from streamlit_app.lib import ml_charts as mc
-from streamlit_app.lib import wiki_architecture as wa
 from streamlit_app.lib.page_shell import (
     AI_PAGE,
     get_ai_section,
@@ -61,11 +60,7 @@ ensure_theme_state()
 inject_styles(app_css(get_theme_mode(), sidebar_open=True))
 
 
-def _render_ai_flow() -> None:
-    st.graphviz_chart(wa.AI_FLOW_DOT, use_container_width=True)
-
-
-top_navigation("ai", AI_PAGE, intro_render=_render_ai_flow)
+top_navigation("ai", AI_PAGE)
 record_page_view("ai_engineering", AI_PAGE)
 
 MODE = get_theme_mode()
