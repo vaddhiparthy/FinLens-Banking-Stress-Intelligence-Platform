@@ -151,6 +151,20 @@ _verdict = (
 )
 st.markdown(_verdict)
 
+# A failed bank the model did NOT flag must never read as "safe" — reconcile it explicitly.
+if rec.get("actual_label_4") == 1 and not flagged:
+    _cause = ""
+    if not crow.empty:
+        _cause = f" Its failure cause was **{str(crow.iloc[0].get('cause', '')).replace('_', '/')}**."
+    st.warning(
+        f"**This bank failed, yet the model scored it low ({prob:.2%}).** That is not a "
+        "contradiction or a model error: " + pick + " failed from a cause that leaves little "
+        "or no signal on quarterly credit-focused Call Report ratios (a rate/liquidity-driven "
+        "deposit run, or fraud)." + _cause + " The model is scoped to credit-visible distress; "
+        "these structurally-invisible failures are exactly what the failure-type decomposition "
+        "on the AI Engineering surface quantifies and excludes from the addressable metric."
+    )
+
 
 # ---- risk drivers (SHAP) ----
 reasons = [r for r in scored.get("reasons", []) if r.get("shap") is not None]
