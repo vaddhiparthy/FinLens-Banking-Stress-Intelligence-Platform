@@ -119,5 +119,7 @@ test("bank report: failed bank shows the failed-but-low reconciliation", async (
 // ---- Wiki: article renders and search filters ----
 test("wiki: article renders real content", async ({ page }) => {
   await page.goto("/Wiki?article=out-of-time-evaluation"); await settle(page);
-  await expect(page.getByText("The embargo").first()).toBeVisible();
+  // the wiki is a client-side SPA in a components iframe; the deep-linked article opens in it
+  const frame = page.frameLocator("iframe").last();
+  await expect(frame.getByText("The embargo").first()).toBeVisible({ timeout: 20000 });
 });

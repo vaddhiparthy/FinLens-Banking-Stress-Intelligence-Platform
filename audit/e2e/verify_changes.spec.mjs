@@ -51,7 +51,9 @@ test("AI research write-up has no dead .md hyperlinks", async ({ page }) => {
 
 test("wiki glossary renders the expanded abbreviations", async ({ page }) => {
   await page.goto("/Wiki?article=glossary"); await settle(page);
-  await expect(page.getByText("CAMELS", { exact: false }).first()).toBeVisible({ timeout: 30000 });
-  await expect(page.getByText("PR-AUC", { exact: false }).first()).toBeVisible();
+  // wiki content lives in the SPA components iframe
+  const frame = page.frameLocator("iframe").last();
+  await expect(frame.getByText("CAMELS", { exact: false }).first()).toBeVisible({ timeout: 30000 });
+  await expect(frame.getByText("PR-AUC", { exact: false }).first()).toBeVisible();
   await page.screenshot({ path: `${SHOTS}wiki_glossary.png`, fullPage: true });
 });

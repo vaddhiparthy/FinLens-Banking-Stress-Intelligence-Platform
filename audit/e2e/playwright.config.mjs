@@ -5,7 +5,7 @@ import { defineConfig } from "@playwright/test";
 // the Analyst Assistant chatbot, and emits JUnit XML for the audit ledger.
 export default defineConfig({
   testDir: ".",
-  testMatch: /(surfaces|chat_report|capture_ceiling|report_open|functional_sweep|verify_changes|verify_diagram|verify_v2|verify_inf|verify_tip|verify_panzoom|verify_batch|verify_nav)\.spec\.mjs/,
+  testMatch: /(surfaces|chat_report|capture_ceiling|report_open|functional_sweep|verify_changes|verify_diagram|verify_v2|verify_inf|verify_tip|verify_panzoom|verify_batch|verify_nav|verify_wiki)\.spec\.mjs/,
   timeout: 90_000,
   expect: { timeout: 30_000 },
   retries: 1,
