@@ -326,12 +326,48 @@ def _render_top_bar(active_page: str, mode: str) -> None:
         )
 
 
+_META_DESCRIPTIONS = {
+    "home": "FinLens: banking stress intelligence. A calibrated, monotone bank-distress hazard "
+            "model on the FDIC Call Report panel, with a full data-engineering pipeline and a "
+            "cited RAG analyst assistant.",
+    BUSINESS_PAGE: "FinLens business surface: bank-failure forensics, macro transmission, stress "
+                   "pulse, and an early-warning distress score for any FDIC-insured bank.",
+    TECHNICAL_PAGE: "FinLens data engineering surface: source-to-gold pipeline (FDIC, FRED, QBP, "
+                    "NIC), dbt + Great Expectations quality gates, and the ML serving deployment.",
+    AI_PAGE: "FinLens AI engineering surface: a discrete-time hazard model with out-of-time "
+             "evaluation, calibration, SHAP, robustness cross-checks, and model governance.",
+}
+
+
+def set_meta_description(mode: str) -> None:
+    """Inject a per-surface <meta name=description> into the parent document head so each route
+    is descriptive for crawlers/Lighthouse. Streamlit strips <script> from st.markdown, so this
+    uses a zero-height components iframe (same-origin) to reach window.parent.document."""
+    import json as _json
+
+    import streamlit.components.v1 as _components
+
+    desc = _META_DESCRIPTIONS.get(mode, _META_DESCRIPTIONS["home"])
+    _components.html(
+        "<script>"
+        "const d=window.parent.document;"
+        "let m=d.querySelector('meta[name=\"description\"]');"
+        "if(!m){m=d.createElement('meta');m.setAttribute('name','description');"
+        "d.head.appendChild(m);}"
+        f"m.setAttribute('content',{_json.dumps(desc)});"
+        "</script>",
+        height=0,
+    )
+
+
 def top_navigation(active_page: str, mode: str) -> None:
     _set_surface_mode(mode)
+    set_meta_description(mode)
     _render_top_bar(active_page, mode)
     _render_section_tabs(active_page, mode)
 
 
 def home_navigation() -> None:
     """Top bar for the landing page: same chrome, no section tabs."""
+    set_meta_description("home")
     _render_top_bar("home", "home")

@@ -115,6 +115,7 @@ def dag_chart(frame: pd.DataFrame) -> go.Figure:
         )
     )
     figure.update_layout(
+        height=360,  # reserve space to avoid layout shift (CLS) as the chart streams in
         margin=dict(l=10, r=10, t=40, b=10),
         paper_bgcolor="rgba(255,255,255,0)",
         plot_bgcolor="rgba(255,255,255,0)",
