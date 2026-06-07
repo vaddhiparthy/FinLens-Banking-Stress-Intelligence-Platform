@@ -90,7 +90,7 @@ _AI_INTRO = {
                  "How the discrete-time hazard model is trained and scored on the FDIC "
                  "bank-quarter panel, end to end, with the real code at each step."),
     "notebook": ("Bank-Distress Model: Analysis Notebook",
-                 "The actual Jupyter notebook I built this with, executed on the real "
+                 "The Jupyter notebook the analysis was built in, executed on the real "
                  "panel: EDA, the out-of-time evaluation, calibration, and SHAP."),
     "contracts": ("Bank-Distress Model: Feature Contracts",
                   "The model's input contract: every feature, its enforced monotone "
