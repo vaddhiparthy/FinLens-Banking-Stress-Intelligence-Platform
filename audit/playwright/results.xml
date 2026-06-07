@@ -1,38 +1,8 @@
-<testsuites id="" name="" tests="17" failures="0" skipped="0" errors="0" time="117.53877800000001">
-<testsuite name="capture_ceiling.spec.mjs" timestamp="2026-06-07T03:46:12.750Z" hostname="" tests="17" failures="0" skipped="0" time="116.247" errors="0">
-<testcase name="home" classname="capture_ceiling.spec.mjs" time="3.301">
+<testsuites id="" name="" tests="2" failures="0" skipped="0" errors="0" time="10.365475">
+<testsuite name="capture_ceiling.spec.mjs" timestamp="2026-06-07T03:53:34.233Z" hostname="" tests="2" failures="0" skipped="0" time="9.512" errors="0">
+<testcase name="ai pipeline" classname="capture_ceiling.spec.mjs" time="5.643">
 </testcase>
-<testcase name="use-notice gate" classname="capture_ceiling.spec.mjs" time="2.117">
-</testcase>
-<testcase name="stress pulse" classname="capture_ceiling.spec.mjs" time="3.841">
-</testcase>
-<testcase name="failure forensics" classname="capture_ceiling.spec.mjs" time="4.834">
-</testcase>
-<testcase name="macro transmission" classname="capture_ceiling.spec.mjs" time="5.088">
-</testcase>
-<testcase name="early warning what-if" classname="capture_ceiling.spec.mjs" time="17.895">
-</testcase>
-<testcase name="de pipeline" classname="capture_ceiling.spec.mjs" time="6.828">
-</testcase>
-<testcase name="de data quality" classname="capture_ceiling.spec.mjs" time="6.566">
-</testcase>
-<testcase name="de administration" classname="capture_ceiling.spec.mjs" time="6.598">
-</testcase>
-<testcase name="de engineering stack" classname="capture_ceiling.spec.mjs" time="6.693">
-</testcase>
-<testcase name="ai pipeline" classname="capture_ceiling.spec.mjs" time="4.867">
-</testcase>
-<testcase name="ai model quality" classname="capture_ceiling.spec.mjs" time="12.237">
-</testcase>
-<testcase name="ai notebook" classname="capture_ceiling.spec.mjs" time="5.517">
-</testcase>
-<testcase name="wiki home" classname="capture_ceiling.spec.mjs" time="5.278">
-</testcase>
-<testcase name="wiki article" classname="capture_ceiling.spec.mjs" time="5.318">
-</testcase>
-<testcase name="bank report svb" classname="capture_ceiling.spec.mjs" time="7.857">
-</testcase>
-<testcase name="chat open" classname="capture_ceiling.spec.mjs" time="11.412">
+<testcase name="wiki home" classname="capture_ceiling.spec.mjs" time="3.869">
 </testcase>
 </testsuite>
 </testsuites>

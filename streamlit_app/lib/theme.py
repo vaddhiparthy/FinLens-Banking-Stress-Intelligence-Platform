@@ -1817,6 +1817,11 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         color: {palette["text_muted"]};
         font-size: .76rem;
         line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 2.13rem;
     }}
     .browser-stage-anchor + div button {{
         min-height: 4.2rem !important;
@@ -2082,20 +2087,20 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
     }}
     .flow-grid {{
         display: flex;
-        gap: .75rem;
+        gap: .55rem;
         align-items: stretch;
         margin-bottom: .8rem;
-        overflow-x: auto;
         padding-bottom: .2rem;
     }}
     .flow-card {{
         background: linear-gradient(180deg, {palette["content_bg"]}, {palette["sand"]});
         border: 1px solid {palette["border"]};
-        border-radius: 18px;
-        padding: .92rem .95rem;
+        border-radius: 16px;
+        padding: .8rem .75rem;
         box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
         min-height: 11rem;
-        min-width: 14.5rem;
+        flex: 1 1 0;
+        min-width: 0;  /* share the row equally so all stages fit without horizontal scroll */
     }}
     .flow-step {{
         color: {palette["text_soft"]};
