@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 import streamlit as st
 
 PALETTE = {
@@ -55,6 +57,14 @@ def get_palette(mode: str | None = None) -> dict[str, str]:
 
 
 def app_css(mode: str | None = None, sidebar_open: bool = False) -> str:
+    # Resolve the theme first, then build from a cached builder. The CSS is ~63KB and was
+    # rebuilt on every Streamlit rerun of every page; caching by (mode, sidebar_open) removes
+    # that per-rerun cost (the main contributor to click-to-navigate lag).
+    return _build_app_css(mode or get_theme_mode(), sidebar_open)
+
+
+@lru_cache(maxsize=8)
+def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
     palette = get_palette(mode)
     # The left rail was retired: sections now live as top tabs and the surface
     # switch is a dropdown, so content is always full width and the sidebar hidden.
