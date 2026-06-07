@@ -1,0 +1,185 @@
+{
+  "suite": "bank_quarterly_risk_facts",
+  "table": "marts.bank_quarterly_risk_facts",
+  "n_expectations": 20,
+  "n_success": 20,
+  "success": true,
+  "results": [
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": {
+        "min_value": 100000,
+        "max_value": 2000000
+      },
+      "success": true,
+      "observed": 448661
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "cert"
+      },
+      "success": true,
+      "observed": true
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "quarter"
+      },
+      "success": true,
+      "observed": true
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "noncurrent_to_loans"
+      },
+      "success": true,
+      "observed": true
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "nco_to_loans"
+      },
+      "success": true,
+      "observed": true
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "tier1_rwa_ratio"
+      },
+      "success": true,
+      "observed": true
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "tier1_leverage"
+      },
+      "success": true,
+      "observed": true
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "equity_to_assets"
+      },
+      "success": true,
+      "observed": true
+    },
+    {
+      "expectation_type": "expect_column_to_exist",
+      "kwargs": {
+        "column": "roa"
+      },
+      "success": true,
+      "observed": true
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "cert"
+      },
+      "success": true,
+      "observed": 1.0
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "quarter"
+      },
+      "success": true,
+      "observed": 1.0
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "tier1_leverage",
+        "mostly": 0.95
+      },
+      "success": true,
+      "observed": 0.9972
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "equity_to_assets",
+        "mostly": 0.95
+      },
+      "success": true,
+      "observed": 0.9972
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "roa",
+        "mostly": 0.95
+      },
+      "success": true,
+      "observed": 1.0
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "noncurrent_to_loans",
+        "mostly": 0.9
+      },
+      "success": true,
+      "observed": 0.9833
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "tier1_rwa_ratio",
+        "mostly": 0.55
+      },
+      "success": true,
+      "observed": 0.9
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "equity_to_assets",
+        "min_value": -60,
+        "max_value": 100,
+        "mostly": 0.99
+      },
+      "success": true,
+      "observed": 1.0
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "tier1_leverage",
+        "min_value": -60,
+        "max_value": 100,
+        "mostly": 0.99
+      },
+      "success": true,
+      "observed": 0.9999
+    },
+    {
+      "expectation_type": "expect_column_values_to_be_between",
+      "kwargs": {
+        "column": "noncurrent_to_loans",
+        "min_value": 0,
+        "max_value": 100,
+        "mostly": 0.99
+      },
+      "success": true,
+      "observed": 1.0
+    },
+    {
+      "expectation_type": "expect_column_max_to_be_between",
+      "kwargs": {
+        "column": "quarter",
+        "min_value": "2024Q4"
+      },
+      "success": true,
+      "observed": "2026Q1"
+    }
+  ]
+}

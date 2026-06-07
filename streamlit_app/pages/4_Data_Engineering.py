@@ -177,27 +177,6 @@ def pipeline_status_table(frame: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def anomaly_chart() -> go.Figure:
-    frame = pd.DataFrame(
-        {
-            "run": list(range(1, 11)),
-            "rows": [142, 141, 143, 142, 144, 141, 142, 143, 141, 142],
-        }
-    )
-    figure = go.Figure()
-    figure.add_scatter(x=frame["run"], y=frame["rows"], mode="lines+markers", name="Rows")
-    figure.add_hrect(y0=140, y1=144, fillcolor="rgba(15,118,110,0.08)", line_width=0)
-    figure.update_layout(
-        margin=dict(l=10, r=10, t=40, b=10),
-        paper_bgcolor="rgba(255,255,255,0)",
-        plot_bgcolor="rgba(255,255,255,0)",
-        font=dict(color="#1f2933"),
-        xaxis_title="Recent runs",
-        yaxis_title="Rows",
-    )
-    return figure
-
-
 def reconciliation_table() -> pd.DataFrame:
     mode = stress_pulse_source_mode()
     status = "Pass" if mode == "live" else "Deferred"
@@ -758,6 +737,74 @@ def dbt_quality_summary_frame() -> pd.DataFrame:
     )
 
 
+_GX_TYPE_LABEL = {
+    "expect_table_row_count_to_be_between": "Row count in range",
+    "expect_column_to_exist": "Column exists",
+    "expect_column_values_to_not_be_null": "Not-null rate",
+    "expect_column_values_to_be_between": "Values in range",
+    "expect_column_max_to_be_between": "Max in range",
+}
+
+
+def gx_validation() -> dict | None:
+    """Committed Great Expectations result snapshot (great_expectations/validate.py output).
+    Prefer the freshest uncommitted run, fall back to the committed snapshot so the surface
+    works in a deploy environment without DuckDB."""
+    import json
+    ge = PROJECT_ROOT / "great_expectations"
+    for p in (ge / "uncommitted" / "validation_bank_quarterly_risk_facts.json",
+              ge / "validation_result.json"):
+        if p.exists():
+            try:
+                return json.loads(p.read_text())
+            except Exception:
+                continue
+    return None
+
+
+def gx_results_frame(report: dict) -> pd.DataFrame:
+    rows = []
+    for r in report.get("results", []):
+        k = r.get("kwargs", {})
+        target = k.get("column", "table")
+        detail = []
+        if "mostly" in k:
+            detail.append(f"mostly ≥ {k['mostly']}")
+        if "min_value" in k or "max_value" in k:
+            detail.append(f"[{k.get('min_value', '−∞')}, {k.get('max_value', '∞')}]")
+        rows.append({
+            "Expectation": _GX_TYPE_LABEL.get(r["expectation_type"], r["expectation_type"]),
+            "Target": target,
+            "Constraint": ", ".join(detail) or "presence",
+            "Observed": r.get("observed"),
+            "Result": "🟢 Pass" if r.get("success") else "🔴 Fail",
+        })
+    return pd.DataFrame(rows)
+
+
+def deploy_artifacts_frame() -> pd.DataFrame:
+    """Containerization + Kubernetes deployment recipe for the ML serving API. Manifests are
+    committed under deploy/k8s/ and the Dockerfiles under their service folders."""
+    return pd.DataFrame(
+        [
+            {"Artifact": "ml/Dockerfile", "Kind": "Container image",
+             "Role": "FastAPI ML serving (calibrated probability + SHAP) on :8077"},
+            {"Artifact": "api/Dockerfile", "Kind": "Container image",
+             "Role": "Health / telemetry API service"},
+            {"Artifact": "Dockerfile.streamlit", "Kind": "Container image",
+             "Role": "Streamlit presentation surfaces"},
+            {"Artifact": "airflow/Dockerfile", "Kind": "Container image",
+             "Role": "Airflow scheduler / workers for ingestion + transforms"},
+            {"Artifact": "docker-compose.prod.yml", "Kind": "Compose stack",
+             "Role": "Local multi-service production-shaped bring-up"},
+            {"Artifact": "deploy/k8s/kind-config.yaml", "Kind": "Kubernetes (kind)",
+             "Role": "Single-node local cluster definition ($0)"},
+            {"Artifact": "deploy/k8s/ml-serve.yaml", "Kind": "Kubernetes (kind)",
+             "Role": "Deployment + NodePort Service for the ML API, readiness/liveness probes"},
+        ]
+    )
+
+
 def dbt_results_frame() -> pd.DataFrame:
     rows = dbt_result_rows()
     if not rows:
@@ -962,6 +1009,24 @@ def service_endpoints_frame() -> pd.DataFrame:
                 "Path": f"{base}/telemetry/summary",
             },
             {
+                "Endpoint": "/predict-failure-risk",
+                "Served by": "FastAPI (ML serve)",
+                "Purpose": "Calibrated bank-distress probability + SHAP for a feature payload",
+                "Path": "POST :8077/predict-failure-risk",
+            },
+            {
+                "Endpoint": "/predict, /predict/batch",
+                "Served by": "FastAPI (ML serve)",
+                "Purpose": "Single and batch scoring against the served champion model",
+                "Path": "POST :8077/predict · /predict/batch",
+            },
+            {
+                "Endpoint": "/ready",
+                "Served by": "FastAPI (ML serve)",
+                "Purpose": "Model-loaded readiness probe (used by the k8s readinessProbe)",
+                "Path": "GET :8077/ready",
+            },
+            {
                 "Endpoint": "Streamlit app",
                 "Served by": "Streamlit",
                 "Purpose": "Business, data engineering, and AI presentation surfaces",
@@ -1013,65 +1078,6 @@ def control_sync_frame() -> pd.DataFrame:
                     "Sync script persists pipeline, connector, and telemetry summaries"
                     f"{env_note}"
                 ),
-            },
-        ]
-    )
-
-
-def architecture_components_frame() -> pd.DataFrame:
-    settings = get_settings()
-    return pd.DataFrame(
-        [
-            {
-                "Layer": "Edge and domain",
-                "Primary component": "Cloudflare + custom domain",
-                "Runtime": "Public edge",
-                "Current posture": settings.project_domain,
-            },
-            {
-                "Layer": "Presentation",
-                "Primary component": "Streamlit",
-                "Runtime": "App container / local runtime",
-                "Current posture": "Business, Data Engineering, and AI surfaces are active",
-            },
-            {
-                "Layer": "Service endpoints",
-                "Primary component": "FastAPI",
-                "Runtime": "API process",
-                "Current posture": "Health and telemetry routes are implemented",
-            },
-            {
-                "Layer": "Orchestration",
-                "Primary component": "Airflow",
-                "Runtime": "Scheduler / worker tier",
-                "Current posture": "DAGs are scaffolded and ready for deployment wiring",
-            },
-            {
-                "Layer": "Raw storage",
-                "Primary component": "AWS S3",
-                "Runtime": "Cloud object storage",
-                "Current posture": (
-                    "Mirror buckets declared under "
-                    f"{settings.aws_default_region or 'pending region'}"
-                ),
-            },
-            {
-                "Layer": "Transforms",
-                "Primary component": "dbt",
-                "Runtime": "Transform runner",
-                "Current posture": "Staging and mart models exist for MVP sources",
-            },
-            {
-                "Layer": "Warehouse",
-                "Primary component": "Snowflake",
-                "Runtime": "Cloud warehouse",
-                "Current posture": settings.snowflake_account or "Pending account values",
-            },
-            {
-                "Layer": "Home control sync",
-                "Primary component": "Postgres",
-                "Runtime": "Home database",
-                "Current posture": settings.postgres_sync_schema,
             },
         ]
     )
@@ -1223,6 +1229,25 @@ elif active_section == "status":
         "artifact has not been produced yet; they are not presented as a successful quality run.",
     )
     styled_table(dbt_results_frame())
+    _gx = gx_validation()
+    if _gx:
+        section_heading(
+            "Great Expectations Suite (gold mart)",
+            "Independent data-contract gate on marts.bank_quarterly_risk_facts, run by "
+            "great_expectations/validate.py: schema, not-null rates, value ranges, and "
+            "freshness. The process exits non-zero on any failure, so this is a real gate.",
+        )
+        gq1, gq2, gq3 = st.columns(3)
+        with gq1:
+            metric_card("Suite result",
+                        "PASS" if _gx.get("success") else "FAIL",
+                        f"{_gx.get('n_success', 0)}/{_gx.get('n_expectations', 0)} expectations")
+        with gq2:
+            metric_card("Table", "gold mart", _gx.get("table", ", "))
+        with gq3:
+            metric_card("Engine", "GX v3 suite",
+                        "self-contained evaluator (see validate.py)")
+        styled_table(gx_results_frame(_gx))
     section_heading(
         "Transformation Rule Catalog",
         "Deterministic rules that protect data quality before values are exposed to Gold marts.",
@@ -1338,6 +1363,19 @@ elif active_section == "administration":
         "Raw files and source volumes retained from connector runs.",
     )
     styled_table(source_landing_frame())
+    section_heading(
+        "Containerization & Kubernetes Deployment",
+        "The ML serving API is containerized and has a committed local-Kubernetes (kind) "
+        "deployment recipe with readiness/liveness probes. Manifests live under deploy/k8s/; "
+        "the Dockerfiles sit beside each service.",
+    )
+    styled_table(deploy_artifacts_frame())
+    st.caption(
+        "Deploy recipe (committed in deploy/k8s/ml-serve.yaml): `kind create cluster` → "
+        "`docker build -f ml/Dockerfile -t fulllens-ml-serve` → `kind load docker-image` → "
+        "`kubectl apply -f deploy/k8s/ml-serve.yaml` → `kubectl port-forward svc/fulllens-ml-serve "
+        "8077:8077`. NodePort 30077, probes on /ready and /health."
+    )
 
 elif active_section == "decisions":
     render_architecture_decisions()
