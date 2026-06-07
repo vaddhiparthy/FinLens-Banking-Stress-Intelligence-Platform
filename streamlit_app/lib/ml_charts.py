@@ -643,6 +643,49 @@ def cblr_variants_fig(cblr: dict, mode: str | None = None) -> go.Figure:
                  title="2020Q1 CBLR break: robust to handling, harmed only by dropping the feature")
 
 
+@lru_cache(maxsize=1)
+def load_maxout_experiment() -> dict | None:
+    p = _PROJECT_ROOT / "ml" / "artifacts" / "maxout_experiment.json"
+    return json.loads(p.read_text()) if p.exists() else None
+
+
+_MAXOUT_LABEL = {
+    "baseline_light": "Light baseline",
+    "heavy_tune": "Heavy tuning",
+    "bagged": "Bagged (served)",
+    "blend_avg": "Blend (avg)",
+    "stack_logit": "Stacked logit",
+}
+_MAXOUT_ORDER = ["baseline_light", "heavy_tune", "bagged", "blend_avg", "stack_logit"]
+
+
+def maxout_ladder_fig(mx: dict, mode: str | None = None) -> go.Figure:
+    """The 'did maxing out help?' ladder: progressively heavier modelling (light → heavy tune →
+    bagged → blend → stack) on the same out-of-time holdout, with 95% CIs. The bagged config is
+    the served one; the CIs overlap heavily, which is the data-ceiling finding (at 66 positives
+    more modelling effort does not separate)."""
+    pal = get_palette(mode)
+    res = mx.get("results", {})
+    keys = [k for k in _MAXOUT_ORDER if k in res]
+    names = [_MAXOUT_LABEL.get(k, k) for k in keys]
+    vals = [res[k].get("pr_auc", 0.0) for k in keys]
+    cis = [res[k].get("ci") for k in keys]
+    colors = [pal["accent"] if k == "bagged" else pal["text_soft"] for k in keys]
+    err = None
+    if all(cis):
+        err = dict(type="data", symmetric=False,
+                   array=[c[1] - v for c, v in zip(cis, vals)],
+                   arrayminus=[v - c[0] for c, v in zip(cis, vals)],
+                   color=pal["text_muted"], thickness=1.4, width=6)
+    fig = go.Figure()
+    fig.add_bar(x=names, y=vals, marker_color=colors, error_y=err,
+                text=[f"{v:.3f}" for v in vals], textposition="outside")
+    fig.update_yaxes(title="out-of-time PR-AUC (95% CI)", range=[0, 0.46])
+    fig.update_xaxes(tickangle=-15)
+    return _base(fig, pal, height=320, legend=False,
+                 title="Maxing out the model: effort ladder (CIs overlap at 66 positives)")
+
+
 def calibration_bakeoff_fig(cb: dict, mode: str | None = None) -> go.Figure:
     """Calibration error (ECE) across the methods that were bench-raced. Isotonic wins
     and is the one served; the alternatives are shown to prove the choice was earned."""

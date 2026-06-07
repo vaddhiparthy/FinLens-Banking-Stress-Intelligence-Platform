@@ -1,20 +1,20 @@
-<testsuites id="" name="" tests="8" failures="0" skipped="0" errors="0" time="42.763916">
-<testsuite name="surfaces.spec.mjs" timestamp="2026-06-07T00:14:24.880Z" hostname="" tests="8" failures="0" skipped="0" time="41.734" errors="0">
-<testcase name="home surface renders the brand and entry" classname="surfaces.spec.mjs" time="1.867">
+<testsuites id="" name="" tests="8" failures="0" skipped="0" errors="0" time="26.431406">
+<testsuite name="surfaces.spec.mjs" timestamp="2026-06-07T00:23:56.497Z" hostname="" tests="8" failures="0" skipped="0" time="25.483" errors="0">
+<testcase name="home surface renders the brand and entry" classname="surfaces.spec.mjs" time="3.409">
 </testcase>
-<testcase name="data engineering surface renders the live pipeline" classname="surfaces.spec.mjs" time="4.664">
+<testcase name="data engineering surface renders the live pipeline" classname="surfaces.spec.mjs" time="1.987">
 </testcase>
-<testcase name="data engineering Data Quality shows the GX suite result" classname="surfaces.spec.mjs" time="7.192">
+<testcase name="data engineering Data Quality shows the GX suite result" classname="surfaces.spec.mjs" time="3.279">
 </testcase>
-<testcase name="AI surface renders the model pipeline flow" classname="surfaces.spec.mjs" time="4.946">
+<testcase name="AI surface renders the model pipeline flow" classname="surfaces.spec.mjs" time="1.734">
 </testcase>
-<testcase name="AI Model Quality shows the headline metrics and robustness cross-checks" classname="surfaces.spec.mjs" time="11.535">
+<testcase name="AI Model Quality shows the headline metrics and robustness cross-checks" classname="surfaces.spec.mjs" time="7.652">
 </testcase>
-<testcase name="AI Decisions surface exposes the methodology write-ups" classname="surfaces.spec.mjs" time="4.596">
+<testcase name="AI Decisions surface exposes the methodology write-ups" classname="surfaces.spec.mjs" time="3.04">
 </testcase>
-<testcase name="analyst assistant renders a cited cached answer" classname="surfaces.spec.mjs" time="4.201">
+<testcase name="analyst assistant renders a cited cached answer" classname="surfaces.spec.mjs" time="2.616">
 </testcase>
-<testcase name="early warning surface renders" classname="surfaces.spec.mjs" time="2.733">
+<testcase name="early warning surface renders" classname="surfaces.spec.mjs" time="1.766">
 </testcase>
 </testsuite>
 </testsuites>

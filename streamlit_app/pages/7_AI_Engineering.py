@@ -582,7 +582,8 @@ elif section == "quality":
         fg = mc.load_fine_gray()
         crisk = mc.load_competing_risks()
         b1 = mc.load_b1_compare()
-        if any((cbk, cblr, fg, b1)):
+        mx = mc.load_maxout_experiment()
+        if any((cbk, cblr, fg, b1, mx)):
             section_heading(
                 "Robustness & validation cross-checks",
                 "The measurement was stress-tested against the choices a validator would "
@@ -590,6 +591,21 @@ elif section == "quality":
                 "reporting break is handled, competing-risks censoring, and originally-filed "
                 "vs restated inputs. Each is the real artifact, collapsed here so the headline "
                 "above stays uncluttered.")
+            if mx:
+                with st.expander("Maxing out the model — effort ladder vs the data ceiling"):
+                    st.plotly_chart(mc.maxout_ladder_fig(mx, MODE), use_container_width=True)
+                    res = mx.get("results", {})
+                    bagged = res.get("bagged", {})
+                    base = res.get("baseline_light", {})
+                    st.caption(
+                        f"Progressively heavier modelling on the same {mx.get('holdout_quarters', 28)}-"
+                        f"quarter out-of-time holdout ({mx.get('test_positives', 66)} positives): light "
+                        f"baseline {base.get('pr_auc', 0):.3f} → heavy tuning → bagged "
+                        f"{bagged.get('pr_auc', 0):.3f} (the served config) → blend → stack. The bagged "
+                        "ensemble is best, but every interval overlaps every other: at this positive "
+                        "count more modelling effort does not separate. Compute was never the limit; "
+                        "the rare-event count is. This is why the served model is the bagged one and "
+                        "why the headline number does not chase the unconstrained maxima.")
             if cbk:
                 with st.expander("Calibration bake-off — why isotonic was chosen"):
                     st.plotly_chart(mc.calibration_bakeoff_fig(cbk, MODE),

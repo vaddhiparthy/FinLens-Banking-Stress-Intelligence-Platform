@@ -53,3 +53,8 @@ dbt/dbt_packages/
 
 # downloaded local tools (kind binary)
 .tools/
+
+# audit byproducts (the e2e tooling is committed; its run outputs and scratch are not)
+.coverage
+test-results/
+audit/screenshots/_crops/

@@ -8,6 +8,36 @@ Legend for "Surfaced in UI?":
 - A concrete page + section means it is reachable and visible in the running Streamlit app.
 - **HIDDEN** = built (file evidence) but not reachable/rendered anywhere in the web UI.
 
+> **NOTE (post-remediation):** the **HIDDEN** labels in the tables below are the ORIGINAL
+> discovery snapshot. Every HIDDEN *feature/result* has since been resolved; the authoritative
+> outcome is the **Remediation outcome** table immediately below. Zero presentable features
+> remain hidden (verified by the information-architecture reviewer against the code,
+> audit/signoffs/information-architecture.md).
+
+## Remediation outcome (authoritative)
+
+| Original HIDDEN item | Outcome | Where now |
+|---|---|---|
+| competing_risks.json | SURFACED | AI / Model Quality → "Competing risks" expander |
+| fine_gray.json | SURFACED | AI / Model Quality → "Competing risks" expander |
+| cblr_robustness.json | SURFACED | AI / Model Quality → "2020Q1 CBLR break" expander (chart) |
+| calibration_bakeoff.json | SURFACED | AI / Model Quality → "Calibration bake-off" expander (chart) |
+| b1_compare.json | SURFACED | AI / Model Quality → "Point-in-time vs restated (B1)" expander |
+| maxout_experiment.json | SURFACED | AI / Model Quality → "Maxing out the model" expander (chart) |
+| sequence_sweep.json | SURFACED | AI / Model Quality → GRU challenger (via sequence_challenger.robustness_sweep) |
+| FAILURE_DECOMPOSITION / COMPETING_RISKS / B1 / SEQUENCE_CHALLENGER / VALIDATION_REPORT / RELATED_WORK docs | SURFACED | AI / Model Decisions → "Methodology write-ups" expanders |
+| Great Expectations mart suite result | SURFACED | DE / Data Quality → GX suite block (20/20, per-expectation table) |
+| ML serving routes (/predict-failure-risk, /predict, /predict/batch, /ready) | SURFACED | DE / Administration → service endpoint catalog |
+| DE data API routes (/failures, /banks/{id}, /metrics/{series_id}) | SURFACED | DE / Administration → service endpoint catalog |
+| K8s ml-serve + kind config; ml/Streamlit/api/airflow Dockerfiles; compose | SURFACED | DE / Administration → "Containerization & Kubernetes Deployment" block |
+| anomaly_chart(), architecture_components_frame() | REMOVED | dead code deleted (A-005) |
+| finlens_model_report.html | EXCLUDED | redundant with the embedded analysis notebook HTML (AI / Notebook) |
+| FFIEC point-in-time loader (ffiec_pit.py) | EXCLUDED (code path) | its result IS surfaced via b1_compare; the loader is the offline code behind it |
+| GX on_load / on_serve suites + checkpoints | EXCLUDED | runtime guards, not a presentable result; the mart suite result is surfaced |
+| Snowflake DDL/load scripts | EXCLUDED | warehouse-target infra, not a product feature (DuckDB is the live store) |
+| ABSTRACT / ARCHITECTURE / CEILING_BACKLOG / FINAL_SIGNOFF / PUBLICATION_READINESS / RUN_LOCAL / WEB_REDESIGN / PROJECT_CAPSTONES docs | EXCLUDED | engineering/process docs, not product features |
+| mkdocs site, web/ static prototype | EXCLUDED | separate/ superseded builds, not part of the running Streamlit app |
+
 Surface map (from `streamlit_app/lib/page_shell.py`):
 - **Business** surface = pages `0_Stress_Pulse`, `1_Failure_Forensics`, `2_Macro_Transmission`,
   `3_Early_Warning`, `8_Analyst_Assistant`, plus the shared `6_Wiki`.

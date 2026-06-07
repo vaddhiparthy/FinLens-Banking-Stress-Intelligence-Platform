@@ -1028,6 +1028,18 @@ def service_endpoints_frame() -> pd.DataFrame:
                 "Path": "GET :8077/ready",
             },
             {
+                "Endpoint": "/failures, /banks/{id}",
+                "Served by": "FastAPI (data API)",
+                "Purpose": "Public bank-failure feed and per-institution lookup",
+                "Path": f"{base}/failures · /banks/{{bank_id}}",
+            },
+            {
+                "Endpoint": "/metrics/{series_id}",
+                "Served by": "FastAPI (data API)",
+                "Purpose": "Macro/FRED series values for the business surfaces",
+                "Path": f"{base}/metrics/{{series_id}}",
+            },
+            {
                 "Endpoint": "Streamlit app",
                 "Served by": "Streamlit",
                 "Purpose": "Business, data engineering, and AI presentation surfaces",
