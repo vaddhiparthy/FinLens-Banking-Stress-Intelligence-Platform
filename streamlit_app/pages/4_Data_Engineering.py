@@ -125,6 +125,22 @@ def dag_chart(frame: pd.DataFrame) -> go.Figure:
     return figure
 
 
+def _fmt_last_run(v: object) -> str:
+    """Render an ISO run timestamp as a clean, readable date; pass through non-timestamps
+    (e.g. 'Source contract inactive', '—') unchanged."""
+    if not isinstance(v, str) or "T" not in v:
+        return str(v)
+    try:
+        from datetime import datetime
+        return datetime.fromisoformat(v.replace("Z", "+00:00")).strftime("%b %-d, %Y · %H:%M UTC")
+    except Exception:  # noqa: BLE001
+        try:
+            from datetime import datetime
+            return datetime.fromisoformat(v.replace("Z", "+00:00")).strftime("%b %d, %Y · %H:%M UTC")
+        except Exception:  # noqa: BLE001
+            return str(v)
+
+
 def pipeline_status_table(frame: pd.DataFrame) -> pd.DataFrame:
     indicator_map = {
         "Success": "🟢 Success",
@@ -158,6 +174,7 @@ def pipeline_status_table(frame: pd.DataFrame) -> pd.DataFrame:
         status_label=lambda data: data["status"].map(indicator_map),
         execution_tool=lambda data: data["flow_name"].map(tool_map),
         runtime_artifact=lambda data: data["flow_name"].map(artifact_map),
+        last_run=lambda data: data["last_run"].map(_fmt_last_run),
     )[
         [
             "flow_no",

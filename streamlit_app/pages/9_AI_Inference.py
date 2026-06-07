@@ -54,6 +54,67 @@ def _shap_diverging(reasons: list[dict]):
     return fig
 
 
+_PROFILE_LITE = [
+    ("roa", "Return on assets"), ("nim", "Net interest margin"),
+    ("noncurrent_loans_ratio", "Noncurrent loans"), ("tier1_leverage", "Tier-1 leverage"),
+    ("uninsured_deposit_ratio", "Uninsured deposits"), ("loans_to_deposits", "Loans / deposits"),
+]
+
+
+def _render_bank_facts(cert: int, bank: str, row: dict, result: dict) -> None:
+    """Deeper insights for the resolved bank: what actually happened + key ratios vs peers,
+    using the same governed sources as the full Bank Report."""
+    import pandas as pd
+    import finlens_ml.scenario as scenario
+
+    # ---- what actually happened (real backtest outcome + regulator-stated cause if it failed) ----
+    label = row.get("actual_label_4")
+    known = row.get("outcome_known")
+    outcome = ("Failed within four quarters of this filing" if label == 1
+               else "Survived the four-quarter window" if known
+               else "Outcome window has not fully elapsed yet")
+    st.markdown("**What actually happened**")
+    cause_shown = False
+    try:
+        from finlens_ml.failure_cause_labels import load_failure_causes
+        causes = load_failure_causes()
+        crow = causes[causes["cert"] == cert] if not causes.empty else pd.DataFrame()
+        if not crow.empty:
+            c = crow.iloc[0]
+            st.markdown(f"{outcome}. Regulator-determined cause: **{c.get('cause', '—')}** "
+                        f"({c.get('failure_year', '—')}).")
+            if isinstance(c.get("quote"), str) and c["quote"].strip():
+                st.caption(f"“{c['quote'].strip()}”")
+            cause_shown = True
+    except Exception:  # noqa: BLE001
+        pass
+    if not cause_shown:
+        st.caption(outcome + ". Backtest label from the governed panel where the window has closed.")
+
+    # ---- key ratios vs peer medians (compact subset of the Bank Report profile) ----
+    try:
+        peers = scenario.baseline_features()
+    except Exception:  # noqa: BLE001
+        peers = {}
+    prof = []
+    for f, lbl in _PROFILE_LITE:
+        v, med = row["features"].get(f), peers.get(f)
+        if v is None or med is None:
+            continue
+        prof.append({"Ratio": lbl, "This bank": round(float(v), 4),
+                     "Peer median": round(float(med), 4),
+                     "vs peers": f"{float(v) - float(med):+.4f}"})
+    if prof:
+        st.markdown("**Key ratios vs peer medians**")
+        st.dataframe(pd.DataFrame(prof), hide_index=True, use_container_width=True)
+
+    if st.button("Open the full Bank Report →", key="inf_open_report",
+                 use_container_width=True):
+        st.session_state["report_cert"] = cert
+        st.session_state["report_bank"] = bank
+        st.switch_page("pages/8_Bank_Report.py")
+
+
 def _render_preview(out: dict) -> None:
     """Left preview: when a bank is resolved, show its live score + drivers."""
     bank = out.get("bank_name")
@@ -66,12 +127,14 @@ def _render_preview(out: dict) -> None:
         return
     try:
         import finlens_ml.scenario as scenario
-        row = scenario.latest_known_row_for_cert(int(cert)) or scenario.latest_row_for_cert(int(cert))
+        # Same source as the full Bank Report so the read matches across surfaces.
+        row = scenario.latest_row_for_cert(int(cert)) or scenario.latest_known_row_for_cert(int(cert))
         result = scenario.score_features(row["features"]) if row else None
     except Exception:  # noqa: BLE001
-        result = None
+        row, result = None, None
     st.markdown(f'<div class="dash-title">{bank.title()}</div>'
                 f'<div class="dash-sub">FDIC CERT {cert}'
+                + (f" · {row.get('state')}" if row and row.get("state") else "")
                 + (f" · scored as of {row.get('quarter')}" if row else "") + "</div>",
                 unsafe_allow_html=True)
     if result is None:
@@ -102,11 +165,26 @@ def _render_preview(out: dict) -> None:
             st.caption("Each bar is a feature's push on THIS bank's score: red (right) raised the "
                        "risk, green (left) lowered it; longer = bigger effect.")
             st.plotly_chart(fig, use_container_width=True, key="inf_shap")
+    _render_bank_facts(int(cert), bank, row, result)
 
 
 st.markdown('<div class="dash-title">AI Inference</div>'
             '<div class="dash-sub">Interrogate any U.S. bank. The model read renders live on the '
             'left as you chat.</div>', unsafe_allow_html=True)
+
+st.markdown(
+    """
+    <style>
+    .st-key-inf_chat_panel {
+        border: 1px solid #e4d7c6; border-radius: 16px; background: #fffaf3;
+        padding: 1rem 1.1rem; box-shadow: 0 10px 30px rgba(15, 23, 42, .06);
+    }
+    .st-key-inf_chat_panel [data-testid="stChatInput"] { margin-top: .4rem; }
+    .inf-disclaimer { color: #7f6b58; font-size: .76rem; text-align: center; margin-top: .6rem; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 ss = st.session_state
 ss.setdefault("chat_history", [])
@@ -115,29 +193,31 @@ ss.setdefault("chat_live_count", 0)
 left, right = st.columns([2.6, 1], gap="large")
 
 with right:
-    st.markdown('<div class="finlens-chat-title">Chat</div>', unsafe_allow_html=True)
-    if not ss.chat_history:
-        with st.chat_message("assistant", avatar=cw._AVATAR["assistant"]):
-            st.markdown("Ask about any U.S. bank, the model, or the data. For example: "
-                        "_Why did Silicon Valley Bank fail?_")
-    for i, msg in enumerate(ss.chat_history):
-        with st.chat_message(msg["role"], avatar=cw._AVATAR.get(msg["role"])):
-            if msg["role"] == "assistant" and isinstance(msg.get("out"), dict):
-                cw._render_answer(msg["out"], i)
-            else:
-                st.markdown(msg["content"])
-    if ss.chat_live_count >= cw.MAX_LIVE_QUERIES:
-        st.info("You've been rate limited.")
-    else:
-        prompt = st.chat_input("Ask a question")
-        if prompt:
-            with st.spinner("Retrieving filings, scoring the bank, synthesizing…"):
-                out = cw._ask(prompt, example=False)
-            ss.chat_history.append({"role": "user", "content": prompt})
-            ss.chat_history.append({"role": "assistant", "content": out.get("answer", ""), "out": out})
-            st.rerun()
-    st.markdown('<div class="inf-disclaimer">AI can and will make mistakes.</div>',
-                unsafe_allow_html=True)
+    with st.container(key="inf_chat_panel"):
+        st.markdown('<div class="finlens-chat-title">Chat</div>', unsafe_allow_html=True)
+        if not ss.chat_history:
+            with st.chat_message("assistant", avatar=cw._AVATAR["assistant"]):
+                st.markdown("Ask about any U.S. bank, the model, or the data. For example: "
+                            "_Why did Silicon Valley Bank fail?_")
+        for i, msg in enumerate(ss.chat_history):
+            with st.chat_message(msg["role"], avatar=cw._AVATAR.get(msg["role"])):
+                if msg["role"] == "assistant" and isinstance(msg.get("out"), dict):
+                    cw._render_answer(msg["out"], i)
+                else:
+                    st.markdown(msg["content"])
+        if ss.chat_live_count >= cw.MAX_LIVE_QUERIES:
+            st.info("You've been rate limited.")
+        else:
+            prompt = st.chat_input("Ask a question")
+            if prompt:
+                with st.spinner("Retrieving filings, scoring the bank, synthesizing…"):
+                    out = cw._ask(prompt, example=False)
+                ss.chat_history.append({"role": "user", "content": prompt})
+                ss.chat_history.append({"role": "assistant", "content": out.get("answer", ""),
+                                        "out": out})
+                st.rerun()
+        st.markdown('<div class="inf-disclaimer">AI can and will make mistakes.</div>',
+                    unsafe_allow_html=True)
 
 with left:
     last = next((m["out"] for m in reversed(ss.chat_history)

@@ -162,6 +162,67 @@ For the reasoning behind each tool choice, see [[Tooling Choices and Their Ratio
 layer model in detail, see [[Bronze, Silver, Intermediate, Gold]] and [[Why Dashboards Read Gold Only]].
 """
 
+_PANZOOM_JS = """
+<script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+<script>
+(function () {
+  var doc;
+  try { doc = window.parent.document; } catch (e) { return; }  // degrade: diagram still renders
+  var tries = 0;
+  function init() {
+    tries += 1;
+    var svg = doc.querySelector('[data-testid="stGraphVizChart"] svg, .stGraphVizChart svg');
+    if (!svg) { if (tries < 80) setTimeout(init, 150); return; }
+    if (svg.getAttribute('data-panzoom') === '1') return;
+    if (typeof window.svgPanZoom === 'undefined') { if (tries < 80) setTimeout(init, 150); return; }
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    svg.setAttribute('data-panzoom', '1');
+    try {
+      window.svgPanZoom(svg, {
+        zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,
+        minZoom: 0.3, maxZoom: 12, zoomScaleSensitivity: 0.4, dblClickZoomEnabled: true
+      });
+    } catch (e) { /* leave the static diagram in place */ }
+  }
+  init();
+})();
+</script>
+"""
+
+
+def render_architecture() -> None:
+    """Render the architecture diagram with scroll-zoom, drag-to-pan, and on-diagram controls.
+
+    The DOT is rendered by Streamlit's client-side Graphviz (robust, no network needed to draw it).
+    A small ``svg-pan-zoom`` layer is attached on top; if its CDN is unavailable the diagram still
+    renders, just without the pan/zoom controls (graceful degradation).
+    """
+    import streamlit as st
+    from streamlit.components.v1 import html as _html
+
+    st.markdown(
+        """
+        <style>
+        [data-testid="stGraphVizChart"], .stGraphVizChart {
+            height: 560px; border: 1px solid #e4d7c6; border-radius: 14px;
+            background: #fffaf3; overflow: hidden;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, .05);
+        }
+        [data-testid="stGraphVizChart"] > svg, .stGraphVizChart > svg {
+            width: 100% !important; height: 100% !important;
+        }
+        .svg-pan-zoom-control-background { fill: #fffaf3; opacity: .85; }
+        .svg-pan-zoom-control-element { fill: #bf6d47; }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.graphviz_chart(ARCHITECTURE_DOT, use_container_width=True)
+    st.caption("Scroll to zoom · drag to pan · use the on-diagram controls to zoom in/out and reset.")
+    _html(_PANZOOM_JS, height=0)
+
+
 ARCHITECTURE_ARTICLES = {
     "System Architecture": {
         "cluster": "Architecture",

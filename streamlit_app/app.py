@@ -60,25 +60,20 @@ st.markdown(
     .browse-col-h { font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
         color: #bf6d47; margin: .2rem 0 .7rem; }
     .browse-div { border-left: 1px solid #e4d7c6; height: 100%; min-height: 320px; margin: 0 auto; width: 1px; }
-    .nav-card { border: 1px solid #e0d2bf; border-left: 3px solid #bf6d47; border-bottom: none;
-        border-radius: 10px 10px 0 0; background: #ffffff; padding: .8rem .95rem .6rem;
-        box-shadow: 0 6px 18px rgba(15,23,42,.05); }
-    .nav-card-t { font-family: "Inter", system-ui, sans-serif; font-weight: 800; font-size: 1.05rem;
-        color: #1f2933; }
-    .nav-card-d { color: #6a6b74; font-size: .82rem; line-height: 1.35; margin-top: .15rem; }
+    .home-head { text-align: left; margin: .4rem 0 0; }
+    .home-intro { text-align: left; color: #6a6b74; font-size: 1rem; line-height: 1.6;
+        margin: .25rem 0 1.4rem; }
+    /* Browse links: clean text + accent hover (no boxes); description lives in the button help tip */
     div[class*="st-key-nav_"] button {
-        border: 1px solid #e0d2bf !important; border-left: 3px solid #bf6d47 !important;
-        border-top: none !important; border-radius: 0 0 10px 10px !important;
-        background: #fbf3ec !important; color: #bf6d47 !important; font-weight: 800 !important;
-        font-size: .9rem !important; margin: 0 0 .85rem !important;
-        box-shadow: 0 6px 18px rgba(15,23,42,.05) !important;
-        transition: background .12s ease, transform .12s ease !important;
+        background: transparent !important; border: none !important; box-shadow: none !important;
+        color: #1f2933 !important; font-weight: 700 !important; font-size: 1rem !important;
+        text-align: left !important; justify-content: flex-start !important;
+        padding: .3rem 0 !important; min-height: 0 !important;
     }
-    div[class*="st-key-nav_"] button:hover {
-        background: #bf6d47 !important; color: #fff !important; border-color: #bf6d47 !important;
-        transform: translateY(-1px) !important;
-    }
-    div[class*="st-key-nav_"] button:hover * { color: #fff !important; -webkit-text-fill-color: #fff !important; }
+    div[class*="st-key-nav_"] button::before { content: "›  "; color: #bf6d47; font-weight: 800; }
+    div[class*="st-key-nav_"] button:hover,
+    div[class*="st-key-nav_"] button:hover * {
+        color: #bf6d47 !important; -webkit-text-fill-color: #bf6d47 !important; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -114,22 +109,19 @@ home_navigation()
 # Title + intro: no boxes.
 st.markdown(
     """
-    <div class="landing-hero">
+    <div class="home-head">
         <div class="landing-eyebrow">Surya Vaddhiparthy · M.S. Data Science</div>
         <div class="landing-h1">FinLens</div>
-        <p class="landing-sub">
-            FinLens turns free public banking data into an early-warning read on U.S. bank distress.
-            It pulls FDIC Call Reports, the failed-bank list, FRED macro series, and FFIEC institution
-            data, and lands them as immutable raw snapshots on a single VPS. A medallion pipeline
-            (Bronze → Silver → Gold) on DuckDB, built with dbt and guarded by Great Expectations,
-            turns those sources into governed marts. On top of the Gold layer sits a calibrated,
-            monotone, 12-seed bagged LightGBM hazard model that scores each bank's probability of
-            financial distress within four quarters: evaluated out-of-time, explained with SHAP, and
-            served through FastAPI. A retrieval-augmented assistant answers questions with cited
-            regulator filings and the live model score. Everything runs at $0, fully visible: the data,
-            the pipeline, the model, and the governance behind every number.
-        </p>
     </div>
+    <p class="home-intro">
+        FinLens turns free public banking data into an early-warning read on U.S. bank distress. It
+        lands FDIC Call Reports, the failed-bank list, FRED macro series, and FFIEC institution data
+        as immutable raw snapshots, runs them through a Bronze → Silver → Gold dbt pipeline on DuckDB
+        (quality-gated by Great Expectations), and scores each bank's probability of financial distress
+        within four quarters with a calibrated, monotone, 12-seed bagged LightGBM hazard model
+        evaluated out-of-time, explained with SHAP, served via FastAPI, and queryable through a
+        cited assistant.
+    </p>
     """,
     unsafe_allow_html=True,
 )
@@ -163,9 +155,8 @@ _RIGHT = [
 def _nav(items: list, side: str) -> None:
     for title, desc, target, article in items:
         key = f"nav_{side}_{title.lower().replace(' ', '_')}"
-        st.markdown(f'<div class="nav-card"><div class="nav-card-t">{title}</div>'
-                    f'<div class="nav-card-d">{desc}</div></div>', unsafe_allow_html=True)
-        if st.button("Open  →", key=key, use_container_width=True):
+        # clean text link; the one-line description is the hover help (no boxes)
+        if st.button(title, key=key, help=desc, use_container_width=True):
             if article:
                 st.session_state["wiki_article"] = article
             elif target.endswith("4_Data_Engineering.py"):

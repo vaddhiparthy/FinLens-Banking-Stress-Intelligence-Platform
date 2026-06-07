@@ -33,8 +33,8 @@ home_navigation()
 record_page_view("business_dashboard", "business")
 
 st.markdown('<div class="dash-title">Business Dashboard</div>'
-            '<div class="dash-sub">The banking story at a glance: earnings, asset quality, the 2023 '
-            'rate shock, failures, and the macro backdrop. Live public data; no commentary.</div>',
+            '<div class="dash-sub">The banking story at a glance: earnings, asset quality, margins, '
+            'failures, and the macro backdrop. Live public data; no commentary.</div>',
             unsafe_allow_html=True)
 
 stress = load_stress_pulse()
@@ -83,24 +83,36 @@ section_heading("Profitability & asset quality", "Industry earnings and the cred
 r1, r2 = st.columns(2)
 with r1:
     if bc.has_chart_data(stress, ["net_income", "roa"]):
-        st.plotly_chart(bc.earnings_chart(stress), use_container_width=True, key="dash_earn")
+        with st.spinner("Loading industry earnings…"):
+            st.plotly_chart(bc.earnings_chart(stress), use_container_width=True, key="dash_earn")
     else:
         st.caption("Earnings data unavailable.")
 with r2:
     if bc.has_chart_data(stress, ["noncurrent_rate", "nco_rate"]):
-        st.plotly_chart(bc.asset_quality_chart(stress), use_container_width=True, key="dash_aq")
+        with st.spinner("Loading asset quality…"):
+            st.plotly_chart(bc.asset_quality_chart(stress), use_container_width=True, key="dash_aq")
     else:
         st.caption("Asset-quality data unavailable.")
 
 r3, r4 = st.columns(2)
 with r3:
+    # The AFS/HTM unrealized-loss series isn't populated in the current public feed; show the real
+    # net-interest-margin signal (margin compression) instead of leaving dead space.
     if bc.has_chart_data(stress, ["afs_losses", "htm_losses"]):
-        st.plotly_chart(bc.unrealized_losses_chart(stress), use_container_width=True, key="dash_afs")
+        st.caption("Unrealized securities losses (AFS + HTM)")
+        with st.spinner("Loading unrealized losses…"):
+            st.plotly_chart(bc.unrealized_losses_chart(stress), use_container_width=True,
+                            key="dash_afs")
+    elif bc.has_chart_data(stress, ["nim"]):
+        st.caption("Net interest margin (industry)")
+        with st.spinner("Loading net interest margin…"):
+            st.plotly_chart(bc.nim_chart(stress), use_container_width=True, key="dash_nim")
     else:
-        st.caption("Unrealized-loss data unavailable.")
+        st.caption("Margin and unrealized-loss data unavailable.")
 with r4:
     if not failures.empty:
-        st.plotly_chart(bc.state_map(failures), use_container_width=True, key="dash_map")
+        with st.spinner("Loading failures by state…"):
+            st.plotly_chart(bc.state_map(failures), use_container_width=True, key="dash_map")
     else:
         st.caption("Failure data unavailable.")
 
@@ -113,17 +125,19 @@ s1, s2 = st.columns(2)
 with s1:
     if not metrics.empty:
         st.caption("Macro signals (FRED)")
-        for sid, label in (("UNRATE", "Unemployment %"), ("DGS10", "10-year Treasury %"),
-                           ("BAA10Y", "Baa credit spread %")):
-            sub = metrics[metrics["series_id"] == sid].sort_values("date")
-            if not sub.empty:
-                st.caption(label)
-                st.line_chart(sub.set_index("date")["value"], height=110)
+        with st.spinner("Loading macro signals…"):
+            for sid, label in (("UNRATE", "Unemployment %"), ("DGS10", "10-year Treasury %"),
+                               ("BAA10Y", "Baa credit spread %")):
+                sub = metrics[metrics["series_id"] == sid].sort_values("date")
+                if not sub.empty:
+                    st.caption(label)
+                    st.line_chart(sub.set_index("date")["value"], height=110)
     else:
         st.caption("Macro data unavailable.")
 with s2:
     if not failures.empty and "acquirer" in failures and failures["acquirer"].notna().any():
-        st.plotly_chart(bc.acquirer_chart(failures), use_container_width=True, key="dash_acq")
+        with st.spinner("Loading acquirers…"):
+            st.plotly_chart(bc.acquirer_chart(failures), use_container_width=True, key="dash_acq")
     else:
         st.caption("Acquirer detail not standardized in the current feed.")
 

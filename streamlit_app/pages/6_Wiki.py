@@ -108,7 +108,7 @@ with main:
         )
         # an article may declare a native diagram (real Graphviz, rendered before the prose)
         if a.get("diagram") == "system_architecture":
-            st.graphviz_chart(wa.ARCHITECTURE_DOT, use_container_width=True)
+            wa.render_architecture()
         with st.container(key="wiki_article_body"):
             st.markdown(_wikilinks(a["body"]), unsafe_allow_html=True)
         # contextual index tables retained from the legacy wiki

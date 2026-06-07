@@ -94,20 +94,28 @@ with k5:
     metric_card("Panel", f"{pf['n_panel_rows']:,}" if pf.get("n_panel_rows") else "448k+",
                 f"{oot.get('positives') or 66} OOT failures")
 
+st.markdown("<div style='height:1.4rem'></div>", unsafe_allow_html=True)
+
 if viz:
     a1, a2 = st.columns(2)
     with a1:
-        st.plotly_chart(mc.pr_curve_fig(viz, MODE), use_container_width=True, key="td_pr")
+        with st.spinner("Loading precision-recall curve…"):
+            st.plotly_chart(mc.pr_curve_fig(viz, MODE), use_container_width=True, key="td_pr")
     with a2:
-        st.plotly_chart(mc.calibration_fig(viz, MODE), use_container_width=True, key="td_cal")
+        with st.spinner("Loading calibration…"):
+            st.plotly_chart(mc.calibration_fig(viz, MODE), use_container_width=True, key="td_cal")
     a3, a4 = st.columns(2)
     with a3:
-        st.plotly_chart(mc.score_dist_fig(viz, MODE), use_container_width=True, key="td_sd")
+        with st.spinner("Loading score distribution…"):
+            st.plotly_chart(mc.score_dist_fig(viz, MODE), use_container_width=True, key="td_sd")
     with a4:
-        st.plotly_chart(mc.shap_importance_fig(viz, MODE), use_container_width=True, key="td_shap")
+        with st.spinner("Loading feature drivers…"):
+            st.plotly_chart(mc.shap_importance_fig(viz, MODE), use_container_width=True,
+                            key="td_shap")
     drift = mc.drift_fig(viz, MODE) or mc.psi_fig(viz, MODE)
     if drift is not None:
-        st.plotly_chart(drift, use_container_width=True, key="td_drift")
+        with st.spinner("Loading drift…"):
+            st.plotly_chart(drift, use_container_width=True, key="td_drift")
 else:
     st.caption("Model viz pack not present: train the model to populate these.")
 
