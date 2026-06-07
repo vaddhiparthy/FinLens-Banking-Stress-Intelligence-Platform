@@ -206,12 +206,8 @@ def page_footer() -> None:
         '</div>',
         unsafe_allow_html=True,
     )
-    # Floating assistant, present on every page (rendered last so it overlays the footer).
-    try:
-        from streamlit_app.lib.chat_widget import render_chat_widget
-        render_chat_widget()
-    except Exception:  # noqa: BLE001
-        pass
+    # The assistant now lives on its own AI Inference page (pages/9_AI_Inference.py); the floating
+    # widget was removed so chat exists in exactly one place.
 
 
 def page_intro(eyebrow: str, title: str, copy: str, wiki_slug: str | None = None) -> None:

@@ -808,6 +808,21 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         color: {palette["text_main"]};
         margin: 1.4rem 0 .8rem;
     }}
+    /* Dashboards (Business / Technical) */
+    .dash-title {{
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        font-size: 1.6rem; font-weight: 800; color: {palette["text_main"]};
+        margin: .2rem 0 .2rem;
+    }}
+    .dash-sub {{
+        color: {palette["text_soft"]}; font-size: .92rem; line-height: 1.5;
+        max-width: 880px; margin-bottom: .4rem;
+    }}
+    .dash-rule {{ height: 1px; background: {palette["border"]}; margin: 1.3rem 0 1rem; }}
+    .inf-disclaimer {{
+        margin-top: .8rem; padding-top: .5rem; border-top: 1px solid {palette["border"]};
+        color: {palette["text_soft"]}; font-size: .72rem; font-style: italic; text-align: right;
+    }}
     /* Section top-tabs (targeted via Streamlit's per-key container class) */
     div[class*="st-key-tab_"] {{
         border-bottom: 1px solid {palette["border"]};

@@ -107,6 +107,13 @@ def _render_score(result: dict, actual: int | None = None, key: str = "score",
             "a 'capital lowers risk' feature still pushes the score up. Higher weight = "
             "larger influence.",
         )
+        st.markdown(
+            "<span title='Effect = direction of this feature&#39;s SHAP push: ↑ raised the "
+            "distress score (risk-increasing), ↓ lowered it. Weight = absolute SHAP magnitude, "
+            "so larger = more influence on THIS score.' style='cursor:help;color:#bf6d47;"
+            "font-weight:700;'>ⓘ what these columns mean</span>",
+            unsafe_allow_html=True,
+        )
         st.dataframe(
             reasons[["Driver", "Reported value", "Effect on this score", "Weight"]],
             hide_index=True,

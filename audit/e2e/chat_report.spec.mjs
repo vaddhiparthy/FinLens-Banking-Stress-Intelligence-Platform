@@ -13,30 +13,20 @@ async function settle(page) {
   await page.waitForTimeout(1200);
 }
 
-test("floating assistant opens and answers a cached example", async ({ page }) => {
-  // Use a non-gated page so the disclaimer modal never races the launcher click.
-  await page.goto("/AI_Engineering");
+test("AI Inference page answers a cached example", async ({ page }) => {
+  await page.goto("/AI_Inference");
   await settle(page);
-  // Launcher present bottom-right on every page.
-  const launch = page.getByRole("button", { name: "Research a bank" });
-  await expect(launch).toBeVisible();
-  await launch.click();
-  await settle(page);
-  await expect(page.getByText("FinLens Analyst").first()).toBeVisible();
   // A cached question answers instantly (no live model needed).
-  const panel = page.locator(".st-key-finlens_chat_open");
   const input = page.getByPlaceholder(/Ask a question/i);
   await input.fill("What is the addressable PR-AUC and how does it differ from pooled?");
   await input.press("Enter");
   await settle(page);
-  await expect(panel.getByText(/pooled out-of-time PR-AUC/i).first()).toBeVisible();
+  await expect(page.getByText(/pooled out-of-time PR-AUC/i).first()).toBeVisible();
   await page.screenshot({ path: `${SHOTS}e2e_chat_widget.png`, fullPage: false });
 });
 
 test("assistant handles an operating bank by name (Comerica), not a failure dump", async ({ page }) => {
-  await page.goto("/AI_Engineering");
-  await settle(page);
-  await page.getByRole("button", { name: "Research a bank" }).click();
+  await page.goto("/AI_Inference");
   await settle(page);
   const input = page.getByPlaceholder(/Ask a question/i);
   await input.fill("What happened to Comerica Bank?");

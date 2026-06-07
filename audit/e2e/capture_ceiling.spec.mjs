@@ -41,10 +41,10 @@ const FULL = { fullPage: true };
 test("home", async ({ page }) => {
   await page.goto("/"); await settle(page); await ack(page);
   // clicking the gate triggers an st.rerun() that blanks then repaints; the hero subline
-  // "in U.S. banks" lives ONLY in the landing (not the gate), so its visibility proves the
+  // "Browse the project" lives ONLY in the landing (not the gate), so its visibility proves the
   // home page actually rendered. Wait for the dialog to be gone first.
   await page.locator('[role="dialog"]').waitFor({ state: "detached", timeout: 10000 }).catch(() => {});
-  await page.getByText("in U.S. banks", { exact: false }).first()
+  await page.getByText("Browse the project", { exact: false }).first()
     .waitFor({ state: "visible", timeout: 30000 });
   await page.waitForTimeout(800);
   await page.screenshot({ path: `${SHOTS}home.png`, ...FULL });
@@ -134,10 +134,9 @@ test("bank report svb", async ({ page }) => {
   await page.screenshot({ path: `${SHOTS}bank_report_svb.png`, ...FULL });
 });
 test("chat open", async ({ page }) => {
-  await page.goto("/AI_Engineering"); await settle(page);
-  await page.getByRole("button", { name: "Research a bank" }).click(); await settle(page);
+  await page.goto("/AI_Inference"); await settle(page);
   const input = page.getByPlaceholder(/Ask a question/i);
   await input.fill("Tell me about Fifth Third Bank"); await input.press("Enter"); await settle(page);
-  await text(page, "operating institution"); await page.waitForTimeout(600);
+  await text(page, "operating institution"); await page.waitForTimeout(800);
   await page.screenshot({ path: `${SHOTS}chat_open.png` });
 });

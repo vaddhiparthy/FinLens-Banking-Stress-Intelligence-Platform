@@ -71,11 +71,12 @@ test("AI Decisions surface exposes the methodology write-ups", async ({ page }) 
   await shot(page, "e2e_ai_decisions");
 });
 
-test("floating assistant launcher is present on a content page", async ({ page }) => {
-  await page.goto("/AI_Engineering");
+test("AI Inference page exposes the chat console", async ({ page }) => {
+  await page.goto("/AI_Inference");
   await settle(page);
-  // The Analyst Assistant is now a floating widget on every page, not a standalone page.
-  await expect(page.getByRole("button", { name: "Research a bank" })).toBeVisible();
+  // The assistant now lives on its own AI Inference page (the floating widget was removed).
+  await expect(page.getByText("AI Inference").first()).toBeVisible();
+  await expect(page.getByPlaceholder(/Ask a question/i)).toBeVisible();
   await shot(page, "e2e_ai_chat_launcher");
 });
 

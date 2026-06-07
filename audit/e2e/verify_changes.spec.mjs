@@ -32,7 +32,7 @@ test("FinLens brand wordmark navigates back to home", async ({ page }) => {
     await settle(page);
   }
   // home hero subline lives only on the landing page
-  await expect(page.getByText("in U.S. banks", { exact: false }).first()).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText("Browse the project", { exact: false }).first()).toBeVisible({ timeout: 30000 });
   await page.screenshot({ path: `${SHOTS}brand_to_home.png`, fullPage: true });
 });
 

@@ -13,9 +13,9 @@ async function ack(page) {
   if (await b.isVisible().catch(() => false)) { await b.click(); await settle(page); }
 }
 async function openChat(page) {
-  await page.goto("/AI_Engineering"); await settle(page);
-  await page.getByRole("button", { name: "Research a bank" }).click(); await settle(page);
-  return page.locator(".st-key-finlens_chat_open");
+  // Chat now lives on its own AI Inference page (the floating widget was removed).
+  await page.goto("/AI_Inference"); await settle(page);
+  return page;
 }
 async function askChat(page, panel, q) {
   const input = page.getByPlaceholder(/Ask a question/i);

@@ -54,7 +54,7 @@ def _matches(query: str) -> set[str] | None:
 # ---- routing ----
 # The landing dives straight into the introduction article (an encyclopedia opens on content,
 # not a wall of tiles); the section tree on the left handles browsing.
-slug = st.query_params.get("article", "")
+slug = st.query_params.get("article", "") or st.session_state.pop("wiki_article", "")
 current = ws.title_for_slug(slug) if slug else None
 if current is None:
     _order = ws.all_titles_in_order()

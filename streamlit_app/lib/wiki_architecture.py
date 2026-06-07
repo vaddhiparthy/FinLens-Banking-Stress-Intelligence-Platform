@@ -25,59 +25,59 @@ digraph FinLens {
   subgraph cluster_src {
     label="Public data sources"; labeljust="l"; fontsize=12; fontname="Helvetica-Bold";
     style="rounded,filled"; fillcolor="#f5efe6"; color="#e4d7c6";
-    fdic [label="FDIC BankFind\\n+ Failed Bank List"];
-    qbp  [label="FDIC Quarterly\\nBanking Profile"];
-    fred [label="FRED / ALFRED\\nmacro series"];
-    nic  [label="FFIEC National\\nInformation Center"];
+    fdic [label="FDIC BankFind\\n+ Failed Bank List", tooltip="FDIC BankFind API + the public Failed Bank List: institutions and every U.S. bank failure since 2000."];
+    qbp  [label="FDIC Quarterly\\nBanking Profile", tooltip="FDIC Quarterly Banking Profile: industry-aggregate earnings, asset quality, and capital by quarter."];
+    fred [label="FRED / ALFRED\\nmacro series", tooltip="Federal Reserve Economic Data (St. Louis Fed), point-in-time aware via ALFRED: unemployment, Treasury yields, credit spreads, CPI, housing."];
+    nic  [label="FFIEC National\\nInformation Center", tooltip="FFIEC National Information Center: institution identity and parent-company relationships."];
   }
 
   subgraph cluster_bronze {
     label="Ingestion · Bronze  (VPS local filesystem)"; labeljust="l"; fontsize=12; fontname="Helvetica-Bold";
     style="rounded,filled"; fillcolor="#f3dfcf"; color="#e4d7c6";
-    ingest [label="Python ingestion clients\\nretry · watermarks · DLQ"];
-    raw    [label="data/raw/source=*/\\ningestion_date=*  (Hive)", fillcolor="#ffffff"];
-    rotate [label="Rotation policy\\n1 version / source", fillcolor="#ffffff"];
+    ingest [label="Python ingestion clients\\nretry · watermarks · DLQ", tooltip="Per-source Python clients with retry/backoff and watermarks; bad payloads go to a dead-letter queue."];
+    raw    [label="data/raw/source=*/\\ningestion_date=*  (Hive)", fillcolor="#ffffff", tooltip="Immutable raw snapshots on the VPS local filesystem, Hive-partitioned by source and ingestion date. No cloud object store."];
+    rotate [label="Rotation policy\\n1 version / source", fillcolor="#ffffff", tooltip="Retention: keeps exactly one version per source and purges older ingestion_date partitions to keep the VPS small."];
   }
 
   subgraph cluster_xform {
     label="Transform · dbt"; labeljust="l"; fontsize=12; fontname="Helvetica-Bold";
     style="rounded,filled"; fillcolor="#dbeceb"; color="#cfe0df";
-    silver [label="Silver\\nstaging models"];
-    inter  [label="Intermediate\\nreusable joins"];
-    gold   [label="Gold marts\\nfacts + dimensions"];
-    duck   [label="DuckDB\\nwarehouse of record", fillcolor="#ffffff"];
-    snow   [label="Snowflake\\noptional · credential-gated", style="rounded,filled,dashed", fillcolor="#ffffff"];
+    silver [label="Silver\\nstaging models", tooltip="dbt staging models normalise raw payloads into canonical, typed tables with stable column names."];
+    inter  [label="Intermediate\\nreusable joins", tooltip="dbt intermediate models hold reusable joins/enrichments shared by multiple marts."];
+    gold   [label="Gold marts\\nfacts + dimensions", tooltip="The consumption contract: fact and dimension tables the dashboards and API read. Nothing reads below Gold."];
+    duck   [label="DuckDB\\nwarehouse of record", fillcolor="#ffffff", tooltip="In-process columnar warehouse that runs the live deployment at $0; MotherDuck is the cloud-scale DuckDB path."];
+    snow   [label="Snowflake\\noptional · credential-gated", style="rounded,filled,dashed", fillcolor="#ffffff", tooltip="Optional warehouse-grade target via a credential-gated dbt output; not the live path (trial expired)."];
   }
 
   subgraph cluster_ml {
     label="AI Engineering · ML"; labeljust="l"; fontsize=12; fontname="Helvetica-Bold";
     style="rounded,filled"; fillcolor="#efe3f3"; color="#e3d3eb";
-    panel [label="bank_quarterly_risk_facts\\n448,661 rows · 34 features"];
-    model [label="Discrete-time hazard\\nLightGBM · monotone\\ncalibrated · 12-seed bag"];
-    art   [label="Artifacts\\nmetrics · SHAP · viz", fillcolor="#ffffff"];
+    panel [label="bank_quarterly_risk_facts\\n448,661 rows · 34 features", tooltip="The modelling panel: 448,661 bank-quarters across ~8,800 banks, 2008Q1–2026Q1, 34 CAMELS-aligned features."];
+    model [label="Discrete-time hazard\\nLightGBM · monotone\\ncalibrated · 12-seed bag", tooltip="Calibrated, monotone-constrained, 12-seed bagged LightGBM hazard model scoring 4-quarter distress probability."];
+    art   [label="Artifacts\\nmetrics · SHAP · viz", fillcolor="#ffffff", tooltip="Training outputs: OOT metrics, calibration, SHAP attributions, and chart data consumed by the surfaces."];
   }
 
   subgraph cluster_serve {
     label="Serving"; labeljust="l"; fontsize=12; fontname="Helvetica-Bold";
     style="rounded,filled"; fillcolor="#f5efe6"; color="#e4d7c6";
-    streamlit [label="Streamlit surfaces\\nBusiness · Data Eng · AI · Wiki"];
-    api       [label="FastAPI\\nhealth · telemetry · scores"];
-    chat      [label="Assistant (RAG)\\nretrieval + cited answers\\nLLM synthesis + extractive fallback"];
+    streamlit [label="Streamlit surfaces\\nBusiness · Data Eng · AI · Wiki", tooltip="The four UI surfaces; they read only Gold marts and model artifacts, never source-shaped data."];
+    api       [label="FastAPI\\nhealth · telemetry · scores", tooltip="Machine-facing endpoints: health, telemetry, and model scoring for monitoring and integrations."];
+    chat      [label="Assistant (RAG)\\nretrieval + cited answers\\nLLM synthesis + extractive fallback", tooltip="Retrieval-augmented assistant: retrieves cited regulator filings + live model score, synthesises via OpenRouter, falls back to a cited extractive answer."];
   }
 
   subgraph cluster_ops {
     label="Orchestration · Quality"; labeljust="l"; fontsize=12; fontname="Helvetica-Bold";
     style="rounded,filled"; fillcolor="#f4efe6"; color="#e4d7c6";
-    airflow [label="Airflow\\nthin DAGs"];
-    quality [label="Great Expectations\\ndbt tests · reconciliation"];
+    airflow [label="Airflow\\nthin DAGs", tooltip="Schedules ingestion and transforms via thin DAGs that call the same Python entry points used locally."];
+    quality [label="Great Expectations\\ndbt tests · reconciliation", tooltip="Layered quality: Great Expectations suites, dbt structural tests, and runtime reconciliation against external authority."];
   }
 
   subgraph cluster_deploy {
     label="Edge · Deployment  (single VPS)"; labeljust="l"; fontsize=12; fontname="Helvetica-Bold";
     style="rounded,filled"; fillcolor="#eef1f4"; color="#dde3ea";
-    cf      [label="Cloudflare\\nDNS · TLS · Turnstile"];
-    caddy   [label="Caddy\\nreverse proxy / ingress"];
-    compose [label="Docker Compose\\nStreamlit · FastAPI · Postgres · Uptime Kuma"];
+    cf      [label="Cloudflare\\nDNS · TLS · Turnstile", tooltip="Edge: DNS, TLS, the branded domain, and the Turnstile bot challenge."];
+    caddy   [label="Caddy\\nreverse proxy / ingress", tooltip="Public ingress on the VPS: terminates TLS and reverse-proxies to the app containers."];
+    compose [label="Docker Compose\\nStreamlit · FastAPI · Postgres · Uptime Kuma", tooltip="Single-VPS runtime: Streamlit, FastAPI, Postgres (control-plane state), and Uptime Kuma monitoring."];
   }
 
   fdic -> ingest; qbp -> ingest; fred -> ingest; nic -> ingest;
