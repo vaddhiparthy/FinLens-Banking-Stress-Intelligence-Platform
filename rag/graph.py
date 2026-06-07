@@ -58,34 +58,127 @@ _SHORT_FORMS = {
 
 @lru_cache(maxsize=1)
 def _bank_index() -> list:
-    """Every bank in the panel as (name_lower, cert, display_name), longest name first, so a
-    question can name ANY institution (not just the failures) and be resolved by longest match."""
+    """Every bank in the panel as (name_lower, cert, display_name, quarter), so a question can
+    name ANY institution (not just failures). quarter lets us prefer the active entity when one
+    name maps to several CERTs (legacy/merged charters)."""
     from finlens_ml import scenario
     items = []
     for _, r in scenario.live_bank_directory().iterrows():
         nm = str(r.get("bank_name") or "").strip()
         # multi-word, reasonably specific names only, to avoid matching generic words
         if len(nm) >= 7 and " " in nm:
-            items.append((nm.lower(), int(r["cert"]), nm))
-    items.sort(key=lambda x: len(x[0]), reverse=True)
+            items.append((nm.lower(), int(r["cert"]), nm, str(r.get("quarter") or "")))
     return items
 
 
 @lru_cache(maxsize=1)
 def _cert_to_name() -> dict:
-    return {cert: disp for _nl, cert, disp in _bank_index()}
+    return {cert: disp for _nl, cert, disp, _q in _bank_index()}
+
+
+_COMMON_WORD_BANKS = {
+    "regions", "discover", "commerce", "valley", "citizens", "heritage", "premier", "summit",
+    "pinnacle", "liberty", "century", "pacific", "provident", "sterling", "independence",
+    "cornerstone", "signature", "republic", "columbia", "amerant", "pathward",
+}
+_GENERIC_NAME_WORDS = {
+    "bank", "banks", "national", "association", "na", "the", "of", "company", "co", "trust",
+    "and", "financial", "corp", "corporation", "inc", "savings", "federal", "fsb", "holding",
+    "group", "bancorp", "banc", "members", "first", "community", "state",
+}
+
+
+def _name_tokens(name: str) -> set:
+    import re
+    toks = re.findall(r"[a-z0-9]+", name.lower())
+    return {t for t in toks if t not in _GENERIC_NAME_WORDS and len(t) >= 3}
+
+
+_NA_SUFFIXES = (", national association", " national association", ", n.a.", " n.a.",
+                ", national assn", " bank, national association")
+
+
+def _pick_primary(cands: list, phrase: str):
+    """From entities whose name starts with `phrase`, pick the PRIMARY one: the bank whose name
+    is just the phrase plus a 'national association'/'bank' suffix (no regional qualifier like
+    'CALIFORNIA' or 'DEARBORN'), preferring the freshest filing. Falls back to freshest+shortest.
+    Returns (cert, display_name)."""
+    def core(nl: str) -> str:
+        for s in _NA_SUFFIXES:
+            if nl.endswith(s):
+                return nl[: -len(s)].strip().rstrip(",").strip()
+        return nl
+    primary_cores = {phrase, phrase + " bank", phrase.removesuffix(" bank")}
+    primary = [c for c in cands if core(c[0]) in primary_cores]
+    pool = primary or cands
+    top_q = max(c[3] for c in pool)
+    pool = [c for c in pool if c[3] == top_q]          # freshest filing
+    pool.sort(key=lambda c: len(c[0]))                  # then the least-qualified (shortest) name
+    return pool[0][1], pool[0][2]
 
 
 def _detect_bank(question: str):
-    """Resolve any bank the question names -> (cert, display_name), or None."""
+    """Resolve any bank the question names -> (cert, display_name), or None. When a name maps to
+    several CERTs (e.g. a legacy charter ending 2009 plus the active 2026 entity), prefer the one
+    with the freshest filing so 'tell me about Fifth Third Bank' resolves to the active bank."""
     q = question.lower()
     for frag, cert in _SHORT_FORMS.items():
         if frag in q:
             return cert, _cert_to_name().get(cert, frag.title())
-    for name_lower, cert, disp in _bank_index():  # longest names first
+    idx = _bank_index()
+
+    import re
+
+    _STOP_FIRST = {"the", "a", "an", "of", "and", "what", "how", "why", "tell", "me", "about",
+                   "is", "are", "was", "did", "does", "do", "it", "this", "that", "model",
+                   "data", "give", "show", "happened", "to", "for", "on", "in"}
+
+    # 1) exact-ish: the longest full bank name that appears verbatim in the question
+    matched = None
+    for name_lower, _cert, _disp, _qtr in sorted(idx, key=lambda x: len(x[0]), reverse=True):
         if name_lower in q:
-            return cert, disp
-    return None
+            matched = name_lower
+            break
+
+    # 2) phrase-prefix: a contiguous phrase from the question that a bank name STARTS WITH
+    # (handles "Bank of America", "JPMorgan Chase" whose full FDIC name is longer than typed).
+    if matched is None:
+        words = re.findall(r"[a-z0-9&.]+", q)
+        for n in range(min(6, len(words)), 0, -1):  # longest phrases first, down to single word
+            for i in range(len(words) - n + 1):
+                seg = words[i:i + n]
+                if seg[0] in _STOP_FIRST:
+                    continue
+                # single-word match must be a distinctive, non-generic name token (and not a
+                # common English word that happens to be a bank name; those resolve via "<X> bank")
+                if n == 1 and (seg[0] in _GENERIC_NAME_WORDS or len(seg[0]) < 6
+                               or seg[0] in _COMMON_WORD_BANKS):
+                    continue
+                phrase = " ".join(seg)
+                if len(phrase) < 6:
+                    continue
+                if any(nl.startswith(phrase) for nl, _c, _d, _qt in idx):
+                    matched = phrase
+                    break
+            if matched:
+                break
+
+    if matched is not None:
+        cands = [(nl, cert, disp, qtr) for (nl, cert, disp, qtr) in idx if nl.startswith(matched)]
+        return _pick_primary(cands, matched)
+
+    # 3) token-subset (last resort): a bank whose >=2 distinctive tokens all appear in the
+    # question. Requiring two tokens avoids a single common word (e.g. "america") mis-matching.
+    qtokens = set(re.findall(r"[a-z0-9]+", q))
+    best = None  # ((n_tokens, char_len, quarter), cert, disp)
+    for nl, cert, disp, qtr in idx:
+        toks = _name_tokens(nl)
+        if len(toks) < 2 or not toks <= qtokens:
+            continue
+        key = (len(toks), sum(len(t) for t in toks), qtr)
+        if best is None or key > best[0]:
+            best = (key, cert, disp)
+    return (best[1], best[2]) if best else None
 
 
 # ---- nodes ----

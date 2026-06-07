@@ -37,17 +37,31 @@ def _demo_cache() -> dict:
     return json.loads(p.read_text()) if p.exists() else {}
 
 
+def _with_bank(out: dict, question: str) -> dict:
+    """Ensure a bank-related answer carries bank_name/bank_cert so the 'full report' button
+    renders (cached demo answers don't include these)."""
+    if not out.get("bank_name"):
+        try:
+            from rag.graph import _detect_bank
+            hit = _detect_bank(question)
+            if hit:
+                out = {**out, "bank_cert": hit[0], "bank_name": hit[1]}
+        except Exception:  # noqa: BLE001
+            pass
+    return out
+
+
 def _ask(question: str, *, example: bool) -> dict:
     """Starter examples are free (cached or run without spending budget); user-typed questions
     count against the per-session live budget. Bank questions answer instantly (deterministic,
     model-grounded); only open-ended questions hit the local LLM."""
     demo = _demo_cache()
     if question in demo:
-        return {**demo[question], "question": question}
+        return _with_bank({**demo[question], "question": question}, question)
     if not example:
         st.session_state["chat_live_count"] = st.session_state.get("chat_live_count", 0) + 1
     try:
-        return _backend()(question)
+        return _with_bank(_backend()(question), question)
     except Exception as exc:  # noqa: BLE001
         return {"question": question, "answer": f"The local assistant is unavailable: {exc}",
                 "citations": [], "used_llm": False}

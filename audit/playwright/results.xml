@@ -1,28 +1,14 @@
-<testsuites id="" name="" tests="11" failures="0" skipped="0" errors="0" time="61.958697">
-<testsuite name="chat_report.spec.mjs" timestamp="2026-06-07T02:49:04.098Z" hostname="" tests="3" failures="0" skipped="0" time="19.128" errors="0">
-<testcase name="floating assistant opens and answers a cached example" classname="chat_report.spec.mjs" time="7.546">
+<testsuites id="" name="" tests="4" failures="0" skipped="0" errors="0" time="38.297329">
+<testsuite name="chat_report.spec.mjs" timestamp="2026-06-07T03:06:25.379Z" hostname="" tests="3" failures="0" skipped="0" time="26.182" errors="0">
+<testcase name="floating assistant opens and answers a cached example" classname="chat_report.spec.mjs" time="11.577">
 </testcase>
-<testcase name="assistant handles an operating bank by name (Comerica), not a failure dump" classname="chat_report.spec.mjs" time="7.351">
+<testcase name="assistant handles an operating bank by name (Comerica), not a failure dump" classname="chat_report.spec.mjs" time="12.26">
 </testcase>
-<testcase name="bank report page renders for an institution" classname="chat_report.spec.mjs" time="4.231">
+<testcase name="bank report page renders for an institution" classname="chat_report.spec.mjs" time="2.345">
 </testcase>
 </testsuite>
-<testsuite name="surfaces.spec.mjs" timestamp="2026-06-07T02:49:04.098Z" hostname="" tests="8" failures="0" skipped="0" time="41.702" errors="0">
-<testcase name="home surface renders the brand and entry" classname="surfaces.spec.mjs" time="1.805">
-</testcase>
-<testcase name="data engineering surface renders the live pipeline" classname="surfaces.spec.mjs" time="3.998">
-</testcase>
-<testcase name="data engineering Data Quality shows the GX suite result" classname="surfaces.spec.mjs" time="8.262">
-</testcase>
-<testcase name="AI surface renders the model pipeline flow" classname="surfaces.spec.mjs" time="4.529">
-</testcase>
-<testcase name="AI Model Quality shows the headline metrics and robustness cross-checks" classname="surfaces.spec.mjs" time="11.532">
-</testcase>
-<testcase name="AI Decisions surface exposes the methodology write-ups" classname="surfaces.spec.mjs" time="5.007">
-</testcase>
-<testcase name="floating assistant launcher is present on a content page" classname="surfaces.spec.mjs" time="4.634">
-</testcase>
-<testcase name="early warning surface renders" classname="surfaces.spec.mjs" time="1.935">
+<testsuite name="report_open.spec.mjs" timestamp="2026-06-07T03:06:25.379Z" hostname="" tests="1" failures="0" skipped="0" time="11.176" errors="0">
+<testcase name="chat -&gt; open full report navigates to the report for that bank" classname="report_open.spec.mjs" time="11.176">
 </testcase>
 </testsuite>
 </testsuites>
