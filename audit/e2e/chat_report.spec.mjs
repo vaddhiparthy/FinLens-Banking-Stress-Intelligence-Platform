@@ -23,11 +23,12 @@ test("floating assistant opens and answers a cached example", async ({ page }) =
   await launch.click();
   await settle(page);
   await expect(page.getByText("FinLens Assistant").first()).toBeVisible();
-  // A cached example answers instantly (no live model needed).
+  // A cached question answers instantly (no live model needed).
   const panel = page.locator(".st-key-finlens_chat_open");
-  await panel.getByRole("button", { name: /addressable PR-AUC/i }).click();
+  const input = page.getByPlaceholder(/Ask a question/i);
+  await input.fill("What is the addressable PR-AUC and how does it differ from pooled?");
+  await input.press("Enter");
   await settle(page);
-  // Assert within the chat panel (the AI page itself also contains "addressable" text).
   await expect(panel.getByText(/pooled out-of-time PR-AUC/i).first()).toBeVisible();
   await page.screenshot({ path: `${SHOTS}e2e_chat_widget.png`, fullPage: false });
 });

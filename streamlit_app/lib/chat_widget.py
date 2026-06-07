@@ -17,13 +17,6 @@ _PROJECT_ROOT = next(
     p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").exists()
 )
 
-_EXAMPLES = [
-    "What happened to Comerica Bank?",
-    "Why did Silicon Valley Bank fail?",
-    "What is the addressable PR-AUC and how does it differ from pooled?",
-]
-
-
 @st.cache_resource(show_spinner=False)
 def _backend():
     from rag.trace import traced_answer
@@ -115,8 +108,14 @@ def render_chat_widget() -> None:
         if head_r.button("✕", key="chat_close_btn", help="Close"):
             ss.chat_open = False
             st.rerun()
-        st.caption("Ask about any U.S. bank, the model, or the data. Grounded in the live model "
-                   "and regulator filings. Local, $0.")
+        if not ss.chat_history:
+            with st.chat_message("assistant"):
+                st.markdown(
+                    "Hi. Ask me about any U.S. bank (for example, _Tell me about Comerica Bank_ "
+                    "or _Why did Silicon Valley Bank fail?_), or about the model and the data. "
+                    "Answers are grounded in the live model and regulator filings, and run "
+                    "locally at no cost."
+                )
 
         for i, msg in enumerate(ss.chat_history):
             with st.chat_message(msg["role"]):
@@ -124,16 +123,6 @@ def render_chat_widget() -> None:
                     _render_answer(msg["out"], i)
                 else:
                     st.markdown(msg["content"])
-
-        if not ss.chat_history:
-            st.caption("Try one of these:")
-            for j, ex in enumerate(_EXAMPLES):
-                if st.button(ex, key=f"chat_ex_{j}", use_container_width=True):
-                    out = _ask(ex, example=True)
-                    ss.chat_history.append({"role": "user", "content": ex})
-                    ss.chat_history.append({"role": "assistant", "content": out.get("answer", ""),
-                                            "out": out})
-                    st.rerun()
 
         remaining = MAX_LIVE_QUERIES - ss.chat_live_count
         if remaining <= 0:

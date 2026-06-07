@@ -59,20 +59,21 @@ def _tier(prob: float, threshold: float) -> tuple[str, str]:
     return "LOW RISK", "ok"
 
 
-def _render_score(result: dict, actual: int | None = None, key: str = "score") -> None:
+def _render_score(result: dict, actual: int | None = None, key: str = "score",
+                  cap: float | None = None) -> None:
     prob = result["probability"]
     thr = result["threshold"]
     tier, cls = _tier(prob, thr)
     g, info = st.columns([1, 1.15], vertical_alignment="center")
     with g:
-        st.plotly_chart(mc.probability_gauge(prob, thr, MODE), use_container_width=True,
+        st.plotly_chart(mc.probability_gauge(prob, thr, MODE, cap=cap), use_container_width=True,
                         key=f"ew_gauge_{key}")
     with info:
         st.markdown(
             f'<div class="ew-badge ew-{cls}">{tier}</div>'
             f'<div class="ew-sub">Calibrated probability of financial distress within four '
-            f'quarters. Review threshold is {thr * 100:.0f}%: at or above it, the bank is '
-            f'flagged for a closer look.</div>',
+            f'quarters: <b>{prob * 100:.3f}%</b> ({prob * 1e4:.1f} bps). Review threshold is '
+            f'{thr * 100:.0f}%: at or above it, the bank is flagged for a closer look.</div>',
             unsafe_allow_html=True,
         )
         if actual is not None:
@@ -118,10 +119,10 @@ page_intro(
     "Business Surface",
     "Early Warning",
     "Pick a bank and the model scores its distress probability and the factors behind it. "
-    "Most tabs are a historical backtest (scored on past quarters whose outcome is already "
-    "known, so the prediction can be checked against reality); the 'Live forward score' tab "
-    "estimates a live bank's latest filing. A live score is a model estimate, not a forecast "
-    "that a bank will fail, and failure is rare (base rate under 1%).",
+    "Every score here is a historical backtest (scored on past quarters whose outcome is "
+    "already known, so the prediction can be checked against reality), or a hypothetical "
+    "what-if you build yourself. A score is a model estimate, not a forecast that a bank will "
+    "fail, and failure is rare (base rate under 1%).",
     wiki_slug="how-to-read-a-stress-score",
 )
 st.markdown(
@@ -146,9 +147,8 @@ if not _model_available():
     st.stop()
 
 scenario = _backend()
-tab_insert, tab_holdout, tab_live, tab_what_if = st.tabs(
-    ["Backtest any bank (by name)", "Failed-bank backtests",
-     "Live forward score (experimental)", "Hypothetical what-if"]
+tab_insert, tab_holdout, tab_what_if = st.tabs(
+    ["Backtest any bank (by name)", "Failed-bank backtests", "Hypothetical what-if"]
 )
 
 with tab_insert:
@@ -199,55 +199,6 @@ with tab_holdout:
         if row is not None:
             _render_score(scenario.score_features(row["features"]), row["actual_label_4"], key="holdout")
 
-with tab_live:
-    chart_note(
-        "Read this before you read the number",
-        "This is a MODEL ESTIMATE on a live bank's most recent public filing, not a "
-        "forecast that the bank will fail. Bank failure is rare (base rate under 1%), so "
-        "even a relatively high score means the bank is very probably fine. The number is "
-        "a calibrated probability from a backtested model, not advice, not a rating, and "
-        "not a basis for any deposit, investment, or business decision. For decisions "
-        "about a bank, rely only on official U.S. regulator sources.",
-    )
-    import json as _json
-    try:
-        _served_pr = _json.loads(
-            (PROJECT_ROOT / "ml" / "artifacts" / "metrics_h4.json").read_text()
-        )["oot_test"]["calibrated_lgbm"]["pr_auc"]
-        _pr_txt = f"~{_served_pr:.2f}"
-    except Exception:
-        _pr_txt = "~0.30"
-    _nfail = (mc.load_panel_facts() or {}).get("oot_failures", 66)
-    st.write(
-        "Score a live U.S. bank as of its **latest available quarter**, whose 4-quarter "
-        f"outcome has not yet elapsed. The model's out-of-time track record (PR-AUC {_pr_txt} "
-        f"on {_nfail} real failures, with wide intervals) is on the AI Engineering surface; treat "
-        "this as a screening estimate, nothing more."
-    )
-    live = scenario.live_bank_directory()
-    llabels = live["label"].tolist()
-    lchoice = st.selectbox(
-        "Bank (live)", llabels, key="live_bank_pick",
-        help="Type to search. Scores the most recent available filing.",
-        placeholder="Start typing a bank name…",
-    )
-    if lchoice:
-        lpick = live[live["label"] == lchoice].iloc[0]
-        lrow = scenario.latest_row_for_cert(int(lpick["cert"]))
-        if lrow is None:
-            st.warning("No data for that bank.")
-        else:
-            tag = ("outcome already known" if lrow["outcome_known"]
-                   else "FORWARD estimate — outcome not yet elapsed")
-            st.info(
-                f"{lrow['bank_name']} ({lrow['state']}), scored as of {lrow['quarter']} "
-                f"· FDIC CERT {lrow['cert']} · {tag}"
-            )
-            _render_score(
-                scenario.score_features(lrow["features"]),
-                lrow["actual_label_4"], key="live",
-            )
-
 with tab_what_if:
     st.write(
         "Move the CAMELS levers to build a hypothetical bank and watch the live score. "
@@ -262,22 +213,28 @@ with tab_what_if:
                 scenario.SLIDER_LABELS.get(feat, feat),
                 float(lo), float(hi), float(default), key=f"wi_{feat}",
             )
-    _render_score(scenario.score_hypothetical(vals), key="whatif")
+    _wi = scenario.score_hypothetical(vals)
+    # Zoom the gauge to the realistic range so every lever move is visible (a median bank scores
+    # ~0%; the score only climbs as several levers move toward distress, peaking around 7%).
+    _wi_cap = max(15.0, _wi["probability"] * 100 * 1.4)
+    _render_score(_wi, key="whatif", cap=_wi_cap)
     st.caption(
+        "A typical (median) bank scores near 0%. The probability climbs as you push several "
+        "levers toward distress together (capital down, noncurrent and charge-offs up), reaching "
+        "roughly 7% with every lever at its worst. "
         "This is a made-up bank, not a real institution. Monotone constraints are enforced: "
         "more capital never increases predicted risk; higher noncurrent loans never decreases it."
     )
 
 chart_note(
     "Please read this",
-    "Most tabs here are a historical backtest on public FDIC data (scored on past quarters "
-    "whose outcome has already elapsed, so the prediction can be checked against reality). "
-    "The 'Live forward score' tab additionally estimates a probability for a live bank's "
-    "latest filing; that is a MODEL ESTIMATE, not a forecast that a bank will fail. Bank "
-    "failure is rare (base rate under 1%), so even an elevated score almost always resolves "
-    "to survival. Nothing here is financial, investment, deposit, or supervisory advice, or "
-    "a rating; for decisions about a bank rely only on official U.S. government and "
-    "regulator sources.",
+    "Every score here is a historical backtest on public FDIC data (scored on past quarters "
+    "whose outcome has already elapsed, so the prediction can be checked against reality), or "
+    "a hypothetical what-if you build. A score is a MODEL ESTIMATE, not a forecast that a bank "
+    "will fail. Bank failure is rare (base rate under 1%), so even an elevated score almost "
+    "always resolves to survival. Nothing here is financial, investment, deposit, or "
+    "supervisory advice, or a rating; for decisions about a bank rely only on official U.S. "
+    "government and regulator sources.",
 )
 
 

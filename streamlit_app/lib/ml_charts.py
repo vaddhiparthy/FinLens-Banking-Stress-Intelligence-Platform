@@ -218,21 +218,26 @@ def psi_fig(pack: dict, mode: str | None = None) -> go.Figure | None:
                  title="Feature stability (PSI): reference vs current")
 
 
-def probability_gauge(prob: float, threshold: float, mode: str | None = None) -> go.Figure:
-    """A calibrated-probability gauge for one bank, banded green / amber / red."""
+def probability_gauge(prob: float, threshold: float, mode: str | None = None,
+                      cap: float | None = None) -> go.Figure:
+    """A calibrated-probability gauge for one bank, banded green / amber / red. `cap` sets the
+    axis maximum as a percentage (default 100). A smaller cap makes small, realistic distress
+    probabilities (and slider moves) visible instead of a frozen needle near zero."""
     pal = get_palette(mode)
     green, amber, red = pal["teal"], pal.get("sand", "#c69026"), pal["rose"]
     amber = "#c69026"
     pct = prob * 100
-    cap = 100.0  # fixed, honest full scale: a 0-100% probability axis (no ambiguous max)
+    cap = 100.0 if cap is None else max(threshold * 100 * 1.2, float(cap))
+    ndp = 2 if cap >= 20 else 3  # more decimals when the axis is zoomed in
+    ticks = [round(cap * f, 2) for f in (0, 0.25, 0.5, 0.75, 1.0)]
     bar = red if prob >= threshold else (amber if prob >= threshold / 2 else green)
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
-        value=round(pct, 2),
+        value=round(pct, ndp),
         number={"suffix": "%", "font": {"size": 30, "color": pal["text_main"]}},
         gauge={
             "axis": {"range": [0, cap], "tickcolor": pal["text_soft"],
-                     "tickvals": [0, 25, 50, 75, 100], "ticksuffix": "%",
+                     "tickvals": ticks, "ticksuffix": "%",
                      "tickfont": {"size": 9, "color": pal["text_soft"]}},
             "bar": {"color": bar, "thickness": 0.7},
             "bgcolor": "rgba(0,0,0,0)",

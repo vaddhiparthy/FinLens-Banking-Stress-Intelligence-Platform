@@ -296,7 +296,12 @@ def _render_top_bar(active_page: str, mode: str) -> None:
     """The single persistent chrome used on every page: surface dropdown (left),
     centred FinLens wordmark, credit (right). Identical placement everywhere."""
     is_home = mode == "home"
-    trigger = "Explore surfaces" if is_home else _SURFACE_META.get(mode, _SURFACE_META[BUSINESS_PAGE])[0]
+    # Always label it as a switcher so the control reads as a dropdown, and name the current
+    # surface so the user knows where they are.
+    if is_home:
+        trigger = "Switch surface  ▾"
+    else:
+        trigger = f"Switch surface: {_SURFACE_META.get(mode, _SURFACE_META[BUSINESS_PAGE])[0]}  ▾"
 
     st.markdown('<div class="topbar-anchor"></div>', unsafe_allow_html=True)
     bar_left, bar_center, bar_right = st.columns([1.25, 2.5, 1.25], vertical_alignment="center")

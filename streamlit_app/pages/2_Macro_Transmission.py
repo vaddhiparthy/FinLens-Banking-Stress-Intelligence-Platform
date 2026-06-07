@@ -227,16 +227,19 @@ with card4:
     value, as_of = latest_metric(frame, "Home Price Index")
     metric_card("Home Price Index", value, f"As of {as_of}")
 
-section_heading(
-    "Macro Stress Drill-Down",
-    "Choose one macro signal, then read it two ways: first on its own native scale, then beside "
-    "monthly FDIC failure counts on a separate axis.",
-)
-selected_series = st.selectbox(
-    "Select macro signal",
-    available_series,
-    key="macro_signal_selector",
-)
+_dd_left, _dd_right = st.columns([2.3, 1], vertical_alignment="bottom")
+with _dd_left:
+    section_heading(
+        "Macro Stress Drill-Down",
+        "Choose one macro signal, then read it two ways: first on its own native scale, then "
+        "beside monthly FDIC failure counts on a separate axis.",
+    )
+with _dd_right:
+    selected_series = st.selectbox(
+        "Select macro signal",
+        available_series,
+        key="macro_signal_selector",
+    )
 
 left, right = st.columns(2)
 with left:
