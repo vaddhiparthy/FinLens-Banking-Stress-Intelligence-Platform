@@ -234,8 +234,8 @@ def page_intro(eyebrow: str, title: str, copy: str, wiki_slug: str | None = None
 
 
 _SURFACES = [
-    (AI_PAGE, "AI Engineering", "pages/7_AI_Engineering.py"),
     (TECHNICAL_PAGE, "Data Engineering", "pages/4_Data_Engineering.py"),
+    (AI_PAGE, "AI Engineering", "pages/7_AI_Engineering.py"),
     (BUSINESS_PAGE, "Business", "pages/0_Stress_Pulse.py"),
 ]
 

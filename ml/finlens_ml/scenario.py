@@ -234,38 +234,3 @@ def default_hypothetical() -> dict:
 
 def feature_monotone(feature: str) -> int:
     return MONOTONE_CONSTRAINTS.get(feature, 0)
-
-
-@lru_cache(maxsize=1)
-def top_risk_banks(k: int = 12) -> pd.DataFrame:
-    """Batch-score every bank at its most recent available quarter and return the top-k by
-    calibrated 4-quarter distress probability. A forward model ESTIMATE on the latest public
-    filing, not a forecast of failure (base rate < 1%); the UI frames it with that disclaimer.
-    Cached once per process; refreshes on restart / next scoring run."""
-    from finlens_ml.predict import score_frame
-    from finlens_ml.config import get_ml_settings
-
-    df = _dataset().copy()
-    # currently-operating banks only: those reporting in the most recent quarter (a defunct
-    # bank's last-ever quarter would otherwise dominate, which is a historical failure not a
-    # live risk). This is a forward estimate on the latest filing, not a forecast.
-    max_qord = df["obs_qord"].max()
-    latest = df[df["obs_qord"] == max_qord].dropna(subset=["bank_name"])
-    latest = latest[[c for c in FEATURE_COLUMNS if c in latest.columns] +
-                    [c for c in ["cert", "bank_name", "state", "quarter"] if c in latest.columns]]
-    probs = score_frame(latest)
-    out = latest[["cert", "bank_name", "state", "quarter"]].copy()
-    out["probability"] = probs
-    out["threshold"] = get_ml_settings().flag_threshold
-    out["cert"] = out["cert"].astype(int)
-    return out.sort_values("probability", ascending=False).head(k).reset_index(drop=True)
-
-
-def peak_distress_sliders() -> dict:
-    """Slider preset that maximizes modelled risk: push each monotone lever to its risk end
-    (capital/profitability/NIM to the low end, bad-loan/funding levers to the high end)."""
-    out: dict[str, float] = {}
-    for feat, (lo, hi, default) in SLIDER_FEATURES.items():
-        mono = feature_monotone(feat)
-        out[feat] = float(hi if mono > 0 else lo if mono < 0 else default)
-    return out
