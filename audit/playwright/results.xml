@@ -1,0 +1,20 @@
+<testsuites id="" name="" tests="8" failures="0" skipped="0" errors="0" time="29.616411">
+<testsuite name="surfaces.spec.mjs" timestamp="2026-06-07T00:05:41.890Z" hostname="" tests="8" failures="0" skipped="0" time="28.45" errors="0">
+<testcase name="home surface renders the brand and entry" classname="surfaces.spec.mjs" time="2.859">
+</testcase>
+<testcase name="data engineering surface renders the live pipeline" classname="surfaces.spec.mjs" time="2.856">
+</testcase>
+<testcase name="data engineering Data Quality shows the GX suite result" classname="surfaces.spec.mjs" time="4.228">
+</testcase>
+<testcase name="AI surface renders the model pipeline flow" classname="surfaces.spec.mjs" time="1.884">
+</testcase>
+<testcase name="AI Model Quality shows the headline metrics and robustness cross-checks" classname="surfaces.spec.mjs" time="8.704">
+</testcase>
+<testcase name="AI Decisions surface exposes the methodology write-ups" classname="surfaces.spec.mjs" time="3.397">
+</testcase>
+<testcase name="analyst assistant renders a cited cached answer" classname="surfaces.spec.mjs" time="2.699">
+</testcase>
+<testcase name="early warning surface renders" classname="surfaces.spec.mjs" time="1.823">
+</testcase>
+</testsuite>
+</testsuites>
