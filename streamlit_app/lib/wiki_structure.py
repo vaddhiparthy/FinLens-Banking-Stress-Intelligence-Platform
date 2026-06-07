@@ -26,12 +26,18 @@ except Exception:
     _AI = {}
 
 # Merged corpus. Extra/deepened articles override base entries with the same title.
-# Drop superseded "(Coming Soon)" stubs: the predictive surface model now exists and the
-# real articles live under their clean titles.
+# Drop superseded "(Coming Soon)" stubs and the short legacy drafts that newer, longer
+# articles fully replace (kept under their clean section titles), so the tree shows no
+# duplicate/stale pages and nothing reachable is superseded.
+_SUPERSEDED = {
+    "About FinLens",                    # -> "What FinLens Is"
+    "How to Read This Wiki",            # -> "How This Wiki Is Organized"
+    "Platform Architecture in One Page",  # -> "Platform Architecture"
+}
 ARTICLES: dict[str, dict] = {
     t: a
     for t, a in {**_BASE, **_EXTRA, **_DE, **_AI}.items()
-    if "(Coming Soon)" not in t
+    if "(Coming Soon)" not in t and t not in _SUPERSEDED
 }
 
 # section_id, section title, [(subsection title or None, [article titles in order])]
@@ -39,6 +45,7 @@ SECTIONS: list[tuple[str, str, list[tuple[str | None, list[str]]]]] = [
     ("introduction", "Introduction", [
         (None, [
             "What FinLens Is",
+            "Author and Project Intent",
             "The Problem: Bank Financial Distress",
             "How This Wiki Is Organized",
         ]),
@@ -118,6 +125,10 @@ SECTIONS: list[tuple[str, str, list[tuple[str | None, list[str]]]]] = [
             "Predictive Analytics on Currently Operating Banks",
             "Engineering of the Predictive Pipeline",
             "How to Read a Stress Score",
+        ]),
+        ("Method deep-dives", [
+            "Failure-Type Decomposition",
+            "Sequence-Model Challenger",
         ]),
     ]),
     ("reference", "Reference", [
