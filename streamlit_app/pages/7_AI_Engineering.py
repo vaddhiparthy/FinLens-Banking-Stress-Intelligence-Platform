@@ -144,7 +144,6 @@ if section == "pipeline":
         except Exception:
             _pr = None
     _ece = (m.get("oot_calibration", {}) or {}).get("ece") if m else None
-    _npanel = f"{viz['n_oot'] + (m.get('final_model', {}).get('n_train', 0) if m else 0):,}" if viz else "448k+"
     _nfail = viz.get("n_oot_failures") if viz else 66
     pipeline_stage_flow([
         {"name": "Ingest", "copy": "FDIC Call Reports → DuckDB point-in-time panel",
