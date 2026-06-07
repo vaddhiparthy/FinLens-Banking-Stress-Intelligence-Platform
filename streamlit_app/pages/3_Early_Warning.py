@@ -114,7 +114,7 @@ def _render_score(result: dict, actual: int | None = None, key: str = "score",
         )
 
 
-status_ribbon("Historical backtest + experimental live scoring")
+status_ribbon("Historical backtest + hypothetical what-if")
 page_intro(
     "Business Surface",
     "Early Warning",

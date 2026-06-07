@@ -199,7 +199,7 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
     }}
     .block-container {{
         padding-top: .9rem;
-        padding-bottom: 3rem;
+        padding-bottom: 5.5rem;
         padding-left: 1.35rem;
         padding-right: 1.35rem;
         max-width: none !important;
@@ -1361,6 +1361,11 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         color: {palette["text_muted"]};
         font-size: .72rem;
         margin-top: .18rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: 2rem;
     }}
     .section-label {{
         color: {palette["text_main"]};
@@ -1944,13 +1949,22 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
     }}
     .page-wiki-link {{
         display: inline-block;
-        margin-top: .2rem;
+        margin-top: .4rem;
         color: {palette["accent"]} !important;
-        font-size: .82rem;
+        font-size: .78rem;
         font-weight: 700;
         text-decoration: none !important;
+        border: 1px solid {palette["border"]};
+        border-radius: 999px;
+        padding: .2rem .7rem;
+        background: {palette["content_bg"]};
+        transition: border-color .12s ease, background .12s ease;
     }}
-    .page-wiki-link:hover {{ text-decoration: underline !important; }}
+    .page-wiki-link:hover {{
+        text-decoration: none !important;
+        border-color: {palette["accent"]};
+        background: {palette["sand"]};
+    }}
     .page-intro {{
         color: {palette["text_muted"]};
         margin-bottom: .7rem;

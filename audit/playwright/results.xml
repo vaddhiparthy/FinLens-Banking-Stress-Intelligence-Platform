@@ -1,14 +1,38 @@
-<testsuites id="" name="" tests="4" failures="0" skipped="0" errors="0" time="38.297329">
-<testsuite name="chat_report.spec.mjs" timestamp="2026-06-07T03:06:25.379Z" hostname="" tests="3" failures="0" skipped="0" time="26.182" errors="0">
-<testcase name="floating assistant opens and answers a cached example" classname="chat_report.spec.mjs" time="11.577">
+<testsuites id="" name="" tests="17" failures="0" skipped="0" errors="0" time="117.53877800000001">
+<testsuite name="capture_ceiling.spec.mjs" timestamp="2026-06-07T03:46:12.750Z" hostname="" tests="17" failures="0" skipped="0" time="116.247" errors="0">
+<testcase name="home" classname="capture_ceiling.spec.mjs" time="3.301">
 </testcase>
-<testcase name="assistant handles an operating bank by name (Comerica), not a failure dump" classname="chat_report.spec.mjs" time="12.26">
+<testcase name="use-notice gate" classname="capture_ceiling.spec.mjs" time="2.117">
 </testcase>
-<testcase name="bank report page renders for an institution" classname="chat_report.spec.mjs" time="2.345">
+<testcase name="stress pulse" classname="capture_ceiling.spec.mjs" time="3.841">
 </testcase>
-</testsuite>
-<testsuite name="report_open.spec.mjs" timestamp="2026-06-07T03:06:25.379Z" hostname="" tests="1" failures="0" skipped="0" time="11.176" errors="0">
-<testcase name="chat -&gt; open full report navigates to the report for that bank" classname="report_open.spec.mjs" time="11.176">
+<testcase name="failure forensics" classname="capture_ceiling.spec.mjs" time="4.834">
+</testcase>
+<testcase name="macro transmission" classname="capture_ceiling.spec.mjs" time="5.088">
+</testcase>
+<testcase name="early warning what-if" classname="capture_ceiling.spec.mjs" time="17.895">
+</testcase>
+<testcase name="de pipeline" classname="capture_ceiling.spec.mjs" time="6.828">
+</testcase>
+<testcase name="de data quality" classname="capture_ceiling.spec.mjs" time="6.566">
+</testcase>
+<testcase name="de administration" classname="capture_ceiling.spec.mjs" time="6.598">
+</testcase>
+<testcase name="de engineering stack" classname="capture_ceiling.spec.mjs" time="6.693">
+</testcase>
+<testcase name="ai pipeline" classname="capture_ceiling.spec.mjs" time="4.867">
+</testcase>
+<testcase name="ai model quality" classname="capture_ceiling.spec.mjs" time="12.237">
+</testcase>
+<testcase name="ai notebook" classname="capture_ceiling.spec.mjs" time="5.517">
+</testcase>
+<testcase name="wiki home" classname="capture_ceiling.spec.mjs" time="5.278">
+</testcase>
+<testcase name="wiki article" classname="capture_ceiling.spec.mjs" time="5.318">
+</testcase>
+<testcase name="bank report svb" classname="capture_ceiling.spec.mjs" time="7.857">
+</testcase>
+<testcase name="chat open" classname="capture_ceiling.spec.mjs" time="11.412">
 </testcase>
 </testsuite>
 </testsuites>
