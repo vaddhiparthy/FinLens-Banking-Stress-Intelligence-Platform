@@ -1683,8 +1683,12 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         top: 1rem;
         max-height: calc(100vh - 2rem);
         overflow-y: auto;
-        padding-right: .5rem;
+        padding: .6rem .85rem .6rem .7rem;
+        margin-right: .4rem;
         font-size: .82rem;
+        background: {palette["content_bg"]};
+        border: 1px solid {palette["border"]};
+        border-radius: 14px;
     }}
     .wiki-tree-home {{
         display: block;

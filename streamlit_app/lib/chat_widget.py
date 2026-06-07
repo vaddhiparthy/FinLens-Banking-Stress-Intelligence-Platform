@@ -82,6 +82,7 @@ def _render_answer(out: dict, idx: int) -> None:
     bank = out.get("bank_name")
     cert = out.get("bank_cert")
     if bank:
+        st.markdown("<div style='height:.35rem'></div>", unsafe_allow_html=True)
         if st.button(f"Open full report on {bank}", key=f"chat_report_{idx}",
                      use_container_width=True):
             st.session_state["report_bank"] = bank
