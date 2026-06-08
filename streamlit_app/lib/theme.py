@@ -921,13 +921,19 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         border-radius: 8px !important;
     }}
     /* Tighten the popover's default 16px row gap so the panel reads compact, not loose. */
-    div[data-testid="stPopoverBody"] [data-testid="stVerticalBlock"] {{ gap: .3rem !important; }}
+    div[data-testid="stPopoverBody"] [data-testid="stVerticalBlock"] {{ gap: .15rem !important; }}
     div[data-testid="stPopoverBody"] [data-testid="stExpander"],
-    div[data-testid="stPopoverBody"] [data-testid="stExpander"] details {{
+    div[data-testid="stPopoverBody"] [data-testid="stExpander"] details,
+    div[data-testid="stPopoverBody"] [data-testid="stExpander"] summary {{
         border: none !important; background: transparent !important; box-shadow: none !important;
+        margin: 0 !important;
+    }}
+    /* group sub-items sit tight under their header; no big void after an expanded group */
+    div[data-testid="stPopoverBody"] [data-testid="stExpanderDetails"] {{
+        padding: 0 0 .1rem .35rem !important; gap: 0 !important;
     }}
     div[data-testid="stPopoverBody"] [data-testid="stExpander"] summary {{
-        padding: .3rem .15rem !important; font-weight: 700 !important;
+        padding: .18rem .15rem !important; font-weight: 700 !important;
         color: {palette["text_main"]} !important; font-size: .9rem !important;
     }}
     div[data-testid="stPopoverBody"] [data-testid="stExpander"] summary:hover {{

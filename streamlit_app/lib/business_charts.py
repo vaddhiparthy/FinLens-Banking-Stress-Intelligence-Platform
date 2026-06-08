@@ -37,6 +37,17 @@ def has_chart_data(frame: pd.DataFrame, columns: list[str]) -> bool:
     return all(column in frame and frame[column].notna().any() for column in columns)
 
 
+def mini_line(frame: pd.DataFrame, x: str, y: str, height: int = 120) -> go.Figure:
+    """Small warm-themed line (replaces st.line_chart's default-blue, off-palette look)."""
+    figure = go.Figure(go.Scatter(x=frame[x], y=frame[y], mode="lines", line=dict(color=_WARM)))
+    figure.update_layout(
+        height=height, margin=dict(l=6, r=6, t=6, b=6),
+        paper_bgcolor="rgba(255,255,255,0)", plot_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"), xaxis=dict(showgrid=False, tickfont=dict(size=9)),
+        yaxis=dict(showgrid=True, gridcolor="rgba(0,0,0,0.05)", tickfont=dict(size=9)))
+    return figure
+
+
 # ---- Stress Pulse ----
 def earnings_chart(frame: pd.DataFrame) -> go.Figure:
     figure = go.Figure()

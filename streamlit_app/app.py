@@ -70,6 +70,9 @@ st.markdown(
         text-align: left !important; justify-content: flex-start !important;
         padding: .3rem 0 !important; min-height: 0 !important;
     }
+    /* keep the chevron and the label as one left-packed unit (Streamlit centers the inner flex) */
+    div[class*="st-key-nav_"] button > div {
+        justify-content: flex-start !important; width: auto !important; }
     div[class*="st-key-nav_"] button::before { content: "›  "; color: #bf6d47; font-weight: 800; }
     div[class*="st-key-nav_"] button:hover,
     div[class*="st-key-nav_"] button:hover * {

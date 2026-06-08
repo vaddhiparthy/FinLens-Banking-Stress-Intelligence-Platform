@@ -132,7 +132,8 @@ with s1:
                 sub = metrics[metrics["series_id"] == sid].sort_values("date")
                 if not sub.empty:
                     st.caption(label)
-                    st.line_chart(sub.set_index("date")["value"], height=110)
+                    st.plotly_chart(bc.mini_line(sub, "date", "value"),
+                                    use_container_width=True, key=f"dash_macro_{sid}")
     else:
         st.caption("Macro data unavailable.")
 with s2:

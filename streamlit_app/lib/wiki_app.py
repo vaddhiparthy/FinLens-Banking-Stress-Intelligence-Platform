@@ -129,7 +129,8 @@ def render_wiki_app(initial_slug: str | None) -> None:
   .title {{ font-size: 1.9rem; font-weight: 800; margin: .15rem 0 .25rem; letter-spacing: -.01em; }}
   .lead {{ color: {p['text_muted']}; font-size: 1rem; line-height: 1.55; margin-bottom: 1.1rem;
     padding-bottom: .9rem; border-bottom: 1px solid {p['border']}; }}
-  .body {{ font-size: .95rem; line-height: 1.7; color: {p['text_main']}; max-width: 50rem; }}
+  .body {{ font-size: .95rem; line-height: 1.7; color: {p['text_main']}; max-width: 46rem; }}
+  .lead {{ max-width: 46rem; }}
   .body h2 {{ font-size: 1.3rem; margin: 1.5rem 0 .5rem; }}
   .body h3 {{ font-size: 1.08rem; margin: 1.2rem 0 .4rem; }}
   .body table {{ border-collapse: collapse; margin: .8rem 0; font-size: .85rem; }}
@@ -143,7 +144,7 @@ def render_wiki_app(initial_slug: str | None) -> None:
     padding-top: 1rem; border-top: 1px solid {p['border']}; }}
   .pager a {{ font-weight: 700; font-size: .85rem; cursor: pointer; }}
   .noresult {{ color: {p['text_soft']}; font-size: .8rem; padding: .4rem .5rem; }}
-  .diagram {{ height: 600px; border: 1px solid {p['border']}; border-radius: 12px;
+  .diagram {{ height: 440px; border: 1px solid {p['border']}; border-radius: 12px;
     background: {p['content_bg']}; overflow: hidden; margin: .2rem 0 1.3rem; }}
   .diagram svg {{ width: 100% !important; height: 100% !important; }}
   .diagram-msg {{ padding: 1rem; color: {p['text_soft']}; font-size: .85rem; }}
