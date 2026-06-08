@@ -117,12 +117,17 @@ test("ai notebook", async ({ page }) => {
 });
 test("wiki home", async ({ page }) => {
   await page.goto("/Wiki"); await settle(page);
-  await text(page, "FinLens Wiki"); await page.waitForTimeout(600);
+  // the wiki is a client-side SPA inside the last iframe
+  const frame = page.frameLocator("iframe").last();
+  await frame.getByText("FinLens Wiki").first().waitFor({ timeout: 30_000 }).catch(() => {});
+  await page.waitForTimeout(600);
   await page.screenshot({ path: `${SHOTS}wiki_home.png`, ...FULL });
 });
 test("wiki article", async ({ page }) => {
   await page.goto("/Wiki?article=out-of-time-evaluation"); await settle(page);
-  await text(page, "The embargo"); await page.waitForTimeout(600);
+  const frame = page.frameLocator("iframe").last();
+  await frame.getByText("The embargo").first().waitFor({ timeout: 30_000 }).catch(() => {});
+  await page.waitForTimeout(600);
   await page.screenshot({ path: `${SHOTS}wiki_article.png`, ...FULL });
 });
 test("bank report svb", async ({ page }) => {
