@@ -2417,7 +2417,9 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         /* shrink plotly chart titles/annotations on phones so long ones don't clip at the edge
            (CSS overrides the SVG font-size attribute; desktop keeps the original size) */
         [data-testid="stPlotlyChart"] text.gtitle {{ font-size: 10.5px !important; }}
-        [data-testid="stPlotlyChart"] g.annotation text {{ font-size: 10px !important; }}
+        [data-testid="stPlotlyChart"] g.annotation text {{ font-size: 8px !important; }}
+        [data-testid="stPlotlyChart"] text.xtitle,
+        [data-testid="stPlotlyChart"] text.ytitle {{ font-size: 9px !important; }}
         /* big display headings scale down so they don't wrap awkwardly */
         .landing-h1 {{ font-size: 2.2rem !important; }}
         .home-intro {{ font-size: .95rem !important; }}
