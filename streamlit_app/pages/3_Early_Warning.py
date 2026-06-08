@@ -1,4 +1,4 @@
-# ruff: noqa: E402
+# ruff: noqa: E402,E501
 """Predictive Analytics, REAL interactive bank-distress scoring.
 
 Backed by the trained model (ml/finlens_ml). Three in-page tabs (st.tabs = no full
@@ -22,6 +22,7 @@ for sub in ("", "src", "ml"):
         sys.path.insert(0, p)
 
 from finlens_ml.features import FEATURE_COLUMNS
+
 from streamlit_app.lib import ml_charts as mc
 from streamlit_app.lib.page_shell import BUSINESS_PAGE, page_intro, status_ribbon, top_navigation
 from streamlit_app.lib.telemetry import record_page_view

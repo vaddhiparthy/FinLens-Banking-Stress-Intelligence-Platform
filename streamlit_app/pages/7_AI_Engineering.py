@@ -1,4 +1,4 @@
-# ruff: noqa: E402
+# ruff: noqa: E402,E501
 """AI Engineering surface, the ML pillar, mirroring the Data Engineering sections.
 
 Every section shows the REAL artifact: charts baked from the trained model + panel
@@ -495,7 +495,8 @@ elif section == "quality":
                 "(Enloe State, Heartland Tri-State, First National Bank of Lindsay, Pulaski "
                 "Savings). No model on quarterly financials can rank these, which is the "
                 "collapse on the **2024 filing cohort**.")
-            _fci = decomp.get("pr_auc_full_ci"); _aci = decomp.get("pr_auc_addressable_ci")
+            _fci = decomp.get("pr_auc_full_ci")
+            _aci = decomp.get("pr_auc_addressable_ci")
             _fci_s = f" (95% CI {_fci[0]:.3f}-{_fci[1]:.3f})" if _fci else ""
             _aci_s = f" (95% CI {_aci[0]:.3f}-{_aci[1]:.3f})" if _aci else ""
             st.caption(

@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """New and deepened FinLens wiki articles.
 
 These override or extend the base corpus (wiki_content.ARTICLES). Schema per entry:

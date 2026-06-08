@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Plotly figures for the AI Engineering surface, driven entirely by the real
 viz-pack (ml/artifacts/viz_pack.json) baked from the trained model + panel.
 
@@ -183,10 +184,12 @@ def by_year_fig(pack_by_year: list, mode: str | None = None) -> go.Figure:
         pr = r.get("pr_auc")
         low = r.get("low_power", npos < 3)
         if not low and pr is not None and pr == pr:
-            real_x.append(yr); real_y.append(pr)
+            real_x.append(yr)
+            real_y.append(pr)
         else:
             val = r.get("pooled_pr_auc")
-            calm_x.append(yr); calm_y.append(val if (val is not None and val == val) else 0.0)
+            calm_x.append(yr)
+            calm_y.append(val if (val is not None and val == val) else 0.0)
             notes.append((yr, val))
     if real_x:
         fig.add_bar(x=real_x, y=real_y, name="PR-AUC (n_pos≥3)", marker_color=pal["accent"])
@@ -442,7 +445,8 @@ def multi_horizon_pr_fig(pack: dict, mode: str | None = None) -> go.Figure | Non
     """4q vs 8q PR curves (different holdouts/base rates, labeled distinctly). Returns
     None if pack['curves_h8'] is absent (8q not headline-eligible)."""
     pal = get_palette(mode)
-    c4 = pack.get("curves"); c8 = pack.get("curves_h8")
+    c4 = pack.get("curves")
+    c8 = pack.get("curves_h8")
     if not c8:
         return None
     fig = go.Figure()
@@ -570,7 +574,8 @@ def addressable_pr_fig(decomp: dict, mode: str | None = None) -> go.Figure:
     addr = decomp.get("pr_auc_addressable", 0.0)
     npos = decomp.get("n_oot_positives", 0)
     addr_n = decomp.get("addressable_positives", 0)
-    fci = decomp.get("pr_auc_full_ci"); aci = decomp.get("pr_auc_addressable_ci")
+    fci = decomp.get("pr_auc_full_ci")
+    aci = decomp.get("pr_auc_addressable_ci")
     fig = go.Figure()
     err = None
     if fci and aci:
@@ -640,8 +645,8 @@ def cblr_variants_fig(cblr: dict, mode: str | None = None) -> go.Figure:
     err = None
     if all(cis):
         err = dict(type="data", symmetric=False,
-                   array=[c[1] - v for c, v in zip(cis, vals)],
-                   arrayminus=[v - c[0] for c, v in zip(cis, vals)],
+                   array=[c[1] - v for c, v in zip(cis, vals, strict=True)],
+                   arrayminus=[v - c[0] for c, v in zip(cis, vals, strict=True)],
                    color=pal["text_muted"], thickness=1.4, width=6)
     fig = go.Figure()
     fig.add_bar(x=names, y=vals, marker_color=colors, error_y=err,
@@ -691,8 +696,8 @@ def maxout_ladder_fig(mx: dict, mode: str | None = None) -> go.Figure:
     err = None
     if all(cis):
         err = dict(type="data", symmetric=False,
-                   array=[c[1] - v for c, v in zip(cis, vals)],
-                   arrayminus=[v - c[0] for c, v in zip(cis, vals)],
+                   array=[c[1] - v for c, v in zip(cis, vals, strict=True)],
+                   arrayminus=[v - c[0] for c, v in zip(cis, vals, strict=True)],
                    color=pal["text_muted"], thickness=1.4, width=6)
     fig = go.Figure()
     fig.add_bar(x=names, y=vals, marker_color=colors, error_y=err,

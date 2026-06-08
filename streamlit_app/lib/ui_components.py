@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 from html import escape
 
 import pandas as pd

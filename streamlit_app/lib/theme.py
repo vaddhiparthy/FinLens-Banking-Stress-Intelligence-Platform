@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 from functools import lru_cache
 
 import streamlit as st
@@ -83,6 +84,13 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         color: {palette["text_main"]};
         font-family: "Inter", system-ui, -apple-system, sans-serif;
     }}
+    /* slim, sleek, accent-themed scrollbars everywhere (no chunky default bars) */
+    * {{ scrollbar-width: thin; scrollbar-color: rgba(191,109,71,.5) transparent; }}
+    ::-webkit-scrollbar {{ width: 7px; height: 7px; }}
+    ::-webkit-scrollbar-track {{ background: transparent; }}
+    ::-webkit-scrollbar-thumb {{ background: rgba(191,109,71,.45); border-radius: 8px; }}
+    ::-webkit-scrollbar-thumb:hover {{ background: rgba(191,109,71,.75); }}
+    ::-webkit-scrollbar-corner {{ background: transparent; }}
     html, body,
     [data-testid="stAppViewContainer"],
     [data-testid="stMarkdownContainer"],
@@ -719,12 +727,12 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
     }}
     .site-footer {{
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         align-items: center;
         justify-content: space-between;
-        gap: .6rem;
-        margin: 3.5rem 0 .5rem;
-        padding-top: 1rem;
+        gap: 1rem;
+        margin: 1.2rem 0 .4rem;
+        padding-top: .8rem;
         border-top: 1px solid {palette["border"]};
     }}
     .site-footer-brand {{
@@ -732,10 +740,21 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         font-weight: 800;
         font-size: .92rem;
         color: {palette["text_main"]};
+        flex: 0 0 auto;
     }}
     .site-footer-note {{
         color: {palette["text_soft"]};
-        font-size: .76rem;
+        font-size: .72rem;
+        text-align: center;
+        flex: 1 1 auto;
+        line-height: 1.4;
+    }}
+    .site-footer-right {{
+        flex: 0 0 auto; text-align: right; font-weight: 700; font-size: .8rem;
+        color: {palette["text_main"]}; line-height: 1.2;
+    }}
+    .site-footer-rights {{
+        display: block; font-weight: 500; font-size: .66rem; color: {palette["text_soft"]};
     }}
     .site-footer-link {{
         color: {palette["text_soft"]} !important;
@@ -869,40 +888,71 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .13em;
         color: {palette["accent"]}; margin-top: .1rem;
     }}
+    /* date and name on ONE line; time on its own line below */
     .ham-metarow {{
-        display: flex; justify-content: space-between; align-items: flex-start; gap: .6rem;
-        margin: .1rem 0 .2rem;
+        display: flex; justify-content: space-between; align-items: baseline; gap: .6rem;
+        margin: .45rem 0 0;
     }}
-    .ham-meta {{
-        color: {palette["text_soft"]}; font-size: .67rem; font-weight: 600; line-height: 1.4;
-    }}
-    .ham-meta-r {{ text-align: right; color: {palette["text_muted"]}; white-space: nowrap;
-        align-self: center; }}
+    .ham-meta-date {{ color: {palette["text_soft"]}; font-size: .7rem; font-weight: 700; }}
+    .ham-meta-name {{ color: {palette["text_main"]}; font-size: .7rem; font-weight: 700;
+        white-space: nowrap; }}
+    .ham-meta-time {{ color: {palette["text_muted"]}; font-size: .64rem; margin-top: .04rem; }}
+    /* clear gap so the Home hover highlight never overlaps the Navigation label */
     .ham-navlabel {{
         color: {palette["text_soft"]}; text-transform: uppercase; letter-spacing: .12em;
-        font-size: .63rem; font-weight: 800; margin: .8rem 0 .2rem;
+        font-size: .63rem; font-weight: 800; margin: 1rem 0 .55rem;
     }}
     .ham-credit {{
-        display: block; margin-top: 1rem; padding-top: .55rem;
+        display: block; margin-top: .55rem; padding-top: .5rem;
         border-top: 1px solid {palette["border"]};
         color: {palette["text_soft"]} !important; font-size: .65rem; font-weight: 600;
         text-decoration: none;
     }}
-    /* The hamburger trigger: a clean accent button, top-left, persistent on every page. */
+    /* The hamburger: a clean TRANSPARENT floating 3-line icon (no box), top-left on every page. */
     div[data-testid="stPopover"] > div > button {{
-        background: {palette["content_bg"]} !important;
-        border: 1px solid {palette["border"]} !important;
-        border-radius: 11px !important;
-        box-shadow: 0 4px 14px rgba(15,23,42,.08) !important;
-        color: {palette["accent_deep"]} !important; font-weight: 700 !important;
+        background: transparent !important; border: none !important; box-shadow: none !important;
+        color: {palette["text_main"]} !important; padding: .15rem .25rem !important;
+        min-height: 0 !important;
     }}
     div[data-testid="stPopover"] > div > button:hover {{
-        border-color: {palette["accent"]} !important; color: {palette["accent"]} !important;
+        background: transparent !important; color: {palette["accent"]} !important;
     }}
-    /* The floating nav panel. */
+    div[data-testid="stPopover"] > div > button svg {{ width: 1.5rem !important; height: 1.5rem !important; }}
+    /* empty label + popover dropdown chevron (expand_more) hidden -> just the ☰ glyph */
+    div[data-testid="stPopover"] > div > button p {{ display: none !important; }}
+    div[data-testid="stPopover"] > div > button > div > div:last-child {{ display: none !important; }}
+    /* ---- global header: GRAND clickable FinLens wordmark (center), identity right ---- */
+    div[class*="st-key-hdr_brand"] {{ text-align: center !important; margin-bottom: -.2rem;
+        width: 100% !important; }}
+    div[class*="st-key-hdr_brand"] div[data-testid="stButton"] {{
+        width: 100% !important;
+        display: flex !important; justify-content: center !important; text-align: center !important;
+    }}
+    div[class*="st-key-hdr_brand"] button {{
+        background: transparent !important; border: none !important; box-shadow: none !important;
+        padding: 0 !important; min-height: 0 !important; cursor: pointer;
+        margin: 0 auto !important; display: inline-flex !important; width: auto !important;
+    }}
+    div[class*="st-key-hdr_brand"] button p {{
+        font-family: "Inter", system-ui, -apple-system, sans-serif !important; font-weight: 800 !important;
+        font-size: 2.6rem !important; line-height: 1 !important; letter-spacing: -.045em !important;
+        color: {palette["text_main"]} !important;
+    }}
+    div[class*="st-key-hdr_brand"] button:hover p {{ color: {palette["accent_deep"]} !important; }}
+    .hdr-brand-tag {{ display: block; text-align: center; font-size: .62rem; font-weight: 700;
+        letter-spacing: .28em; text-transform: uppercase; color: {palette["accent"]}; margin-top: .15rem; }}
+    .hdr-name {{ text-align: right; line-height: 1.15; }}
+    .hdr-name-main {{ display: block; font-weight: 700; font-size: .85rem; color: {palette["text_main"]}; }}
+    .hdr-name-cred {{ display: block; font-size: .62rem; color: {palette["text_soft"]}; }}
+    /* Declare a light color-scheme so mobile Chrome "auto dark" never force-darkens the app into
+       black-on-black (it respects this and leaves light surfaces alone). */
+    html, :root {{ color-scheme: light only !important; }}
+    /* The floating nav panel. Use a SOLID background-color (not only a gradient image, which leaves
+       background-color transparent and lets mobile auto-dark blacken the panel under the dark text). */
     div[data-testid="stPopoverBody"] {{
         min-width: 21rem !important; max-width: 23rem !important;
-        background: linear-gradient(180deg, {palette["content_bg"]}, {palette["sand"]}) !important;
+        background-color: {palette["content_bg"]} !important;
+        background-image: linear-gradient(180deg, {palette["content_bg"]}, {palette["sand"]}) !important;
         border: 1px solid {palette["border"]} !important; border-radius: 16px !important;
         box-shadow: 0 18px 48px rgba(15,23,42,.16) !important;
     }}
@@ -2407,11 +2457,8 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         div[data-testid="stPopoverBody"] [data-testid="stExpander"] summary {{
             min-height: 42px !important; display: flex !important; align-items: center !important;
         }}
-        /* identity row stacks left instead of orphaning the name on the right */
-        .ham-metarow {{ flex-direction: column !important; align-items: flex-start !important;
-            gap: .1rem !important; width: 100% !important; }}
-        .ham-meta-r {{ text-align: left !important; align-self: flex-start !important;
-            margin: 0 !important; }}
+        /* keep date + name on one line; wrap only if truly out of room */
+        .ham-metarow {{ flex-wrap: wrap !important; width: 100% !important; }}
         /* read-only plotly widgets: drop the modebar that overlaps charts/gauges on touch */
         [data-testid="stPlotlyChart"] .modebar {{ display: none !important; }}
         /* shrink plotly chart titles/annotations on phones so long ones don't clip at the edge

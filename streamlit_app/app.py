@@ -1,4 +1,4 @@
-# ruff: noqa: E402
+# ruff: noqa: E402,E501
 
 import sys
 from pathlib import Path
@@ -49,20 +49,30 @@ st.markdown(
     .gate-brand { font-weight: 800; letter-spacing: .02em; color: #bf6d47; font-size: .82rem;
         text-transform: uppercase; margin-bottom: .1rem; }
 
-    /* Browse-the-project hub */
-    .browse-head {
-        text-align: center; font-family: "Inter", system-ui, sans-serif; font-weight: 800;
-        font-size: 1.5rem; color: #1f2933; margin: 2rem 0 .2rem;
-    }
-    .browse-head-sub { text-align: center; color: #7f6b58; font-size: .85rem; margin-bottom: 1rem; }
+    /* Single clean window: vertically center the whole content group so top and bottom whitespace
+       are balanced (no giant forehead, no dead space dumped under the footer). */
+    .block-container { padding-top: .4rem !important; padding-bottom: .4rem !important;
+        min-height: calc(100vh - .8rem); display: flex !important; flex-direction: column; }
+    /* the inner vertical block fills the height; center its children so whitespace is balanced */
+    [data-testid="stMainBlockContainer"] > [data-testid="stVerticalBlock"] {
+        justify-content: center !important; }
+    .nav-anchor { height: 0; margin: 0; }
+    /* full-width intro (NOT constrained/centered), ~1.5-line gap under the header */
+    .home-intro { text-align: left; color: #6a6b74; font-size: 1.02rem; line-height: 1.65;
+        margin: 2.4rem 0 1.8rem; max-width: none; }
+    /* a touch of separation from the footer */
+    .site-footer { margin-top: 1.6rem !important; }
+    /* Browse rectangle */
     .st-key-browse_box { border: 1px solid #e4d7c6; border-radius: 18px; background: #fffaf3;
-        padding: 1.2rem 1.4rem; box-shadow: 0 10px 30px rgba(15,23,42,.06); }
+        padding: 1.1rem 1.6rem; box-shadow: 0 10px 30px rgba(15,23,42,.06); }
     .browse-col-h { font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
-        color: #bf6d47; margin: .2rem 0 .7rem; }
-    .browse-div { border-left: 1px solid #e4d7c6; height: 100%; min-height: 200px; margin: 0 auto; width: 1px; }
-    .home-head { text-align: left; margin: .4rem 0 0; }
-    .home-intro { text-align: left; color: #6a6b74; font-size: 1rem; line-height: 1.6;
-        margin: .25rem 0 1.4rem; }
+        color: #bf6d47; margin: .1rem 0 .6rem; }
+    /* full-height vertical divider = border on the first column (auto-centered, equal-height cols) */
+    .st-key-browse_box [data-testid="stHorizontalBlock"] { align-items: stretch; }
+    .st-key-browse_box [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:first-child {
+        border-right: 1px solid #e4d7c6; padding-right: 1.6rem; }
+    .st-key-browse_box [data-testid="stHorizontalBlock"] > [data-testid="stColumn"]:last-child {
+        padding-left: 1.6rem; }
     /* Browse links: clean text + accent hover (no boxes); description lives in the button help tip */
     div[class*="st-key-nav_"] button {
         background: transparent !important; border: none !important; box-shadow: none !important;
@@ -102,21 +112,69 @@ def _legal_disclaimer() -> None:
     if st.button("I understand", key="accept_home_disclaimer", use_container_width=True,
                  type="primary"):
         st.session_state["home_disclaimer_accepted"] = True
+        st.query_params["ack"] = "1"  # survive a page refresh / new session too
         st.rerun()
 
 
-if not st.session_state.get("home_disclaimer_accepted"):
+def _disclaimer_persistence() -> None:
+    """Remember acceptance in the browser (localStorage) so the use-notice shows ONCE, ever — it
+    survives server restarts, refreshes, new sessions, and arriving at home from another page.
+    Streamlit's sandboxed component iframe can't redirect the top frame, but it CAN read/write the
+    parent DOM (same-origin), so: if the browser already accepted, remove the dialog the moment it
+    renders; and persist acceptance when 'I understand' is clicked."""
+    import streamlit.components.v1 as _components
+    _components.html(
+        """
+        <script>
+        (function () {
+          var doc; try { doc = window.parent.document; } catch (e) { return; }
+          var KEY = 'finlens_disclaimer_ack';
+          function accepted() { try { return window.localStorage.getItem(KEY) === '1'; }
+                                catch (e) { return false; } }
+          function isNotice(el) { return /Important Use Notice/i.test(el.textContent || ''); }
+          function kill() {
+            doc.querySelectorAll('[role="dialog"]').forEach(function (d) {
+              if (isNotice(d)) {
+                var modal = d.closest('[data-baseweb="modal"]') || d.closest('[data-testid="stDialog"]');
+                (modal || d).remove();
+              }
+            });
+          }
+          if (accepted()) {
+            kill();
+            var obs = new MutationObserver(kill);
+            obs.observe(doc.body, { childList: true, subtree: true });
+            setTimeout(function () { obs.disconnect(); }, 6000);
+          }
+          // persist as soon as the user accepts (and on any future render where ack=1 is in the URL)
+          if (new URLSearchParams(doc.location.search).get('ack') === '1') {
+            try { window.localStorage.setItem(KEY, '1'); } catch (e) {}
+          }
+          doc.addEventListener('click', function (e) {
+            var b = e.target.closest('button');
+            if (b && /I understand/i.test(b.textContent || '')) {
+              try { window.localStorage.setItem(KEY, '1'); } catch (e) {}
+            }
+          }, true);
+        })();
+        </script>
+        """,
+        height=0,
+    )
+
+
+_disclaimer_persistence()
+# Accepted if the in-session flag (internal navigation) or the URL flag (refresh) is set; the
+# localStorage layer above removes the dialog for browsers that accepted in any prior session.
+_acked = st.session_state.get("home_disclaimer_accepted") or st.query_params.get("ack") == "1"
+if not _acked:
     _legal_disclaimer()
 
 home_navigation()
 
-# Title + intro: no boxes.
+# FinLens title now lives in the global header (centered); the page opens straight on the intro.
 st.markdown(
     """
-    <div class="home-head">
-        <div class="landing-eyebrow">Surya Vaddhiparthy · M.S. Data Science</div>
-        <div class="landing-h1">FinLens</div>
-    </div>
     <p class="home-intro">
         FinLens turns free public banking data into an early-warning read on U.S. bank distress. It
         lands FDIC Call Reports, the failed-bank list, FRED macro series, and FFIEC institution data
@@ -130,11 +188,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown('<div class="browse-head">Browse the project</div>'
-            '<div class="browse-head-sub">Interactive surfaces<span class="d-only"> on the left</span>'
-            ' · the technical build<span class="d-only"> on the right</span></div>',
-            unsafe_allow_html=True)
-
 _LEFT = [
     ("AI Inference", "Chat with the cited model and watch a bank's live read appear.",
      "pages/9_AI_Inference.py", None),
@@ -142,7 +195,7 @@ _LEFT = [
      "pages/3_Early_Warning.py", None),
     ("Business Dashboard", "Earnings, asset quality, the 2023 shock, failures, macro: at a glance.",
      "pages/10_Business_Dashboard.py", None),
-    ("Wikipedia", "The encyclopedia: domain, architecture, data engineering, and the model.",
+    ("FinLens-Wiki", "The encyclopedia: domain, architecture, data engineering, and the model.",
      "pages/6_Wiki.py", None),
 ]
 _RIGHT = [
@@ -153,7 +206,7 @@ _RIGHT = [
     ("Data Engineering Pipeline", "The DE surface: source contracts, warehouse, quality, operations.",
      "pages/4_Data_Engineering.py", None),
     ("Architecture Diagram", "The whole platform end to end, every component, hover for detail.",
-     "pages/6_Wiki.py", "system-architecture"),
+     "pages/11_Technical_Dashboard.py", "ARCH"),
 ]
 
 
@@ -162,20 +215,22 @@ def _nav(items: list, side: str) -> None:
         key = f"nav_{side}_{title.lower().replace(' ', '_')}"
         # clean text link; the one-line description is the hover help (no boxes)
         if st.button(title, key=key, help=desc, use_container_width=True):
-            if article:
+            if article == "ARCH":
+                st.session_state["td_view"] = "arch"  # open the full-screen architecture immersion
+            elif article:
                 st.session_state["wiki_article"] = article
             elif target.endswith("4_Data_Engineering.py"):
                 st.session_state["technical_section"] = "pipeline"
+            elif target.endswith("11_Technical_Dashboard.py"):
+                st.session_state["td_view"] = "dashboard"
             st.switch_page(target)
 
 
 with st.container(key="browse_box"):
-    col_l, col_div, col_r = st.columns([1, 0.05, 1])
+    col_l, col_r = st.columns(2)
     with col_l:
         st.markdown('<div class="browse-col-h">Interactive</div>', unsafe_allow_html=True)
         _nav(_LEFT, "l")
-    with col_div:
-        st.markdown('<div class="browse-div"></div>', unsafe_allow_html=True)
     with col_r:
         st.markdown('<div class="browse-col-h">Technical</div>', unsafe_allow_html=True)
         _nav(_RIGHT, "r")

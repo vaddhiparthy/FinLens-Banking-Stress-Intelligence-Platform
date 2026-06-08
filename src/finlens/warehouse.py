@@ -68,7 +68,12 @@ def _clean_public_text(value: object) -> str:
 def _fdic_failures_frame():
     payload = _latest_source_json("fdic")
     if not payload or not payload.get("records"):
-        return pd.DataFrame(columns=["bank_id","bank_name","city","state","cert","acquirer","closing_date","year","assets_millions"])
+        return pd.DataFrame(
+            columns=[
+                "bank_id", "bank_name", "city", "state", "cert",
+                "acquirer", "closing_date", "year", "assets_millions",
+            ]
+        )
 
     rows = []
     for record in payload["records"]:
@@ -92,13 +97,20 @@ def _fdic_failures_frame():
 
     frame = pd.DataFrame(rows)
     if frame.empty:
-        return pd.DataFrame(columns=["bank_id","bank_name","city","state","cert","acquirer","closing_date","year","assets_millions"])
+        return pd.DataFrame(
+            columns=[
+                "bank_id", "bank_name", "city", "state", "cert",
+                "acquirer", "closing_date", "year", "assets_millions",
+            ]
+        )
     return frame.sort_values(["year", "bank_name"], ascending=[False, True]).reset_index(drop=True)
 
 
 def _fdic_acquirers_frame(failures):
     if failures.empty:
-        return pd.DataFrame(columns=["acquirer","decade","failure_count","assets_absorbed_millions"])
+        return pd.DataFrame(
+            columns=["acquirer", "decade", "failure_count", "assets_absorbed_millions"]
+        )
     grouped = (
         failures.assign(
             decade=lambda data: (data["year"].fillna(0).astype(int) // 10 * 10).astype(str) + "s"

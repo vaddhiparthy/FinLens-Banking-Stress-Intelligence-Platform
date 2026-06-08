@@ -1,4 +1,4 @@
-# ruff: noqa: E402
+# ruff: noqa: E402,E501
 """Technical Dashboard: the AI model and the data pipeline at a glance, no write-ups.
 
 Curated from the AI Engineering and Data Engineering surfaces, grouped headline -> detail. Reads the
@@ -21,10 +21,23 @@ for sub in ("", "src", "ml"):
 
 from finlens.pipeline_status import pipeline_status_rows
 from streamlit_app.lib import ml_charts as mc
+from streamlit_app.lib.de_pipeline import (
+    TZ_CHOICES,
+    dag_chart,
+    pipeline_status_frame,
+    pipeline_status_table,
+)
 from streamlit_app.lib.page_shell import home_navigation, page_footer
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
-from streamlit_app.lib.ui_components import inject_styles, metric_card, section_heading, status_tone
+from streamlit_app.lib.ui_components import (
+    inject_styles,
+    metric_card,
+    section_heading,
+    status_tone,
+    styled_table,
+)
+from streamlit_app.lib.wiki_architecture import render_architecture
 
 st.set_page_config(page_title="FinLens | Technical Dashboard", layout="wide",
                    initial_sidebar_state="collapsed")
@@ -64,8 +77,57 @@ def _gx() -> dict:
     return {}
 
 
-st.markdown('<div class="dash-title">Technical Dashboard</div>'
-            '<div class="dash-sub">The model and the pipeline at a glance: out-of-time performance, '
+st.markdown(
+    """
+    <style>
+    div[class*="st-key-td_tab_dash"] button, div[class*="st-key-td_tab_arch"] button {
+        background: transparent !important; border: none !important; box-shadow: none !important;
+        padding: 0 !important; min-height: 0 !important; justify-content: flex-start !important; }
+    div[class*="st-key-td_tab_dash"] button:disabled,
+    div[class*="st-key-td_tab_arch"] button:disabled { opacity: 1 !important; }
+    div[class*="st-key-td_tab_dash"] button:disabled p,
+    div[class*="st-key-td_tab_arch"] button:disabled p {
+        font-size: 1.75rem !important; font-weight: 800 !important; letter-spacing: -.02em !important;
+        color: #a8501f !important; -webkit-text-fill-color: #a8501f !important; opacity: 1 !important; }
+    div[class*="st-key-td_tab_dash"] button:not(:disabled) p,
+    div[class*="st-key-td_tab_arch"] button:not(:disabled) p {
+        font-size: 1.2rem !important; font-weight: 700 !important; color: #9a8a78 !important;
+        -webkit-text-fill-color: #9a8a78 !important; }
+    div[class*="st-key-td_tab_dash"] button:not(:disabled):hover p,
+    div[class*="st-key-td_tab_arch"] button:not(:disabled):hover p {
+        color: #a8501f !important; -webkit-text-fill-color: #a8501f !important; }
+    .td-tab-pipe { font-size: 1.7rem; font-weight: 300; color: #cbbfae; text-align: center;
+        line-height: 2.1rem; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+st.session_state.setdefault("td_view", "dashboard")
+_tc1, _tcp, _tc2, _tcsp = st.columns([2.4, 0.12, 1.2, 6.3], vertical_alignment="center")
+with _tc1:
+    st.button("Technical Dashboard", key="td_tab_dash", use_container_width=True,
+              disabled=st.session_state["td_view"] == "dashboard",
+              on_click=lambda: st.session_state.update(td_view="dashboard"))
+with _tcp:
+    st.markdown('<div class="td-tab-pipe">|</div>', unsafe_allow_html=True)
+with _tc2:
+    st.button("Architecture", key="td_tab_arch", use_container_width=True,
+              disabled=st.session_state["td_view"] == "arch",
+              on_click=lambda: st.session_state.update(td_view="arch"))
+
+if st.session_state["td_view"] == "arch":
+    st.markdown('<div class="dash-sub">The whole platform end to end: public sources, ingestion and '
+                'Bronze, dbt Silver/Intermediate/Gold on DuckDB, the ML hazard model, the serving '
+                'surfaces, and orchestration. Scroll to zoom, drag to pan.</div>',
+                unsafe_allow_html=True)
+    render_architecture()
+    if st.button("Read more about the architecture ›", key="td_arch_readmore"):
+        st.session_state["wiki_article"] = "system-architecture"
+        st.switch_page("pages/6_Wiki.py")
+    page_footer()
+    st.stop()
+
+st.markdown('<div class="dash-sub">The model and the pipeline at a glance: out-of-time performance, '
             'calibration, feature drivers, and live data-engineering status. Real artifacts; no '
             'commentary.</div>', unsafe_allow_html=True)
 
@@ -147,7 +209,18 @@ with q2:
 with q3:
     metric_card("Warehouse", "DuckDB", "warehouse of record")
 
-st.caption("For the full pipeline flow (Sankey), source contracts, dbt models, reconciliation, and "
-           "the engineering stack, open the Data Engineering surface.")
+st.markdown('<div style="height:1rem"></div>', unsafe_allow_html=True)
+section_heading("Run status by flow",
+                "Real-time run status across sources, bronze, silver, gold, and dashboard serving; "
+                "the table names the runtime responsible for each movement.")
+_pf = pipeline_status_frame()
+st.plotly_chart(dag_chart(_pf), use_container_width=True, key="td_sankey")
+_, _tzcol = st.columns([3, 1])
+with _tzcol:
+    _tz_label = st.selectbox("Last-run times in", list(TZ_CHOICES), index=0, key="td_last_run_tz")
+styled_table(pipeline_status_table(_pf, TZ_CHOICES[_tz_label]))
+
+st.caption("For source contracts, dbt models, reconciliation, and the engineering stack, open the "
+           "Data Engineering surface.")
 
 page_footer()

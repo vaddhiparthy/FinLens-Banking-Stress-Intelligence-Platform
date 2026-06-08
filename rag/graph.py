@@ -20,7 +20,7 @@ for p in (REPO, REPO / "src", REPO / "ml"):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
-from rag.ingest import CHROMA_DIR, COLLECTION  # noqa: E402
+from rag.ingest import _failure_docs, _methodology_docs  # noqa: E402
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 TOP_K = 4
@@ -38,15 +38,38 @@ class State(TypedDict, total=False):
     used_llm: bool
 
 
-def _collection():
-    import chromadb
-    from chromadb.utils import embedding_functions
-    ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
-    client = chromadb.PersistentClient(path=str(CHROMA_DIR))
-    return client.get_collection(COLLECTION, embedding_function=ef)
-
-
 from functools import lru_cache
+
+
+@lru_cache(maxsize=1)
+def _corpus() -> tuple:
+    """Build the tiny knowledge corpus in-memory (66 cited failure cases + a few methodology docs)
+    from the same sources the offline indexer uses. No vector DB / embedding model is needed at
+    this scale, so the assistant runs in the lightweight $0 image with zero heavy ML deps."""
+    fdocs, fids, fmetas = _failure_docs()
+    mdocs, mids, mmetas = _methodology_docs()
+    return (fdocs + mdocs, fids + mids, fmetas + mmetas)
+
+
+def _toks(s: str) -> set:
+    import re
+    return {t for t in re.findall(r"[a-z0-9]+", (s or "").lower()) if len(t) >= 3}
+
+
+def _lexical_topk(question: str, k: int):
+    """Rank corpus docs by token overlap with the question (overlap + Jaccard tie-break). For a
+    ~71-doc corpus this matches semantic retrieval in practice and needs no embeddings."""
+    docs, _ids, metas = _corpus()
+    q = _toks(question)
+    scored = []
+    for d, m in zip(docs, metas, strict=False):
+        dt = _toks(d)
+        overlap = len(q & dt)
+        jacc = overlap / (len(q | dt) or 1)
+        scored.append((overlap + jacc, d, m))
+    scored.sort(key=lambda x: x[0], reverse=True)
+    chosen = scored[:k]
+    return [d for _s, d, _m in chosen], [m for _s, _d, m in chosen]
 
 # Common short forms -> CERT, so colloquial names resolve to the right institution.
 _SHORT_FORMS = {
@@ -246,30 +269,23 @@ def _detect_bank(question: str):
 # ---- nodes ----
 
 def retrieve(state: State) -> State:
-    col = _collection()
-    res = col.query(query_texts=[state["question"]], n_results=TOP_K)
-    docs = list(res["documents"][0])
-    metas = list(res["metadatas"][0])
+    docs, metas = _lexical_topk(state["question"], TOP_K)
 
     # Precision fix: if the question names a known bank, make that bank's OWN failure document
-    # rank first. Pure semantic similarity on a short query ("what happened to SVB") sometimes
-    # ranks a different bank's report above the right one, which then gets miscited.
+    # rank first, so a short query ("what happened to SVB") never mis-cites another bank's report.
     hit = _detect_bank(state["question"])
     if hit:
         cert, _name = hit
-        try:
-            got = col.get(ids=[f"failure::{cert}"])
-            if got and got.get("documents"):
-                bank_doc = got["documents"][0]
-                bank_meta = (got.get("metadatas") or [{}])[0]
-                # de-dupe then prepend
-                docs = [d for d in docs if d != bank_doc]
-                metas = [m for m in metas if m.get("cert") != cert]
-                docs.insert(0, bank_doc)
-                metas.insert(0, bank_meta)
-                docs, metas = docs[:TOP_K], metas[:TOP_K]
-        except Exception:  # noqa: BLE001
-            pass
+        cdocs, cids, cmetas = _corpus()
+        fid = f"failure::{cert}"
+        if fid in cids:
+            j = cids.index(fid)
+            bank_doc, bank_meta = cdocs[j], cmetas[j]
+            docs = [d for d in docs if d != bank_doc]
+            metas = [m for m in metas if m.get("cert") != cert]
+            docs.insert(0, bank_doc)
+            metas.insert(0, bank_meta)
+            docs, metas = docs[:TOP_K], metas[:TOP_K]
 
     doc_sources = [(m.get("source_url") or m.get("source") or "") for m in metas]
     # deduped, order-preserving list of all retrieved sources (fallback if no [n] is cited)
@@ -456,16 +472,17 @@ def answer_question(question: str) -> dict:
     hit = _detect_bank(question)
     if hit:
         return _bank_answer(question, hit[0], hit[1])
-    global _GRAPH
-    if _GRAPH is None:
-        _GRAPH = _build_graph()
-    out = _GRAPH.invoke({"question": question})
-    answer = out.get("answer", "")
-    citations = _cited_sources(answer, out.get("doc_sources", []), out.get("sources", []))
+    # methodology / open-ended path: run retrieve -> ground -> synthesize directly (no langgraph)
+    state: State = {"question": question}
+    state.update(retrieve(state))
+    state.update(ground_model(state))
+    state.update(synthesize(state))
+    answer = state.get("answer", "")
+    citations = _cited_sources(answer, state.get("doc_sources", []), state.get("sources", []))
     return {"question": question, "answer": answer,
-            "citations": citations, "retrieved": out.get("docs", []),
-            "model_pred": out.get("model_pred"), "used_llm": out.get("used_llm", False),
-            "bank_name": out.get("bank_name"), "bank_cert": out.get("bank_cert")}
+            "citations": citations, "retrieved": state.get("docs", []),
+            "model_pred": state.get("model_pred"), "used_llm": state.get("used_llm", False),
+            "bank_name": state.get("bank_name"), "bank_cert": state.get("bank_cert")}
 
 
 if __name__ == "__main__":

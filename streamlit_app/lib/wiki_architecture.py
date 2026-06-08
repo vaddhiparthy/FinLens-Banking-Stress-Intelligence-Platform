@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Dedicated whole-system architecture diagram for the FinLens Wiki.
 
 The diagram is real Graphviz DOT rendered client-side by ``st.graphviz_chart`` (no binary, no
@@ -23,7 +24,7 @@ digraph FinLens {
         fontname="Helvetica", fontsize=9, fontcolor="#6a6b74"];
 
   subgraph cluster_src {
-    label="Public data sources"; labeljust="l"; fontsize=12; fontname="Helvetica-Bold";
+    label="Public data sources"; labeljust="c"; fontsize=12; fontname="Helvetica-Bold";
     style="rounded,filled"; fillcolor="#f5efe6"; color="#e4d7c6";
     fdic [label="FDIC BankFind\\n+ Failed Bank List", tooltip="FDIC BankFind API + the public Failed Bank List: institutions and every U.S. bank failure since 2000."];
     qbp  [label="FDIC Quarterly\\nBanking Profile", tooltip="FDIC Quarterly Banking Profile: industry-aggregate earnings, asset quality, and capital by quarter."];
@@ -32,7 +33,7 @@ digraph FinLens {
   }
 
   subgraph cluster_bronze {
-    label="Ingestion · Bronze  (VPS local filesystem)"; labeljust="l"; fontsize=12; fontname="Helvetica-Bold";
+    label="Ingestion · Bronze  (VPS local filesystem)"; labeljust="c"; fontsize=12; fontname="Helvetica-Bold";
     style="rounded,filled"; fillcolor="#f3dfcf"; color="#e4d7c6";
     ingest [label="Python ingestion clients\\nretry · watermarks · DLQ", tooltip="Per-source Python clients with retry/backoff and watermarks; bad payloads go to a dead-letter queue."];
     raw    [label="data/raw/source=*/\\ningestion_date=*  (Hive)", fillcolor="#ffffff", tooltip="Immutable raw snapshots on the VPS local filesystem, Hive-partitioned by source and ingestion date. No cloud object store."];
@@ -40,7 +41,7 @@ digraph FinLens {
   }
 
   subgraph cluster_xform {
-    label="Transform · dbt"; labeljust="l"; fontsize=12; fontname="Helvetica-Bold";
+    label="Transform · dbt"; labeljust="c"; fontsize=12; fontname="Helvetica-Bold";
     style="rounded,filled"; fillcolor="#dbeceb"; color="#cfe0df";
     silver [label="Silver\\nstaging models", tooltip="dbt staging models normalise raw payloads into canonical, typed tables with stable column names."];
     inter  [label="Intermediate\\nreusable joins", tooltip="dbt intermediate models hold reusable joins/enrichments shared by multiple marts."];
@@ -50,7 +51,7 @@ digraph FinLens {
   }
 
   subgraph cluster_ml {
-    label="AI Engineering · ML"; labeljust="l"; fontsize=12; fontname="Helvetica-Bold";
+    label="AI Engineering · ML"; labeljust="c"; fontsize=12; fontname="Helvetica-Bold";
     style="rounded,filled"; fillcolor="#efe3f3"; color="#e3d3eb";
     panel [label="bank_quarterly_risk_facts\\n448,661 rows · 34 features", tooltip="The modelling panel: 448,661 bank-quarters across ~8,800 banks, 2008Q1–2026Q1, 34 CAMELS-aligned features."];
     model [label="Discrete-time hazard\\nLightGBM · monotone\\ncalibrated · 12-seed bag", tooltip="Calibrated, monotone-constrained, 12-seed bagged LightGBM hazard model scoring 4-quarter distress probability."];
@@ -58,7 +59,7 @@ digraph FinLens {
   }
 
   subgraph cluster_serve {
-    label="Serving"; labeljust="l"; fontsize=12; fontname="Helvetica-Bold";
+    label="Serving"; labeljust="c"; fontsize=12; fontname="Helvetica-Bold";
     style="rounded,filled"; fillcolor="#f5efe6"; color="#e4d7c6";
     streamlit [label="Streamlit surfaces\\nBusiness · Data Eng · AI · Wiki", tooltip="The four UI surfaces; they read only Gold marts and model artifacts, never source-shaped data."];
     api       [label="FastAPI\\nhealth · telemetry · scores", tooltip="Machine-facing endpoints: health, telemetry, and model scoring for monitoring and integrations."];
@@ -66,18 +67,10 @@ digraph FinLens {
   }
 
   subgraph cluster_ops {
-    label="Orchestration · Quality"; labeljust="l"; fontsize=12; fontname="Helvetica-Bold";
+    label="Orchestration · Quality"; labeljust="c"; fontsize=12; fontname="Helvetica-Bold";
     style="rounded,filled"; fillcolor="#f4efe6"; color="#e4d7c6";
     airflow [label="Airflow\\nthin DAGs", tooltip="Schedules ingestion and transforms via thin DAGs that call the same Python entry points used locally."];
     quality [label="Great Expectations\\ndbt tests · reconciliation", tooltip="Layered quality: Great Expectations suites, dbt structural tests, and runtime reconciliation against external authority."];
-  }
-
-  subgraph cluster_deploy {
-    label="Edge · Deployment  (single VPS)"; labeljust="l"; fontsize=12; fontname="Helvetica-Bold";
-    style="rounded,filled"; fillcolor="#eef1f4"; color="#dde3ea";
-    cf      [label="Cloudflare\\nDNS · TLS · Turnstile", tooltip="Edge: DNS, TLS, the branded domain, and the Turnstile bot challenge."];
-    caddy   [label="Caddy\\nreverse proxy / ingress", tooltip="Public ingress on the VPS: terminates TLS and reverse-proxies to the app containers."];
-    compose [label="Docker Compose\\nStreamlit · FastAPI · Postgres · Uptime Kuma", tooltip="Single-VPS runtime: Streamlit, FastAPI, Postgres (control-plane state), and Uptime Kuma monitoring."];
   }
 
   fdic -> ingest; qbp -> ingest; fred -> ingest; nic -> ingest;
@@ -101,7 +94,6 @@ digraph FinLens {
   airflow -> silver [style=dashed];
   quality -> raw [style=dotted, dir=none];
   quality -> gold [style=dotted, dir=none];
-  cf -> caddy -> compose;
 }
 """
 
@@ -150,13 +142,6 @@ fully-cited extractive answer if the model is unavailable.
 Python entry points used locally, so there is no orchestrator-only code path. Quality is layered:
 **Great Expectations** suites, **dbt tests**, and **runtime reconciliation** against external
 authority each guard a different boundary.
-
-### 7. Edge · Deployment (single VPS)
-**Cloudflare** provides DNS, TLS, and the Turnstile challenge at the edge. **Caddy** is the public
-ingress on the VPS, reverse-proxying to a small set of **Docker Compose** containers (Streamlit,
-FastAPI, Postgres for control-plane state, Uptime Kuma for monitoring). The deployment is
-reproducible from the compose file; there is no infrastructure-as-code because there are no cloud
-resources to provision.
 
 For the reasoning behind each tool choice, see [[Tooling Choices and Their Rationale]]; for the
 layer model in detail, see [[Bronze, Silver, Intermediate, Gold]] and [[Why Dashboards Read Gold Only]].

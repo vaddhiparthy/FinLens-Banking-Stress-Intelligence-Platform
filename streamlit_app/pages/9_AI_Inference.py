@@ -1,4 +1,4 @@
-# ruff: noqa: E402
+# ruff: noqa: E402,E501
 """AI Inference: a dedicated chat console. Right column is the chat; the left column is a live
 'glorified filter' preview that renders the resolved bank's facts, distress score, and SHAP drivers
 as you ask. Backed by the cited RAG path + OpenRouter, with a silent per-session cap.

@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Shared business-surface chart builders.
 
 Pure functions (DataFrame -> Plotly figure) lifted out of the Stress Pulse, Failure Forensics, and

@@ -35,10 +35,20 @@ _SUPERSEDED = {
     "How to Read This Wiki",            # -> "How This Wiki Is Organized"
     "Platform Architecture in One Page",  # -> "Platform Architecture"
 }
+# Removed from the wiki for SECURITY: deployment topology, secrets, monitoring, edge and serving
+# internals must not be exposed on the public site.
+_REMOVED = {
+    "Streamlit Surfaces",
+    "FastAPI Endpoints",
+    "Edge and Operations",
+    "Deployment Topology",
+    "Configuration and Secrets",
+    "Monitoring and Health",
+}
 ARTICLES: dict[str, dict] = {
     t: a
     for t, a in {**_BASE, **_EXTRA, **_DE, **_AI, **_ARCH}.items()
-    if "(Coming Soon)" not in t and t not in _SUPERSEDED
+    if "(Coming Soon)" not in t and t not in _SUPERSEDED and t not in _REMOVED
 }
 
 # section_id, section title, [(subsection title or None, [article titles in order])]
@@ -49,62 +59,6 @@ SECTIONS: list[tuple[str, str, list[tuple[str | None, list[str]]]]] = [
             "Author and Project Intent",
             "The Problem: Bank Financial Distress",
             "How This Wiki Is Organized",
-        ]),
-    ]),
-    ("business", "Business", [
-        (None, [
-            "Banking Industry Stress, Defined",
-            "Aggregate Profitability Metrics",
-            "Asset Quality and Credit Stress",
-            "Capital, Unrealised Losses, and the 2023 Episode",
-            "Reading Failed-Bank Records",
-            "Macroeconomic Context and Banking Stress",
-            "How to Read Macro Indicators in This Surface",
-            "What the Failure Surface Cannot Show",
-            "What Macro Data Cannot Prove",
-        ]),
-    ]),
-    ("architecture", "Architecture", [
-        (None, [
-            "System Architecture",
-            "Platform Architecture",
-            "The Three Surfaces",
-            "Bronze, Silver, Intermediate, Gold",
-            "Why Dashboards Read Gold Only",
-            "Tooling Choices and Their Rationale",
-        ]),
-    ]),
-    ("data-engineering", "Data Engineering", [
-        ("Sources", [
-            "Source Policy Overview",
-            "FDIC BankFind",
-            "FDIC Quarterly Banking Profile",
-            "FRED and ALFRED",
-            "National Information Center",
-            "Excluded Sources and Their Rationale",
-        ]),
-        ("Warehouse", [
-            "Snowflake Warehouse Topology",
-            "dbt Model Inventory",
-            "Tests and the Data Quality Boundary",
-        ]),
-        ("Orchestration", [
-            "Airflow DAG Topology",
-            "Why the DAGs Are Thin",
-            "Local Parity",
-        ]),
-        ("Quality & Reconciliation", [
-            "Reconciliation Against External Authority",
-            "Data Quality Strategy",
-            "Pipeline Status and Operational State",
-        ]),
-        ("Serving & Operations", [
-            "Streamlit Surfaces",
-            "FastAPI Endpoints",
-            "Edge and Operations",
-            "Deployment Topology",
-            "Configuration and Secrets",
-            "Monitoring and Health",
         ]),
     ]),
     ("ai-engineering", "AI Engineering", [
@@ -131,6 +85,55 @@ SECTIONS: list[tuple[str, str, list[tuple[str | None, list[str]]]]] = [
         ("Method deep-dives", [
             "Failure-Type Decomposition",
             "Sequence-Model Challenger",
+        ]),
+    ]),
+    ("data-engineering", "Data Engineering", [
+        ("Sources", [
+            "Source Policy Overview",
+            "FDIC BankFind",
+            "FDIC Quarterly Banking Profile",
+            "FRED and ALFRED",
+            "National Information Center",
+            "Excluded Sources and Their Rationale",
+        ]),
+        ("Warehouse", [
+            "Snowflake Warehouse Topology",
+            "dbt Model Inventory",
+            "Tests and the Data Quality Boundary",
+        ]),
+        ("Orchestration", [
+            "Airflow DAG Topology",
+            "Why the DAGs Are Thin",
+            "Local Parity",
+        ]),
+        ("Quality & Reconciliation", [
+            "Reconciliation Against External Authority",
+            "Data Quality Strategy",
+            "Pipeline Status and Operational State",
+        ]),
+        # "Serving & Operations" removed for security (deployment/secrets/monitoring/edge).
+    ]),
+    ("architecture", "Architecture", [
+        (None, [
+            "System Architecture",
+            "Platform Architecture",
+            "The Three Surfaces",
+            "Bronze, Silver, Intermediate, Gold",
+            "Why Dashboards Read Gold Only",
+            "Tooling Choices and Their Rationale",
+        ]),
+    ]),
+    ("business", "Business", [
+        (None, [
+            "Banking Industry Stress, Defined",
+            "Aggregate Profitability Metrics",
+            "Asset Quality and Credit Stress",
+            "Capital, Unrealised Losses, and the 2023 Episode",
+            "Reading Failed-Bank Records",
+            "Macroeconomic Context and Banking Stress",
+            "How to Read Macro Indicators in This Surface",
+            "What the Failure Surface Cannot Show",
+            "What Macro Data Cannot Prove",
         ]),
     ]),
     ("reference", "Reference", [

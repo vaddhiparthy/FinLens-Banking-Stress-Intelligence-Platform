@@ -23,7 +23,8 @@ LOGGER = get_logger(__name__)
 
 
 def _clear_readonly_and_retry(func, path, _exc):
-    # On Windows a read-only file makes shutil.rmtree raise PermissionError; clear the bit and retry.
+    # On Windows a read-only file makes shutil.rmtree raise PermissionError;
+    # clear the bit and retry.
     os.chmod(path, stat.S_IWRITE)
     func(path)
 
@@ -47,10 +48,14 @@ def _date_partitions(source_dir: Path) -> list[Path]:
     return sorted(parts, key=lambda p: p.name, reverse=True)  # newest ISO date first
 
 
-def rotate_partitions(base_dir: Path, *, keep: int = 1, dry_run: bool = False) -> list[SourceRotation]:
+def rotate_partitions(
+    base_dir: Path, *, keep: int = 1, dry_run: bool = False
+) -> list[SourceRotation]:
     """Retain the newest ``keep`` ingestion_date partitions per source under ``base_dir``."""
     if keep < 1:
-        raise ValueError("keep must be >= 1 (the policy always retains at least the latest version)")
+        raise ValueError(
+            "keep must be >= 1 (the policy always retains at least the latest version)"
+        )
     results: list[SourceRotation] = []
     if not base_dir.exists():
         return results

@@ -186,8 +186,14 @@ def _status_fields_for_result(key: str, result: Any) -> dict[str, str]:
                 "note": "Latest ingest complete"}
     if key == "fred":
         updated_count = sum(1 for item in result if getattr(item, "updated", False))
-        return {"status": "Success", "last_run": now, "rows": f"{len(result)} series",
-                "note": f"{updated_count} series updated"}
+        total = len(result)
+        note = (
+            f"{updated_count} of {total} series had new observations"
+            if updated_count
+            else "Up to date — no new observations since last run"
+        )
+        return {"status": "Success", "last_run": now, "rows": f"{total} series",
+                "note": note}
     if key == "qbp":
         return {"status": "Success", "last_run": now,
                 "rows": f"{getattr(result, 'size_bytes', 0):,} bytes",

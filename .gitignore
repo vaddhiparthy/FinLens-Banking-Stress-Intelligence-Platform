@@ -1,6 +1,8 @@
 .env
 .env.*
 !.env.example
+# private working material — must NEVER reach the remote
+agents/
 .duckdb/
 data/
 backups/
@@ -59,3 +61,10 @@ dbt/dbt_packages/
 test-results/
 audit/screenshots/_crops/
 COMMIT_MSG.tmp
+
+# QA/dev artifacts (not project code)
+audit/screenshots/
+audit/lighthouse/
+audit/playwright/
+audit/e2e/_*.png
+audit/e2e/_*.mjs

@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """Floating, rate-limited FinLens assistant, shown bottom-right on every page.
 
 Backed by the RAG path (rag.trace.traced_answer): retrieval and citations are real, synthesis is

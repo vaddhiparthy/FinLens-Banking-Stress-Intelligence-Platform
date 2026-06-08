@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """In-depth AI-engineering articles for the FinLens bank-distress model.
 
 Nine encyclopedia entries documenting the model itself: framing, features, labels,

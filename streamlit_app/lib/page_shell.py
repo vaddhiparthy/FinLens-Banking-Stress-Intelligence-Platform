@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -199,10 +200,11 @@ def page_footer() -> None:
     st.markdown(
         '<div class="site-footer">'
         '<span class="site-footer-brand">FinLens</span>'
-        '<span class="site-footer-note">Public FDIC &amp; FRED data · open-source stack'
-        '</span>'
-        '<a class="site-footer-link" href="https://surya.vaddhiparthy.com" '
-        'target="_blank">Built by Surya Vaddhiparthy</a>'
+        '<span class="site-footer-note">Not financial, investment, or supervisory advice. '
+        'An AI/ML portfolio project — models can and will make mistakes; for any decision about a '
+        'bank or financial institution, rely only on official U.S. government sources.</span>'
+        '<span class="site-footer-right">Surya Vaddhiparthy'
+        '<span class="site-footer-rights">All rights reserved</span></span>'
         '</div>',
         unsafe_allow_html=True,
     )
@@ -332,20 +334,30 @@ def render_nav(active_page: str, mode: str) -> None:
     _set_surface_mode(mode)
     set_meta_description("home" if mode == "home" else mode)
     st.markdown('<div class="nav-anchor"></div>', unsafe_allow_html=True)
-    bar_l, _bar_r = st.columns([1, 5], vertical_alignment="center")
+    bar_l, bar_c, bar_r = st.columns([1, 3, 1], vertical_alignment="center")
+    with bar_c:
+        # the grand FinLens wordmark doubles as an easter-egg Home link (base-path-safe switch_page)
+        if st.button("FinLens", key=f"hdr_brand_{active_page}"):
+            st.switch_page(_page_path("home"))
+        st.markdown('<div class="hdr-brand-tag">Banking Stress Intelligence</div>',
+                    unsafe_allow_html=True)
+    with bar_r:
+        st.markdown(
+            '<div class="hdr-name"><span class="hdr-name-main">Surya Vaddhiparthy</span>'
+            '<span class="hdr-name-cred">M.S. Data Science</span></div>',
+            unsafe_allow_html=True,
+        )
     with bar_l:
-        with st.popover("Menu", icon=":material/menu:", use_container_width=True):
+        with st.popover("", icon=":material/menu:", use_container_width=False):
             now = datetime.now(ZoneInfo("America/New_York"))
+            _date = f'{now.strftime("%A, %B ")}{now.day}, {now.strftime("%Y")}'
             st.markdown(
                 '<div class="ham-brand"><span class="ham-brand-name">FinLens</span>'
-                '<span class="ham-brand-tag">Banking Stress Intelligence</span></div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(
+                '<span class="ham-brand-tag">Banking Stress Intelligence</span></div>'
                 '<div class="ham-metarow">'
-                f'<span class="ham-meta">{now.strftime("%a, %b %d %Y")}<br>'
-                f'{now.strftime("%I:%M %p ET")}</span>'
-                '<span class="ham-meta ham-meta-r">Surya Vaddhiparthy</span></div>'
+                f'<span class="ham-meta-date">{_date}</span>'
+                '<span class="ham-meta-name">Surya Vaddhiparthy</span></div>'
+                f'<div class="ham-meta-time">{now.strftime("%I:%M %p ET")}</div>'
                 '<div class="ham-navlabel">Navigation</div>',
                 unsafe_allow_html=True,
             )

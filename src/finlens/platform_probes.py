@@ -12,7 +12,11 @@ def probe_local_raw_storage() -> dict[str, Any]:
     from finlens.paths import RAW_DATA_DIR
 
     raw_dir = RAW_DATA_DIR
-    sources = sorted(p.name.split("=", 1)[-1] for p in raw_dir.glob("source=*")) if raw_dir.exists() else []
+    sources = (
+        sorted(p.name.split("=", 1)[-1] for p in raw_dir.glob("source=*"))
+        if raw_dir.exists()
+        else []
+    )
     result: dict[str, Any] = {
         "configured": raw_dir.exists(),
         "path": str(raw_dir),

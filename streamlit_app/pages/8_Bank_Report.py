@@ -1,4 +1,4 @@
-# ruff: noqa: E402
+# ruff: noqa: E402,E501
 """Dynamic institutional risk report for any U.S. bank in the panel.
 
 Every field is filled in real time from the live model and the governed panel: the calibrated
@@ -24,6 +24,7 @@ for sub in ("", "src", "ml"):
 
 from finlens_ml import scenario
 from finlens_ml.scenario import humanize_feature
+
 from streamlit_app.lib.page_shell import BUSINESS_PAGE, page_footer, page_intro, top_navigation
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_palette, get_theme_mode

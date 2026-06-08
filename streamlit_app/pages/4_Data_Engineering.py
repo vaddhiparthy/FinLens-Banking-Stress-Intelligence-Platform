@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 
 import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
 
 PROJECT_ROOT = next(
@@ -31,6 +30,12 @@ from finlens.state import load_state
 from finlens.telemetry import telemetry_summary
 from finlens.warehouse import stress_pulse_source_mode
 from streamlit_app.lib.architecture_docs import render_architecture_decisions
+from streamlit_app.lib.de_pipeline import (
+    TZ_CHOICES,
+    dag_chart,
+    pipeline_status_frame,
+    pipeline_status_table,
+)
 from streamlit_app.lib.page_shell import (
     TECHNICAL_PAGE,
     get_technical_section,
@@ -39,7 +44,7 @@ from streamlit_app.lib.page_shell import (
     top_navigation,
 )
 from streamlit_app.lib.telemetry import record_page_view
-from streamlit_app.lib.theme import app_css, ensure_theme_state, get_palette, get_theme_mode
+from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
 from streamlit_app.lib.ui_components import (
     inject_styles,
     metric_card,
@@ -49,153 +54,11 @@ from streamlit_app.lib.ui_components import (
     tech_bulletin,
 )
 
-LIVE_BADGE = '<span class="finlens-live-badge">Live</span>'
+LIVE_BADGE = '<span class="finlens-live-badge"><span class="finlens-live-dot"></span>Live</span>'
 
 
 def live_label(label: str) -> str:
     return f"{label} {LIVE_BADGE}"
-
-
-def pipeline_status_frame() -> pd.DataFrame:
-    return pd.DataFrame(pipeline_status_rows())
-
-
-def _status_color(status: str, palette: dict[str, str]) -> str:
-    return {
-        "Success": "rgba(121, 183, 175, 0.55)",
-        "Failed": "rgba(212, 139, 102, 0.55)",
-        "Running": "rgba(179, 141, 91, 0.55)",
-        "Missing Data": "rgba(180, 170, 156, 0.5)",
-        "Deferred": "rgba(180, 170, 156, 0.35)",
-        "Not Activated": "rgba(180, 170, 156, 0.35)",
-    }.get(status, palette["text_soft"])
-
-
-def dag_chart(frame: pd.DataFrame) -> go.Figure:
-    palette = get_palette()
-    link_colors = []
-    link_labels = []
-    for row in frame.itertuples():
-        color = _status_color(row.status, palette)
-        link_colors.append(color)
-        link_labels.append(f"{row.flow_no}. {row.flow_name}, {row.status}")
-    figure = go.Figure(
-        go.Sankey(
-            arrangement="snap",
-            node=dict(
-                label=[
-                    "FDIC",
-                    "QBP",
-                    "FRED",
-                    "NIC",
-                    "Bronze",
-                    "Silver",
-                    "Gold",
-                    "Dashboards",
-                ],
-                pad=18,
-                thickness=18,
-                color=[
-                    palette["accent"],
-                    "rgba(180, 170, 156, 0.7)",
-                    palette["link"],
-                    "rgba(180, 170, 156, 0.7)",
-                    palette["accent_soft"],
-                    palette["teal_soft"],
-                    palette["content_bg"],
-                    palette["rose"],
-                ],
-            ),
-            link=dict(
-                source=[0, 1, 2, 3, 4, 5, 6],
-                target=[4, 4, 4, 4, 5, 6, 7],
-                value=[4, 4, 4, 3, 6, 6, 6],
-                color=link_colors,
-                label=link_labels,
-            ),
-        )
-    )
-    figure.update_layout(
-        height=360,  # reserve space to avoid layout shift (CLS) as the chart streams in
-        margin=dict(l=10, r=10, t=40, b=10),
-        paper_bgcolor="rgba(255,255,255,0)",
-        plot_bgcolor="rgba(255,255,255,0)",
-        font=dict(color="#1f2933"),
-    )
-    return figure
-
-
-def _fmt_last_run(v: object) -> str:
-    """Render an ISO run timestamp as a clean, readable date; pass through non-timestamps
-    (e.g. 'Source contract inactive', '—') unchanged."""
-    if not isinstance(v, str) or "T" not in v:
-        return str(v)
-    try:
-        from datetime import datetime
-        return datetime.fromisoformat(v.replace("Z", "+00:00")).strftime("%b %-d, %Y · %H:%M UTC")
-    except Exception:  # noqa: BLE001
-        try:
-            from datetime import datetime
-            return datetime.fromisoformat(v.replace("Z", "+00:00")).strftime("%b %d, %Y · %H:%M UTC")
-        except Exception:  # noqa: BLE001
-            return str(v)
-
-
-def pipeline_status_table(frame: pd.DataFrame) -> pd.DataFrame:
-    indicator_map = {
-        "Success": "🟢 Success",
-        "Failed": "🔴 Failed",
-        "Running": "🟠 Running",
-        "Missing Data": "⚪ Missing Data",
-        "Deferred": "⚪ Deferred",
-        "Not Activated": "⚪ Not Activated",
-    }
-    # Honest runtime: the extractors were run by scripts/run_local_pipeline.py (Python), not a
-    # live Airflow scheduler. The Airflow DAGs are defined (airflow/dags/) for scheduled runs.
-    tool_map = {
-        "FDIC -> Bronze": "Python extractor (local run; Airflow DAG defined)",
-        "QBP -> Bronze": "FDIC summary extractor (local run; Airflow DAG defined)",
-        "FRED -> Bronze": "FRED extractor (local run; Airflow DAG defined)",
-        "NIC -> Bronze": "Institution-metadata extractor (local run; Airflow DAG defined)",
-        "Bronze -> Silver": "dbt staging / canonical model",
-        "Silver -> Gold": "dbt mart build",
-        "Gold -> Dashboards": "DuckDB mart read + Streamlit",
-    }
-    artifact_map = {
-        "FDIC -> Bronze": "FDIC failure feed is landing into the active data contract",
-        "QBP -> Bronze": "FDIC aggregate banking summary lands into the active data contract",
-        "FRED -> Bronze": "FRED macro series are landing into the active data contract",
-        "NIC -> Bronze": "FDIC active-institution metadata lands into the active data contract",
-        "Bronze -> Silver": "Canonical model layer rebuilds from source payloads",
-        "Silver -> Gold": "Dashboard-facing marts are refreshed from canonical tables",
-        "Gold -> Dashboards": "FastAPI health and Streamlit serving are live",
-    }
-    return frame.assign(
-        status_label=lambda data: data["status"].map(indicator_map),
-        execution_tool=lambda data: data["flow_name"].map(tool_map),
-        runtime_artifact=lambda data: data["flow_name"].map(artifact_map),
-        last_run=lambda data: data["last_run"].map(_fmt_last_run),
-    )[
-        [
-            "flow_no",
-            "flow_name",
-            "execution_tool",
-            "status_label",
-            "last_run",
-            "rows",
-            "runtime_artifact",
-        ]
-    ].rename(
-        columns={
-            "flow_no": "#",
-            "flow_name": "Data flow",
-            "execution_tool": "Tool / runtime",
-            "status_label": "Status",
-            "last_run": "Last run",
-            "rows": "Rows / units",
-            "runtime_artifact": "Operational artifact",
-        }
-    )
 
 
 def reconciliation_table() -> pd.DataFrame:
@@ -1104,27 +967,35 @@ inject_styles(
     .finlens-live-badge {
         display: inline-flex;
         align-items: center;
+        gap: .32rem;
         margin-left: .42rem;
-        padding: .08rem .34rem;
+        padding: .14rem .55rem;
         border-radius: 999px;
-        border: 1px solid rgba(190, 72, 72, .26);
-        background: rgba(212, 78, 78, .09);
-        color: #b94141;
-        font-size: .56rem;
+        border: 1px solid rgba(46, 160, 87, .32);
+        background: rgba(46, 160, 87, .10);
+        color: #1f7a3d;
+        font-size: .58rem;
         font-weight: 800;
-        letter-spacing: 0;
+        letter-spacing: .04em;
         text-transform: uppercase;
         vertical-align: middle;
-        animation: finlensLivePulse 1.9s ease-in-out infinite;
+    }
+    .finlens-live-dot {
+        width: .42rem;
+        height: .42rem;
+        border-radius: 50%;
+        background: #2ea057;
+        box-shadow: 0 0 0 0 rgba(46, 160, 87, .55);
+        animation: finlensLivePulse 1.6s ease-in-out infinite;
     }
     @keyframes finlensLivePulse {
         0%, 100% {
-            opacity: .68;
-            box-shadow: 0 0 0 0 rgba(212, 78, 78, .14);
+            opacity: .5;
+            box-shadow: 0 0 0 0 rgba(46, 160, 87, .5);
         }
         50% {
             opacity: 1;
-            box-shadow: 0 0 0 4px rgba(212, 78, 78, 0);
+            box-shadow: 0 0 0 4px rgba(46, 160, 87, 0);
         }
     }
     </style>
@@ -1223,7 +1094,11 @@ if active_section == "pipeline":
         "movement.",
     )
     st.plotly_chart(dag_chart(pipeline_frame), width="stretch")
-    styled_table(pipeline_status_table(pipeline_frame))
+    _, _tzcol = st.columns([3, 1])
+    with _tzcol:
+        _tz_label = st.selectbox("Last-run times in", list(TZ_CHOICES), index=0,
+                                 key="de_last_run_tz")
+    styled_table(pipeline_status_table(pipeline_frame, TZ_CHOICES[_tz_label]))
     render_data_browser("pipeline")
 
 elif active_section == "status":

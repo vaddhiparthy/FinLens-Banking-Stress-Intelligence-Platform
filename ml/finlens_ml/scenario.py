@@ -94,6 +94,32 @@ def _dataset() -> pd.DataFrame:
         ).df()
 
 
+def _conn():
+    import duckdb
+
+    return duckdb.connect(str(get_ml_settings().duckdb_path), read_only=True)
+
+
+@lru_cache(maxsize=1)
+def _directory_frame() -> pd.DataFrame:
+    """Light directory query: only the columns the bank pickers need. Avoids materializing the full
+    55-column x 448k-row panel into pandas, which is too heavy for the serving container (it can
+    exceed memory and hang); the picker only needs identity + the elapsed-outcome flag."""
+    with _conn() as conn:
+        return conn.execute(
+            "select cert, bank_name, state, quarter, obs_qord, label_4 from ml.training_dataset"
+        ).df()
+
+
+def _cert_frame(cert: int) -> pd.DataFrame:
+    """Every row for a single CERT (a few dozen) — instant; used for per-bank scoring instead of
+    filtering the whole panel in memory."""
+    with _conn() as conn:
+        return conn.execute(
+            "select * from ml.training_dataset where cert = ?", [int(cert)]
+        ).df()
+
+
 @lru_cache(maxsize=1)
 def bank_directory() -> pd.DataFrame:
     """One row per bank for a searchable name picker (no CERT needed), restricted to
@@ -102,7 +128,7 @@ def bank_directory() -> pd.DataFrame:
     Forward-looking scoring is intentionally disabled: every bank shown here can only be
     scored as of a past quarter whose actual outcome has elapsed (a backtest), so the
     tool can never imply a live bank will fail in the future."""
-    df = _dataset().copy()
+    df = _directory_frame().copy()
     known = df[df["label_4"].notna()]  # outcome window has elapsed = a real backtest
     latest = known.sort_values("obs_qord").drop_duplicates("cert", keep="last")
     cols = [c for c in ["cert", "bank_name", "state", "quarter"] if c in latest.columns]
@@ -123,8 +149,8 @@ def latest_known_row_for_cert(cert: int) -> dict | None:
     This is a backtest only. Quarters whose outcome window has not yet elapsed (i.e. a
     forward-looking prediction about a live bank) are deliberately excluded so the
     surface never produces a claim about the future."""
-    df = _dataset()
-    sub = df[(df["cert"] == cert) & (df["label_4"].notna())]
+    sub = _cert_frame(cert)
+    sub = sub[sub["label_4"].notna()]
     if sub.empty:
         return None
     row = sub.sort_values("obs_qord").iloc[-1]
@@ -145,7 +171,7 @@ def live_bank_directory() -> pd.DataFrame:
     of institutions whose 4-quarter outcome has NOT yet elapsed. A forward score is a
     model ESTIMATE on the latest public filing, not a forecast of certain failure; the
     UI frames every such score with explicit disclaimers (base rate < 1%)."""
-    df = _dataset().copy()
+    df = _directory_frame().copy()
     latest = df.sort_values("obs_qord").drop_duplicates("cert", keep="last")
     cols = [c for c in ["cert", "bank_name", "state", "quarter"] if c in latest.columns]
     out = latest[cols].dropna(subset=["bank_name"]).copy()
@@ -158,8 +184,7 @@ def live_bank_directory() -> pd.DataFrame:
 def latest_row_for_cert(cert: int) -> dict | None:
     """Most recent available bank-quarter for a CERT, for a FORWARD (live) score. The
     4-quarter outcome may not have elapsed yet (``outcome_known`` False, actual None)."""
-    df = _dataset()
-    sub = df[df["cert"] == cert]
+    sub = _cert_frame(cert)
     if sub.empty:
         return None
     row = sub.sort_values("obs_qord").iloc[-1]
@@ -180,7 +205,11 @@ def latest_row_for_cert(cert: int) -> dict | None:
 def held_out_failed_banks(horizon_q: int = 4, limit: int = 25) -> pd.DataFrame:
     """Real banks that actually FAILED within the horizon (label==1), for the
     hold-out demo: pick one, score its pre-failure quarter, compare to the outcome."""
-    df = _dataset()
+    with _conn() as conn:
+        df = conn.execute(
+            "select cert, bank_name, quarter, state, obs_qord, label_4, label_8 "
+            "from ml.training_dataset"
+        ).df()
     pos = df[df[f"label_{horizon_q}"] == 1].copy()
     if pos.empty:
         return pos
@@ -210,14 +239,22 @@ def baseline_features() -> dict:
     """Median of every feature across the panel — a realistic, complete 'typical bank'
     vector. Used to fill the features a what-if user does not set, so the score and SHAP
     reasons reflect a coherent whole bank rather than a mostly-missing record."""
-    df = _dataset()
+    with _conn() as conn:
+        existing = {
+            r[0] for r in conn.execute(
+                "select column_name from information_schema.columns "
+                "where table_schema = 'ml' and table_name = 'training_dataset'"
+            ).fetchall()
+        }
+        present = [c for c in FEATURE_COLUMNS if c in existing]
+        med_row: dict = {}
+        if present:
+            sel = ", ".join(f'median("{c}") as "{c}"' for c in present)
+            med_row = conn.execute(f"select {sel} from ml.training_dataset").df().iloc[0].to_dict()
     out: dict[str, float] = {}
     for c in FEATURE_COLUMNS:
-        if c in df.columns:
-            med = pd.to_numeric(df[c], errors="coerce").median()
-            out[c] = None if pd.isna(med) else float(med)
-        else:
-            out[c] = None
+        v = med_row.get(c)
+        out[c] = None if (v is None or pd.isna(v)) else float(v)
     return out
 
 

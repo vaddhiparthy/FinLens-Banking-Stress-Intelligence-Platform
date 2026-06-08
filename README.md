@@ -1,159 +1,100 @@
-# FinLens: Banking Stress Intelligence Platform
+# FinLens — Banking Stress Intelligence Platform
 
-FinLens is a public-data banking analytics platform built to demonstrate senior data engineering work: source ingestion, raw-to-curated data modeling, orchestration, quality checks, API health surfaces, and an analyst-facing dashboard.
+FinLens is an end-to-end banking stress intelligence platform that turns free public data from the FDIC, FFIEC, and Federal Reserve into a calibrated, explainable early-warning read on U.S. bank distress. It covers the full stack: automated ingestion of four official regulatory feeds, a medallion data model built on DuckDB and dbt, a discrete-time hazard model that produces a 4-quarter distress probability for every FDIC-insured institution, and four analyst-facing Streamlit surfaces backed by a FastAPI service and a retrieval-augmented assistant — all orchestrated with Airflow and gated by layered data quality checks.
 
-Live presentation: <https://surya.vaddhiparthy.com/finlens/>
+**Live:** [surya.vaddhiparthy.com/FinLens-Banking-Stress-Intelligence-Platform](https://surya.vaddhiparthy.com/FinLens-Banking-Stress-Intelligence-Platform/)
 
-## What It Demonstrates
+**Portfolio:** [surya.vaddhiparthy.com](https://surya.vaddhiparthy.com/) &nbsp;|&nbsp; [Data Platforms](https://surya.vaddhiparthy.com/data-platforms)
 
-- Public financial data ingestion from FDIC, FRED/ALFRED, QBP, and NIC metadata sources
-- Layered data design with Bronze, Silver, and Gold contracts
-- dbt-style analytical modeling and dashboard-ready marts
-- Airflow orchestration assets for repeatable pipeline execution
-- Great Expectations checks for source and serving-layer validation
-- FastAPI health and telemetry endpoints for machine-facing operations
-- Streamlit business and technical surfaces for recruiters, analysts, and engineers
-- VPS-local raw storage (`data/raw`, partitioned by source and ingestion date; one retained version per source via the rotation policy), optional credential-gated Snowflake, Docker, and Caddy + docker-compose.prod.yml production deployment
+---
+
+## What It Does
+
+| Layer | Description |
+|---|---|
+| Ingestion | Python clients pull FDIC BankFind + Failed Bank List, FDIC Quarterly Banking Profile, FRED/ALFRED macro series (point-in-time aware via ALFRED), and FFIEC NIC institution metadata. Retry, watermarks, and dead-letter queuing are built in. |
+| Bronze | Raw payloads land verbatim on the local filesystem, Hive-partitioned by source and ingestion date. Immutable and replayable. A rotation policy retains exactly one version per source. |
+| Silver / Intermediate / Gold | dbt models on DuckDB normalize raw payloads (Silver), build reusable joins (Intermediate), and produce the stable consumption contract (Gold facts and dimensions). Nothing in the serving layer reads below Gold. |
+| Quality | Great Expectations suites guard raw ingestion and the Gold serving layer. dbt tests enforce structural contracts. Runtime reconciliation checks against external authority. |
+| ML | A calibrated, monotone-constrained, 12-seed bagged LightGBM discrete-time hazard model scores each bank-quarter's probability of failing within 4 quarters. Trained on 448,661 bank-quarters across ~8,800 institutions (2008Q1–2026Q1), evaluated out-of-time on the last 28 quarters (118,943 bank-quarters, 66 real failures). Out-of-time PR-AUC 0.301 (95% CI [0.191, 0.438]), ROC-AUC 0.855, recall@200 0.545. Explained with SHAP; top drivers are tier-1 capital ratio and noncurrent loan ratio, consistent with the bank-failure literature. |
+| Serving | Four Streamlit surfaces (Business, Data Engineering, AI Engineering, Wiki). FastAPI health, telemetry, and scoring endpoints. A retrieval-augmented assistant that retrieves cited regulator filings and live model scores, synthesizes with an LLM, and falls back to a fully-cited extractive answer. |
+| Orchestration | Airflow thin DAGs schedule ingestion and transforms using the same Python entry points used locally — no orchestrator-only code path. |
+
+---
 
 ## Architecture
 
-```text
-Public Sources
-  -> ingestion clients
-  -> raw landing / bronze artifacts
-  -> normalized silver models
-  -> gold analytical marts
-  -> Streamlit dashboard + FastAPI health/telemetry
+```
+Public data sources (FDIC BankFind · Failed Bank List · FDIC QBP · FRED/ALFRED · FFIEC NIC)
+  → Python ingestion clients (retry · watermarks · dead-letter queue)
+  → Immutable Bronze on local filesystem (Hive-partitioned, rotation policy)
+  → dbt Silver → Intermediate → Gold on DuckDB
+  → Great Expectations + dbt tests (quality gates at every boundary)
+  → Discrete-time hazard model (calibrated · monotone · 12-seed bagged LightGBM)
+      → SHAP attributions · OOT metrics · chart artifacts
+  → Streamlit surfaces (Business · Data Engineering · AI Engineering · Wiki)
+  → FastAPI (health · telemetry · scoring endpoints)
+  → RAG assistant (retrieval + cited answers · LLM synthesis)
+  Orchestration: Airflow DAGs
 ```
 
-The dashboard binds to Gold-layer contracts rather than raw source fields. Raw payloads remain preserved for traceability, while the presentation layer reads curated facts and metrics.
+---
 
-Detailed docs:
+## Model Performance
 
-- [Architecture](docs/architecture.md)
-- [Data Flow](docs/data-flow.md)
-- [Validation](docs/validation.md)
-- [Operations](docs/operations.md)
-- [Data Model](docs/data-model.md)
-- [Deployment Stack](docs/deployment-stack.md)
-- [Architecture Decision Records](docs/adr/README.md)
+Metrics are from real out-of-time evaluation (test window: 2019–2026, 66 real bank failures). PR-AUC is the lead metric at a sub-1% base rate; accuracy is not reported.
 
-## Stack
+| Model | PR-AUC | ROC-AUC | recall@200 | Brier |
+|---|---|---|---|---|
+| Calibrated LGBM (served) | **0.301** | 0.855 | 0.545 | 0.00045 |
+| Unconstrained GBM | 0.270 | 0.833 | 0.515 | 0.00045 |
+| Logit benchmark | 0.153 | 0.924 | 0.379 | 0.00874 |
+
+95% percentile-bootstrap CIs: PR-AUC [0.191, 0.438], recall@k [0.419, 0.657]. The LightGBM model's PR-AUC advantage over the logit benchmark has a paired-bootstrap P(LGBM > logit) of 100%. Top SHAP drivers: tier-1 capital ratio, noncurrent-to-loans ratio, ROE, leverage, and equity-to-assets — all consistent with CAMELS-based failure literature.
+
+Calibration: ECE 1.22e-04; in the top-scoring decile the model predicts 0.0035 vs observed 0.0035.
+
+---
+
+## Tech Stack
 
 | Layer | Tools |
-| --- | --- |
-| Language | Python, SQL |
-| Ingestion | FDIC, FRED/ALFRED, QBP, NIC source clients |
+|---|---|
+| Language | Python 3.11+, SQL |
+| Ingestion | FDIC BankFind, FDIC QBP, FRED/ALFRED, FFIEC NIC (custom clients) |
+| Transformation | dbt-core, dbt-duckdb, DuckDB |
+| Quality | Great Expectations, dbt tests |
 | Orchestration | Airflow |
-| Transformation | dbt-style SQL models, DuckDB, optional credential-gated Snowflake |
-| Quality | Great Expectations, schema checks, smoke tests |
-| Serving | Streamlit, FastAPI |
-| Infrastructure | Docker, Caddy + docker-compose.prod.yml on the VPS, VPS-local raw landing (`data/raw`, partitioned by source and ingestion date) |
-| Operations | Health checks, connector readiness, structured project docs |
+| ML | LightGBM, scikit-learn, SHAP, MLflow, Optuna, skops, Evidently |
+| Serving | Streamlit, FastAPI, Uvicorn |
+| API / Utils | Pydantic, structlog, tenacity, Plotly, Pandas |
+| Optional warehouse | Snowflake (credential-gated; not the live path) |
+
+---
 
 ## Repository Layout
 
 | Path | Purpose |
-| --- | --- |
-| `ingestion/` | Source clients for approved public datasets |
-| `src/finlens/` | Shared configuration, state, telemetry, storage, and warehouse helpers |
+|---|---|
+| `ingestion/` | Per-source ingestion clients |
+| `src/finlens/` | Shared config, state, telemetry, storage, and warehouse helpers |
 | `dbt/` | Staging, intermediate, mart, and reference models |
 | `airflow/` | DAGs and orchestration support |
-| `great_expectations/` | Load and serving quality checks |
+| `great_expectations/` | Source and serving quality suites |
 | `duckdb/` | Local mart DDL and export utilities |
-| `snowflake/` | Warehouse DDL and load scaffolding |
-| `api/` | FastAPI health, metrics, failure, and telemetry endpoints |
-| `streamlit_app/` | Business dashboard and technical documentation UI |
-| `scripts/` | Pipeline and operational scripts, including `rotate_raw_data.py` raw-retention rotation |
-| `docs/` | Architecture, data model, validation, operations, and ADRs |
+| `api/` | FastAPI health, metrics, and telemetry endpoints |
+| `streamlit_app/` | Business, Data Engineering, AI Engineering, and Wiki surfaces |
+| `ml/` | Training pipeline, evaluation, SHAP, MLflow artifacts |
+| `scripts/` | Pipeline and operational scripts |
+| `docs/` | Architecture, data model, validation, ML model card, and ADRs |
 | `tests/` | Unit and smoke coverage |
 
-## Local Setup
+---
 
-Create or activate a Python environment, then install dependencies from the project metadata.
+## License
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -U pip
-python -m pip install -e ".[dev]"
-```
+This project is proprietary. All rights reserved. No use, copying, modification, distribution, or commercial use is permitted without the author's prior written authorization. See [LICENSE](LICENSE).
 
-Copy the environment template if you want to configure optional connectors.
+---
 
-```powershell
-Copy-Item .env.example .env
-```
-
-Secrets belong in `.env`, local secret stores, or deployment secret managers. They do not belong in committed code or docs.
-
-## Run Locally
-
-Check connector readiness:
-
-```powershell
-python .\scripts\run_local_pipeline.py --check-connectors
-```
-
-Start the Streamlit app:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\start_finlens.ps1
-```
-
-Start the FastAPI service:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\start_api.ps1
-```
-
-Local URLs:
-
-- Streamlit: `http://127.0.0.1:8501`
-- FastAPI health: `http://127.0.0.1:8010/health`
-- Uptime-style health check: `http://127.0.0.1:8010/healthz`
-
-## Validation
-
-```powershell
-python -m ruff check .
-python -m pytest -q
-powershell -ExecutionPolicy Bypass -File .\scripts\smoke_test.ps1
-```
-
-The smoke test validates imports, core chart generation, and demo stress-lab execution against the active local environment.
-
-## Source Policy
-
-Active source scope:
-
-- FDIC BankFind
-- FDIC QBP
-- FRED / ALFRED
-- NIC current parent metadata
-
-Removed from active scope:
-
-- SEC / EDGAR
-- FR Y-9C
-- SLOOS
-- UBPR
-- Filing surveillance
-- Active Stress Lab modeling
-
-Out-of-scope features are not documented as active product commitments.
-
-## Production Posture
-
-Production presentation:
-
-- <https://surya.vaddhiparthy.com/finlens/>
-
-Operational shape:
-
-- Streamlit serves the business and technical interface.
-- FastAPI exposes health and telemetry endpoints.
-- DuckDB supports local Bronze/Silver/Gold mart materialization.
-- Raw data lives on the VPS local filesystem (`data/raw`, partitioned by source and ingestion date; one retained version per source via the rotation policy); deployment is Caddy + docker-compose.prod.yml on the VPS, with optional credential-gated Snowflake as a warehouse target.
-
-Missing account-specific connector values are surfaced as readiness gaps instead of being hidden or hardcoded.
+**Author:** Sri Surya S. Vaddhiparthy

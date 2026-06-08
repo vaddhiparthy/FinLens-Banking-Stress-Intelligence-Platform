@@ -1,4 +1,4 @@
-# ruff: noqa: E402
+# ruff: noqa: E402,E501
 """Business Dashboard: the most decision-relevant business visualizations on one page, no write-ups.
 
 Curated from the Business surface (Stress Pulse, Failure Forensics, Macro Transmission), grouped
