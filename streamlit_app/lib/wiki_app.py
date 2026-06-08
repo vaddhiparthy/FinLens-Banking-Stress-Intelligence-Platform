@@ -163,11 +163,14 @@ def render_wiki_app(initial_slug: str | None) -> None:
     .title {{ font-size: 1.5rem; }}
     .lead {{ font-size: .92rem; }}
     .body {{ font-size: .92rem; }}
-    /* phone: scrollable frame showing the diagram at natural (legible) size, drag/scroll to pan;
-       the frame is pinned to the viewport width and scrolls the oversized svg internally */
-    .diagram {{ height: 420px; width: 100% !important; max-width: 100% !important; min-width: 0 !important;
-      overflow: auto !important; -webkit-overflow-scrolling: touch; }}
-    .diagram svg {{ width: auto !important; height: auto !important; max-width: none !important; }}
+    /* phone: show the diagram at natural (legible) size; the frame fits the svg's full HEIGHT so
+       every node is visible (no vertical hunting / empty bands), and scrolls only HORIZONTALLY to
+       pan the wide graph. Pinned to viewport width so the page never overflows. */
+    .diagram {{ height: auto !important; width: 100% !important; max-width: 100% !important;
+      min-width: 0 !important; overflow-x: auto !important; overflow-y: hidden !important;
+      -webkit-overflow-scrolling: touch; }}
+    .diagram svg {{ width: auto !important; height: auto !important; max-width: none !important;
+      display: block; }}
     /* show the collapsible tree toggle as a tappable bar */
     #treebox > summary.tree-toggle {{
       display: flex; align-items: center; gap: .4rem; cursor: pointer;

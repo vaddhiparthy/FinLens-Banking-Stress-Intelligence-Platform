@@ -102,7 +102,10 @@ def asset_quality_chart(frame: pd.DataFrame) -> go.Figure:
                        yaxis="y2", line=dict(color=_WARM_SOFT))
     figure.update_layout(
         margin=dict(l=10, r=10, t=40, b=10), yaxis_title="Noncurrent (%)",
-        yaxis2=dict(title="NCO (%)", overlaying="y", side="right"), legend=dict(orientation="h"),
+        yaxis2=dict(title="NCO (%)", overlaying="y", side="right"),
+        # legend on top (matching the earnings chart above it) so it never collides with the rotated
+        # quarter x-tick labels at the bottom on narrow/mobile widths
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
         paper_bgcolor="rgba(255,255,255,0)", plot_bgcolor="rgba(255,255,255,0)",
         font=dict(color="#1f2933"))
     add_recession_bands(figure)
