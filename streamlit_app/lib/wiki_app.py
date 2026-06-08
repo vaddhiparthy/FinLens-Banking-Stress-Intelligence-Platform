@@ -124,6 +124,9 @@ def render_wiki_app(initial_slug: str | None) -> None:
   .tree-art.active {{ border-left-color: {p['accent']}; color: {p['accent_deep']};
     font-weight: 700; background: {p['content_bg']}; }}
   .tree-art.hidden {{ display: none; }}
+  /* the collapsible-tree toggle is desktop-hidden (tree always open in the grid); shown on mobile */
+  #treebox > summary.tree-toggle {{ display: none; list-style: none; }}
+  #treebox > summary.tree-toggle::-webkit-details-marker {{ display: none; }}
   .main {{ overflow-y: auto; height: 100%; padding-right: .6rem; }}
   .crumb {{ font-size: .72rem; color: {p['text_soft']}; font-weight: 600; }}
   .title {{ font-size: 1.9rem; font-weight: 800; margin: .15rem 0 .25rem; letter-spacing: -.01em; }}
@@ -150,6 +153,26 @@ def render_wiki_app(initial_slug: str | None) -> None:
   .diagram-msg {{ padding: 1rem; color: {p['text_soft']}; font-size: .85rem; }}
   .svg-pan-zoom-control-background {{ fill: {p['content_bg']}; opacity: .9; }}
   .svg-pan-zoom-control-element {{ fill: {p['accent']}; }}
+  /* ---- mobile: stack the tree above full-width content; iframe height fits content (one scroll) ---- */
+  @media (max-width: 700px) {{
+    .wrap {{ grid-template-columns: 1fr; height: auto; gap: .6rem; padding: 0; }}
+    .side {{ border-right: none; border-bottom: 1px solid {p['border']}; padding-right: 0;
+      padding-bottom: .6rem; height: auto; overflow: visible; }}
+    .main {{ height: auto; overflow: visible; padding-right: 0; }}
+    .title {{ font-size: 1.5rem; }}
+    .lead {{ font-size: .92rem; }}
+    .body {{ font-size: .92rem; }}
+    .diagram {{ height: 300px; }}
+    /* show the collapsible tree toggle as a tappable bar */
+    #treebox > summary.tree-toggle {{
+      display: flex; align-items: center; gap: .4rem; cursor: pointer;
+      font-weight: 800; font-size: .8rem; letter-spacing: .04em; text-transform: uppercase;
+      color: {p['accent']}; padding: .5rem .2rem; border: 1px solid {p['border']};
+      border-radius: 10px; background: {p['content_bg']};
+    }}
+    #treebox > summary.tree-toggle::before {{ content: "☰"; font-size: .95rem; }}
+    #treebox[open] > summary.tree-toggle::before {{ content: "✕"; }}
+  }}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@viz-js/viz@3.2.4/lib/viz-standalone.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
@@ -160,13 +183,27 @@ def render_wiki_app(initial_slug: str | None) -> None:
     <div class="stats">{s['articles']} articles · {s['sections']} sections · ~{s['read_minutes']} min read</div>
     <input id="q" class="search" placeholder="Search the wiki…" autocomplete="off">
     <div id="noresult" class="noresult" style="display:none">No articles match.</div>
-    {tree}
+    <details id="treebox" open>
+      <summary class="tree-toggle">Browse articles</summary>
+      {tree}
+    </details>
   </aside>
   <main class="main" id="main"></main>
 </div>
 <script>
   const DATA = {payload_js};
   const main = document.getElementById('main');
+  const isMobile = window.matchMedia('(max-width: 700px)').matches;
+  const treebox = document.getElementById('treebox');
+  if (isMobile && treebox) treebox.removeAttribute('open');  // start collapsed on phones
+  function fitHeight() {{
+    // mobile only: grow the component iframe to fit content so the page has ONE natural scroll
+    // (desktop keeps the fixed 1500px frame — untouched)
+    if (!isMobile) return;
+    try {{ if (window.frameElement) window.frameElement.style.height = (document.body.scrollHeight + 24) + 'px'; }}
+    catch (e) {{ /* cross-origin: leave default height */ }}
+  }}
+  if (treebox) treebox.addEventListener('toggle', fitHeight);
   function setActive(slug) {{
     document.querySelectorAll('.tree-art').forEach(function(el) {{
       el.classList.toggle('active', el.getAttribute('data-slug') === slug);
@@ -185,6 +222,7 @@ def render_wiki_app(initial_slug: str | None) -> None:
         svgPanZoom(svg, {{ zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,
           minZoom: 0.3, maxZoom: 12, zoomScaleSensitivity: 0.4 }});
       }}
+      fitHeight();
     }}).catch(function() {{
       host.innerHTML = '<div class="diagram-msg">Diagram failed to render.</div>';
     }});
@@ -203,11 +241,14 @@ def render_wiki_app(initial_slug: str | None) -> None:
     h += '</div>';
     main.innerHTML = h;
     main.scrollTop = 0;
+    if (isMobile) window.scrollTo(0, 0);
     if (a.dot) renderDiagram(document.getElementById('wiki-diagram'), a.dot);
     setActive(slug);
     document.querySelectorAll('.tree-art').forEach(function(el) {{
       if (el.getAttribute('data-slug') === slug) el.scrollIntoView({{block: 'nearest'}});
     }});
+    if (isMobile && treebox) treebox.removeAttribute('open');  // collapse tree after picking
+    fitHeight();
   }}
   // delegate clicks: tree leaves, in-body wikilinks, pager
   document.addEventListener('click', function(e) {{
@@ -219,6 +260,7 @@ def render_wiki_app(initial_slug: str | None) -> None:
   const nores = document.getElementById('noresult');
   q.addEventListener('input', function() {{
     const v = q.value.trim().toLowerCase();
+    if (isMobile && treebox && v) treebox.setAttribute('open', '');  // reveal filtered results
     let shown = 0;
     document.querySelectorAll('.tree-art').forEach(function(el) {{
       const slug = el.getAttribute('data-slug');
@@ -228,8 +270,12 @@ def render_wiki_app(initial_slug: str | None) -> None:
       if (hit) shown++;
     }});
     nores.style.display = shown ? 'none' : 'block';
+    fitHeight();
   }});
   render({json.dumps(start)});
+  window.addEventListener('load', fitHeight);
+  window.addEventListener('resize', fitHeight);
+  setTimeout(fitHeight, 400);
 </script></body></html>
 """
     components.html(doc, height=1500, scrolling=False)

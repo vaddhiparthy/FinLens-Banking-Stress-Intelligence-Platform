@@ -2389,5 +2389,23 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
     .st-key-finlens_chat_open [data-testid="stChatMessage"] {{
         padding: .25rem .15rem; background: transparent;
     }}
+    /* mobile (<=640px): scoped responsive tweaks; desktop above this width is untouched */
+    @media (max-width: 640px) {{
+        .block-container {{ padding-left: .85rem !important; padding-right: .85rem !important; }}
+        /* nav popover panel must fit a phone, not overflow it */
+        div[data-testid="stPopoverBody"] {{
+            min-width: 90vw !important; max-width: 94vw !important;
+        }}
+        /* big display headings scale down so they don't wrap awkwardly */
+        .landing-h1 {{ font-size: 2.2rem !important; }}
+        .home-intro {{ font-size: .95rem !important; }}
+        .dash-title {{ font-size: 1.5rem !important; }}
+        .page-title {{ font-size: 1.6rem !important; }}
+        .browse-head {{ font-size: 1.25rem !important; }}
+        /* the Browse divider is a vertical hairline — meaningless once columns stack */
+        .browse-div {{ display: none !important; }}
+        /* section tabs (DE/AI sub-pages) wrap instead of squashing into unreadable slivers */
+        .stTabs [data-baseweb="tab-list"] {{ flex-wrap: wrap !important; }}
+    }}
     </style>
     """
