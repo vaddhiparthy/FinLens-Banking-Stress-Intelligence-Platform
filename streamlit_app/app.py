@@ -59,7 +59,7 @@ st.markdown(
         padding: 1.2rem 1.4rem; box-shadow: 0 10px 30px rgba(15,23,42,.06); }
     .browse-col-h { font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
         color: #bf6d47; margin: .2rem 0 .7rem; }
-    .browse-div { border-left: 1px solid #e4d7c6; height: 100%; min-height: 320px; margin: 0 auto; width: 1px; }
+    .browse-div { border-left: 1px solid #e4d7c6; height: 100%; min-height: 200px; margin: 0 auto; width: 1px; }
     .home-head { text-align: left; margin: .4rem 0 0; }
     .home-intro { text-align: left; color: #6a6b74; font-size: 1rem; line-height: 1.6;
         margin: .25rem 0 1.4rem; }
@@ -73,7 +73,8 @@ st.markdown(
     /* keep the chevron and the label as one left-packed unit (Streamlit centers the inner flex) */
     div[class*="st-key-nav_"] button > div {
         justify-content: flex-start !important; width: auto !important; }
-    div[class*="st-key-nav_"] button::before { content: "›  "; color: #bf6d47; font-weight: 800; }
+    div[class*="st-key-nav_"] button::before {
+        content: "›"; margin-right: .45rem; color: #bf6d47; font-weight: 800; }
     div[class*="st-key-nav_"] button:hover,
     div[class*="st-key-nav_"] button:hover * {
         color: #bf6d47 !important; -webkit-text-fill-color: #bf6d47 !important; }

@@ -144,7 +144,7 @@ def render_wiki_app(initial_slug: str | None) -> None:
     padding-top: 1rem; border-top: 1px solid {p['border']}; }}
   .pager a {{ font-weight: 700; font-size: .85rem; cursor: pointer; }}
   .noresult {{ color: {p['text_soft']}; font-size: .8rem; padding: .4rem .5rem; }}
-  .diagram {{ height: 440px; border: 1px solid {p['border']}; border-radius: 12px;
+  .diagram {{ height: 340px; border: 1px solid {p['border']}; border-radius: 12px;
     background: {p['content_bg']}; overflow: hidden; margin: .2rem 0 1.3rem; }}
   .diagram svg {{ width: 100% !important; height: 100% !important; }}
   .diagram-msg {{ padding: 1rem; color: {p['text_soft']}; font-size: .85rem; }}
