@@ -341,16 +341,14 @@ def render_nav(active_page: str, mode: str) -> None:
                 '<span class="ham-brand-tag">Banking Stress Intelligence</span></div>',
                 unsafe_allow_html=True,
             )
-            mc_l, mc_r = st.columns([1.25, 1], vertical_alignment="center")
-            with mc_l:
-                st.markdown(
-                    f'<div class="ham-meta">{now.strftime("%a, %b %d %Y")}<br>'
-                    f'{now.strftime("%I:%M %p ET")}</div>', unsafe_allow_html=True,
-                )
-            with mc_r:
-                st.markdown('<div class="ham-meta ham-meta-r">Surya<br>Vaddhiparthy</div>',
-                            unsafe_allow_html=True)
-            st.markdown('<div class="ham-navlabel">Navigation</div>', unsafe_allow_html=True)
+            st.markdown(
+                '<div class="ham-metarow">'
+                f'<span class="ham-meta">{now.strftime("%a, %b %d %Y")}<br>'
+                f'{now.strftime("%I:%M %p ET")}</span>'
+                '<span class="ham-meta ham-meta-r">Surya Vaddhiparthy</span></div>'
+                '<div class="ham-navlabel">Navigation</div>',
+                unsafe_allow_html=True,
+            )
             if st.button("Home", key=f"ham_home_{active_page}", use_container_width=True,
                          icon=":material/home:"):
                 st.switch_page(_page_path("home"))

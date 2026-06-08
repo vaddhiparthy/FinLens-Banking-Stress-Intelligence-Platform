@@ -31,10 +31,10 @@ test("wiki SPA renders, tree navigates instantly, search filters", async ({ page
   expect(visible).toBeGreaterThan(0);
 });
 
-test("System Architecture keeps its Streamlit diagram route", async ({ page }) => {
+test("System Architecture renders the interactive diagram inside the SPA", async ({ page }) => {
   await page.goto("/Wiki?article=system-architecture");
-  // the live graphviz diagram (and #88 pan/zoom) render via Streamlit, not the SPA
-  const svg = page.locator('[data-testid="stGraphVizChart"] svg').first();
-  await expect(svg).toBeVisible({ timeout: 30000 });
-  await expect(svg).toHaveAttribute("data-panzoom", "1", { timeout: 25000 });
+  // the diagram is rendered client-side (viz.js) inside the SPA iframe with pan/zoom controls
+  const frame = page.frameLocator("iframe").last();
+  await expect(frame.locator("#wiki-diagram svg").first()).toBeVisible({ timeout: 30000 });
+  await expect(frame.locator("#svg-pan-zoom-controls")).toHaveCount(1, { timeout: 25000 });
 });

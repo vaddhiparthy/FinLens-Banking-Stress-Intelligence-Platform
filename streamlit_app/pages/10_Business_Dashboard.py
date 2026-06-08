@@ -76,6 +76,7 @@ with k5:
     metric_card("FDIC failures", f"{len(failures):,}" if not failures.empty else "n/a",
                 "cumulative since 2000")
 
+st.markdown("<div style='height:1.1rem'></div>", unsafe_allow_html=True)
 st.markdown('<div class="dash-rule"></div>', unsafe_allow_html=True)
 
 # ---- results (the signals that matter) ----

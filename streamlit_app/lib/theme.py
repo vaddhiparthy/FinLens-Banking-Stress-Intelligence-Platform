@@ -869,10 +869,15 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         font-size: .6rem; font-weight: 700; text-transform: uppercase; letter-spacing: .13em;
         color: {palette["accent"]}; margin-top: .1rem;
     }}
+    .ham-metarow {{
+        display: flex; justify-content: space-between; align-items: flex-start; gap: .6rem;
+        margin: .1rem 0 .2rem;
+    }}
     .ham-meta {{
         color: {palette["text_soft"]}; font-size: .67rem; font-weight: 600; line-height: 1.4;
     }}
-    .ham-meta-r {{ text-align: right; color: {palette["text_muted"]}; }}
+    .ham-meta-r {{ text-align: right; color: {palette["text_muted"]}; white-space: nowrap;
+        align-self: center; }}
     .ham-navlabel {{
         color: {palette["text_soft"]}; text-transform: uppercase; letter-spacing: .12em;
         font-size: .63rem; font-weight: 800; margin: .8rem 0 .2rem;
@@ -905,12 +910,18 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         text-align: left !important; justify-content: flex-start !important;
         border: none !important; background: transparent !important; box-shadow: none !important;
         color: {palette["text_main"]} !important; font-weight: 600 !important;
-        padding: .3rem .25rem !important; min-height: 0 !important;
+        padding: .25rem .25rem !important; min-height: 0 !important; width: 100% !important;
+    }}
+    /* Streamlit centers the button's inner flex; force it left to align with the group headers. */
+    div[data-testid="stPopoverBody"] div[data-testid="stButton"] > button > div {{
+        justify-content: flex-start !important; width: 100% !important;
     }}
     div[data-testid="stPopoverBody"] div[data-testid="stButton"] > button:hover {{
         color: {palette["accent"]} !important; background: {palette["content_bg"]} !important;
         border-radius: 8px !important;
     }}
+    /* Tighten the popover's default 16px row gap so the panel reads compact, not loose. */
+    div[data-testid="stPopoverBody"] [data-testid="stVerticalBlock"] {{ gap: .3rem !important; }}
     div[data-testid="stPopoverBody"] [data-testid="stExpander"],
     div[data-testid="stPopoverBody"] [data-testid="stExpander"] details {{
         border: none !important; background: transparent !important; box-shadow: none !important;

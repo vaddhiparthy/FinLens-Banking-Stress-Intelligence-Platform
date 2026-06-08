@@ -11,6 +11,14 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
+# Warm palette aligned to the app accent, so every business chart reads as one product (no stray
+# slate-blue / teal / Plotly-default series).
+_WARM = "#bf6d47"        # accent (primary series)
+_WARM_DEEP = "#a8501f"   # accent_deep
+_WARM_SOFT = "#8a7c66"   # muted warm (secondary series)
+_WARM_TAN = "#c2a98c"    # light warm (bars)
+_WARM_SCALE = ["#f3e6da", "#d99b6c", "#bf6d47", "#8a3d16"]  # sequential warm (choropleth)
+
 
 def add_recession_bands(figure: go.Figure) -> None:
     for start, end in (("2020Q1", "2020Q3"), ("2023Q1", "2023Q2")):
@@ -33,10 +41,10 @@ def has_chart_data(frame: pd.DataFrame, columns: list[str]) -> bool:
 def earnings_chart(frame: pd.DataFrame) -> go.Figure:
     figure = go.Figure()
     figure.add_bar(x=frame["quarter"], y=frame["net_income"], name="Net income ($B)",
-                   marker_color="#7c93a8")
+                   marker_color=_WARM_TAN)
     figure.add_scatter(x=frame["quarter"], y=frame["roa"], name="ROA (%)", mode="lines+markers",
-                       yaxis="y2", line=dict(color="#bf6d47", width=2.5),
-                       marker=dict(color="#bf6d47", size=6))
+                       yaxis="y2", line=dict(color=_WARM_DEEP, width=2.5),
+                       marker=dict(color=_WARM_DEEP, size=6))
     figure.update_layout(
         margin=dict(l=10, r=10, t=40, b=10), xaxis_title="Quarter",
         yaxis_title="Net income ($B)", yaxis2=dict(title="ROA (%)", overlaying="y", side="right"),
@@ -49,8 +57,10 @@ def earnings_chart(frame: pd.DataFrame) -> go.Figure:
 
 def funding_chart(frame: pd.DataFrame) -> go.Figure:
     figure = go.Figure()
-    figure.add_scatter(x=frame["quarter"], y=frame["asset_yield"], name="Yield on earning assets")
-    figure.add_scatter(x=frame["quarter"], y=frame["funding_cost"], name="Cost of funds")
+    figure.add_scatter(x=frame["quarter"], y=frame["asset_yield"], name="Yield on earning assets",
+                       line=dict(color=_WARM))
+    figure.add_scatter(x=frame["quarter"], y=frame["funding_cost"], name="Cost of funds",
+                       line=dict(color=_WARM_SOFT))
     figure.update_layout(
         margin=dict(l=10, r=10, t=40, b=10), legend=dict(orientation="h"),
         paper_bgcolor="rgba(255,255,255,0)", plot_bgcolor="rgba(255,255,255,0)",
@@ -63,7 +73,8 @@ def nim_chart(frame: pd.DataFrame) -> go.Figure:
     figure = go.Figure()
     clean = frame.dropna(subset=["nim"])
     figure.add_scatter(x=clean["quarter"], y=clean["nim"], name="Net interest margin",
-                       mode="lines+markers")
+                       mode="lines+markers", line=dict(color=_WARM, width=2.5),
+                       marker=dict(color=_WARM, size=6))
     figure.update_layout(
         margin=dict(l=10, r=10, t=40, b=10), legend=dict(orientation="h"),
         paper_bgcolor="rgba(255,255,255,0)", plot_bgcolor="rgba(255,255,255,0)",
@@ -74,8 +85,10 @@ def nim_chart(frame: pd.DataFrame) -> go.Figure:
 
 def asset_quality_chart(frame: pd.DataFrame) -> go.Figure:
     figure = go.Figure()
-    figure.add_scatter(x=frame["quarter"], y=frame["noncurrent_rate"], name="Noncurrent loan rate")
-    figure.add_scatter(x=frame["quarter"], y=frame["nco_rate"], name="Net charge-off rate", yaxis="y2")
+    figure.add_scatter(x=frame["quarter"], y=frame["noncurrent_rate"], name="Noncurrent loan rate",
+                       line=dict(color=_WARM))
+    figure.add_scatter(x=frame["quarter"], y=frame["nco_rate"], name="Net charge-off rate",
+                       yaxis="y2", line=dict(color=_WARM_SOFT))
     figure.update_layout(
         margin=dict(l=10, r=10, t=40, b=10), yaxis_title="Noncurrent (%)",
         yaxis2=dict(title="NCO (%)", overlaying="y", side="right"), legend=dict(orientation="h"),
@@ -117,7 +130,7 @@ def acquirer_chart(frame: pd.DataFrame) -> go.Figure:
     clean = clean.loc[clean["acquirer"].astype(str).str.strip() != ""]
     grouped = clean.groupby("acquirer").size().nlargest(15).reset_index(name="failures")
     figure = px.bar(grouped.sort_values("failures"), x="failures", y="acquirer", orientation="h",
-                    color_discrete_sequence=["#0f766e"])
+                    color_discrete_sequence=[_WARM])
     figure.update_layout(
         title="Top acquirers in current filter", margin=dict(l=10, r=10, t=40, b=10),
         paper_bgcolor="rgba(255,255,255,0)", plot_bgcolor="rgba(255,255,255,0)",
@@ -140,7 +153,7 @@ def state_map(frame: pd.DataFrame) -> go.Figure:
     aggregation = "sum" if value_column == "assets_millions" else "count"
     grouped = frame.groupby("state")[value_column].agg(aggregation).reset_index()
     figure = px.choropleth(grouped, locations="state", locationmode="USA-states",
-                           color=value_column, scope="usa", color_continuous_scale="Tealgrn")
+                           color=value_column, scope="usa", color_continuous_scale=_WARM_SCALE)
     figure.update_layout(
         title="State-wise failures in current filter", margin=dict(l=10, r=10, t=30, b=10),
         paper_bgcolor="rgba(255,255,255,0)", geo_bgcolor="rgba(255,255,255,0)",
@@ -153,7 +166,7 @@ def state_map(frame: pd.DataFrame) -> go.Figure:
 def detail_chart(frame: pd.DataFrame, series: str) -> go.Figure:
     figure = go.Figure()
     clean = frame.dropna(subset=[series])
-    figure.add_scatter(x=clean["date"], y=clean[series], name=series)
+    figure.add_scatter(x=clean["date"], y=clean[series], name=series, line=dict(color=_WARM))
     figure.update_layout(
         title=f"{series} history", margin=dict(l=10, r=10, t=40, b=10),
         paper_bgcolor="rgba(255,255,255,0)", plot_bgcolor="rgba(255,255,255,0)",
@@ -166,7 +179,8 @@ def failure_overlay_chart(frame: pd.DataFrame, series: str) -> go.Figure:
     figure = go.Figure()
     if series in frame and frame[series].notna().any():
         clean = frame.dropna(subset=[series])
-        figure.add_scatter(x=clean["date"], y=clean[series], name=series, yaxis="y")
+        figure.add_scatter(x=clean["date"], y=clean[series], name=series, yaxis="y",
+                           line=dict(color=_WARM))
     if "failure_count" in frame:
         failures = frame.loc[frame["failure_count"].gt(0)]
         figure.add_bar(x=failures["date"], y=failures["failure_count"], name="Monthly failures",

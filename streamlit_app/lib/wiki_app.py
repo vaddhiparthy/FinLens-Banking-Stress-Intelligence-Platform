@@ -14,6 +14,7 @@ import re
 
 import mistune
 
+from streamlit_app.lib import wiki_architecture as wa
 from streamlit_app.lib import wiki_structure as ws
 
 ARCH_SLUG = ws.slug("System Architecture")
@@ -55,6 +56,10 @@ def _payload() -> dict:
             "nextT": next_t,
             "search": " ".join([title, a.get("summary", ""), a.get("body", "")]).lower(),
         }
+    # the System Architecture article carries the live Graphviz DOT; the SPA renders it client-side
+    # (viz.js + svg-pan-zoom) so the diagram is interactive in-place — no cross-frame navigation.
+    if ARCH_SLUG in out:
+        out[ARCH_SLUG]["dot"] = wa.ARCHITECTURE_DOT
     return out
 
 
@@ -138,7 +143,16 @@ def render_wiki_app(initial_slug: str | None) -> None:
     padding-top: 1rem; border-top: 1px solid {p['border']}; }}
   .pager a {{ font-weight: 700; font-size: .85rem; cursor: pointer; }}
   .noresult {{ color: {p['text_soft']}; font-size: .8rem; padding: .4rem .5rem; }}
-</style></head><body>
+  .diagram {{ height: 600px; border: 1px solid {p['border']}; border-radius: 12px;
+    background: {p['content_bg']}; overflow: hidden; margin: .2rem 0 1.3rem; }}
+  .diagram svg {{ width: 100% !important; height: 100% !important; }}
+  .diagram-msg {{ padding: 1rem; color: {p['text_soft']}; font-size: .85rem; }}
+  .svg-pan-zoom-control-background {{ fill: {p['content_bg']}; opacity: .9; }}
+  .svg-pan-zoom-control-element {{ fill: {p['accent']}; }}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@viz-js/viz@3.2.4/lib/viz-standalone.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+</head><body>
 <div class="wrap">
   <aside class="side">
     <div class="brand">FinLens Wiki<small>Banking Stress Intelligence</small></div>
@@ -151,25 +165,36 @@ def render_wiki_app(initial_slug: str | None) -> None:
 </div>
 <script>
   const DATA = {payload_js};
-  const ARCH = {json.dumps(ARCH_SLUG)};
   const main = document.getElementById('main');
-  function gotoArch() {{
-    // the diagram article keeps its Streamlit route (interactive pan/zoom); navigate the parent
-    try {{ window.parent.location.search = '?article=' + ARCH; }}
-    catch(e) {{ window.location.search = '?article=' + ARCH; }}
-  }}
   function setActive(slug) {{
     document.querySelectorAll('.tree-art').forEach(function(el) {{
       el.classList.toggle('active', el.getAttribute('data-slug') === slug);
     }});
   }}
+  function renderDiagram(host, dot) {{
+    // client-side Graphviz (viz.js) + pan/zoom, fit to frame; degrade gracefully if a CDN is down
+    if (typeof Viz === 'undefined') {{
+      host.innerHTML = '<div class="diagram-msg">Interactive diagram unavailable (offline).</div>';
+      return;
+    }}
+    Viz.instance().then(function(viz) {{
+      const svg = viz.renderSVGElement(dot);
+      host.appendChild(svg);
+      if (typeof svgPanZoom !== 'undefined') {{
+        svgPanZoom(svg, {{ zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,
+          minZoom: 0.3, maxZoom: 12, zoomScaleSensitivity: 0.4 }});
+      }}
+    }}).catch(function() {{
+      host.innerHTML = '<div class="diagram-msg">Diagram failed to render.</div>';
+    }});
+  }}
   function render(slug) {{
-    if (slug === ARCH) {{ gotoArch(); return; }}
     const a = DATA[slug];
     if (!a) return;
     let h = '<div class="crumb">' + (a.crumb || 'Wiki') + '</div>';
     h += '<div class="title">' + a.title + '</div>';
     if (a.summary) h += '<div class="lead">' + a.summary + '</div>';
+    if (a.dot) h += '<div class="diagram" id="wiki-diagram"></div>';
     h += '<div class="body">' + a.html + '</div>';
     h += '<div class="pager">';
     h += a.prev ? '<a data-slug="' + a.prev + '">‹ ' + a.prevT + '</a>' : '<span></span>';
@@ -177,6 +202,7 @@ def render_wiki_app(initial_slug: str | None) -> None:
     h += '</div>';
     main.innerHTML = h;
     main.scrollTop = 0;
+    if (a.dot) renderDiagram(document.getElementById('wiki-diagram'), a.dot);
     setActive(slug);
     document.querySelectorAll('.tree-art').forEach(function(el) {{
       if (el.getAttribute('data-slug') === slug) el.scrollIntoView({{block: 'nearest'}});
