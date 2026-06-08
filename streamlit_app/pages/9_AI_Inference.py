@@ -120,8 +120,8 @@ def _render_preview(out: dict) -> None:
     bank = out.get("bank_name")
     cert = out.get("bank_cert")
     if not bank or cert is None:
-        section_heading("Live preview", "Ask about a U.S. bank on the right and its model read "
-                        "appears here: score, risk tier, and what drives it.")
+        section_heading("Live preview", "Ask about a U.S. bank<span class='d-only'> on the right</span>"
+                        " and its model read appears here: score, risk tier, and what drives it.")
         if out.get("answer"):
             st.markdown(out["answer"])
         return
@@ -170,8 +170,8 @@ def _render_preview(out: dict) -> None:
 
 
 st.markdown('<div class="dash-title">AI Inference</div>'
-            '<div class="dash-sub">Interrogate any U.S. bank. The model read renders live on the '
-            'left as you chat.</div>', unsafe_allow_html=True)
+            '<div class="dash-sub">Interrogate any U.S. bank. The model read renders live'
+            '<span class="d-only"> on the left</span> as you chat.</div>', unsafe_allow_html=True)
 
 st.markdown(
     """
@@ -225,8 +225,9 @@ with left:
                  if m["role"] == "assistant" and isinstance(m.get("out"), dict)), None)
     if last is None:
         with st.container(border=True):
-            section_heading("Live preview", "Ask about a U.S. bank on the right and its model read "
-                            "appears here: distress score, risk tier, and the SHAP drivers behind it.")
+            section_heading("Live preview", "Ask about a U.S. bank<span class='d-only'> on the "
+                            "right</span> and its model read appears here: distress score, risk "
+                            "tier, and the SHAP drivers behind it.")
     else:
         with st.container(border=True):
             _render_preview(last)

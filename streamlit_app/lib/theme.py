@@ -2389,13 +2389,31 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
     .st-key-finlens_chat_open [data-testid="stChatMessage"] {{
         padding: .25rem .15rem; background: transparent;
     }}
+    /* directional copy shows on desktop, hides on mobile where the layout stacks */
+    .m-only {{ display: none; }}
     /* mobile (<=640px): scoped responsive tweaks; desktop above this width is untouched */
     @media (max-width: 640px) {{
         .block-container {{ padding-left: .85rem !important; padding-right: .85rem !important; }}
-        /* nav popover panel must fit a phone, not overflow it */
+        .d-only {{ display: none !important; }}
+        .m-only {{ display: inline !important; }}
+        /* nav popover panel near full-width so no underlying page text bleeds beside it */
         div[data-testid="stPopoverBody"] {{
-            min-width: 90vw !important; max-width: 94vw !important;
+            min-width: 96vw !important; max-width: 96vw !important;
         }}
+        /* comfortable tap targets in the nav panel (>=44px) */
+        div[data-testid="stPopoverBody"] div[data-testid="stButton"] > button {{
+            min-height: 44px !important;
+        }}
+        div[data-testid="stPopoverBody"] [data-testid="stExpander"] summary {{
+            min-height: 42px !important; display: flex !important; align-items: center !important;
+        }}
+        /* identity row stacks left instead of orphaning the name on the right */
+        .ham-metarow {{ flex-direction: column !important; align-items: flex-start !important;
+            gap: .1rem !important; width: 100% !important; }}
+        .ham-meta-r {{ text-align: left !important; align-self: flex-start !important;
+            margin: 0 !important; }}
+        /* read-only plotly widgets: drop the modebar that overlaps charts/gauges on touch */
+        [data-testid="stPlotlyChart"] .modebar {{ display: none !important; }}
         /* big display headings scale down so they don't wrap awkwardly */
         .landing-h1 {{ font-size: 2.2rem !important; }}
         .home-intro {{ font-size: .95rem !important; }}
@@ -2404,8 +2422,17 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         .browse-head {{ font-size: 1.25rem !important; }}
         /* the Browse divider is a vertical hairline — meaningless once columns stack */
         .browse-div {{ display: none !important; }}
-        /* section tabs (DE/AI sub-pages) wrap instead of squashing into unreadable slivers */
-        .stTabs [data-baseweb="tab-list"] {{ flex-wrap: wrap !important; }}
+        /* DE/AI section tabs: a horizontal scroller, not a tall vertical stack above content.
+           The tabs live in a stLayoutWrapper right after the .sectiontabs-anchor element. */
+        [data-testid="stElementContainer"]:has(.sectiontabs-anchor)
+            + [data-testid="stLayoutWrapper"] [data-testid="stHorizontalBlock"] {{
+            flex-direction: row !important; flex-wrap: nowrap !important;
+            overflow-x: auto !important; gap: .4rem !important;
+        }}
+        [data-testid="stElementContainer"]:has(.sectiontabs-anchor)
+            + [data-testid="stLayoutWrapper"] [data-testid="stColumn"] {{
+            flex: 0 0 auto !important; width: auto !important; min-width: max-content !important;
+        }}
     }}
     </style>
     """

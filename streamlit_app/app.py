@@ -131,8 +131,9 @@ st.markdown(
 )
 
 st.markdown('<div class="browse-head">Browse the project</div>'
-            '<div class="browse-head-sub">Interactive surfaces on the left · the technical build on '
-            'the right</div>', unsafe_allow_html=True)
+            '<div class="browse-head-sub">Interactive surfaces<span class="d-only"> on the left</span>'
+            ' · the technical build<span class="d-only"> on the right</span></div>',
+            unsafe_allow_html=True)
 
 _LEFT = [
     ("AI Inference", "Chat with the cited model and watch a bank's live read appear.",

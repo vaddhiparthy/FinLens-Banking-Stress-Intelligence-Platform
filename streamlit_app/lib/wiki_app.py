@@ -219,8 +219,10 @@ def render_wiki_app(initial_slug: str | None) -> None:
       const svg = viz.renderSVGElement(dot);
       host.appendChild(svg);
       if (typeof svgPanZoom !== 'undefined') {{
-        svgPanZoom(svg, {{ zoomEnabled: true, controlIconsEnabled: true, fit: true, center: true,
-          minZoom: 0.3, maxZoom: 12, zoomScaleSensitivity: 0.4 }});
+        const pz = svgPanZoom(svg, {{ zoomEnabled: true, controlIconsEnabled: true, fit: true,
+          center: true, minZoom: 0.3, maxZoom: 12, zoomScaleSensitivity: 0.4 }});
+        // on a phone, fit-to-width makes the wide diagram a thumbnail; zoom in so labels are legible
+        if (isMobile) {{ pz.zoomBy(2.4); pz.pan({{ x: 8, y: 8 }}); }}
       }}
       fitHeight();
     }}).catch(function() {{
