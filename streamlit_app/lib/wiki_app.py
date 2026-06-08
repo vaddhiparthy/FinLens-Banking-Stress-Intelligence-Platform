@@ -158,11 +158,16 @@ def render_wiki_app(initial_slug: str | None) -> None:
     .wrap {{ grid-template-columns: 1fr; height: auto; gap: .6rem; padding: 0; }}
     .side {{ border-right: none; border-bottom: 1px solid {p['border']}; padding-right: 0;
       padding-bottom: .6rem; height: auto; overflow: visible; }}
-    .main {{ height: auto; overflow: visible; padding-right: 0; }}
+    /* min-width:0 lets the grid item shrink below the wide svg's intrinsic size (no page overflow) */
+    .main {{ height: auto; overflow: visible; padding-right: 0; min-width: 0 !important; }}
     .title {{ font-size: 1.5rem; }}
     .lead {{ font-size: .92rem; }}
     .body {{ font-size: .92rem; }}
-    .diagram {{ height: 300px; }}
+    /* phone: scrollable frame showing the diagram at natural (legible) size, drag/scroll to pan;
+       the frame is pinned to the viewport width and scrolls the oversized svg internally */
+    .diagram {{ height: 420px; width: 100% !important; max-width: 100% !important; min-width: 0 !important;
+      overflow: auto !important; -webkit-overflow-scrolling: touch; }}
+    .diagram svg {{ width: auto !important; height: auto !important; max-width: none !important; }}
     /* show the collapsible tree toggle as a tappable bar */
     #treebox > summary.tree-toggle {{
       display: flex; align-items: center; gap: .4rem; cursor: pointer;
@@ -218,11 +223,13 @@ def render_wiki_app(initial_slug: str | None) -> None:
     Viz.instance().then(function(viz) {{
       const svg = viz.renderSVGElement(dot);
       host.appendChild(svg);
-      if (typeof svgPanZoom !== 'undefined') {{
-        const pz = svgPanZoom(svg, {{ zoomEnabled: true, controlIconsEnabled: true, fit: true,
+      // Phone: render the diagram at natural size in a scrollable frame so node labels are legible
+      // and the user pans by dragging/scrolling. svg-pan-zoom's fit-to-width shrank it to an
+      // unreadable thumbnail and kept re-fitting whenever fitHeight() resized the iframe.
+      // Desktop keeps the interactive pan/zoom diagram (unchanged).
+      if (!isMobile && typeof svgPanZoom !== 'undefined') {{
+        svgPanZoom(svg, {{ zoomEnabled: true, controlIconsEnabled: true, fit: true,
           center: true, minZoom: 0.3, maxZoom: 12, zoomScaleSensitivity: 0.4 }});
-        // on a phone, fit-to-width makes the wide diagram a thumbnail; zoom in so labels are legible
-        if (isMobile) {{ pz.zoomBy(2.4); pz.pan({{ x: 8, y: 8 }}); }}
       }}
       fitHeight();
     }}).catch(function() {{
