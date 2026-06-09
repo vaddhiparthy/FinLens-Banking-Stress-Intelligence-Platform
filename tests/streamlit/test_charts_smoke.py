@@ -9,6 +9,8 @@ from streamlit_app.lib.charts import (
     state_mix_donut,
     top_states_chart,
 )
+import pytest
+
 from streamlit_app.lib.data import load_acquirers, load_failures, load_metrics
 
 
@@ -16,6 +18,9 @@ def test_chart_builders_return_plotly_figures() -> None:
     failures = load_failures()
     metrics = load_metrics()
     acquirers = load_acquirers()
+
+    if failures.empty or metrics.empty or acquirers.empty:
+        pytest.skip("warehouse marts not built in this environment (no data to chart)")
 
     figures = [
         failures_by_year_chart(failures),

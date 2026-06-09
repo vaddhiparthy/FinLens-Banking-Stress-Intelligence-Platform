@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import importlib.util
+
 import pytest
 
 from finlens_ml.config import get_ml_settings
@@ -10,8 +12,14 @@ from finlens_ml.config import get_ml_settings
 _ARTIFACT = get_ml_settings().artifact_dir / "calibrated_h4.skops"
 _BOOSTER = get_ml_settings().artifact_dir / "booster_h4.txt"
 _HAS_MODEL = _ARTIFACT.exists() or _BOOSTER.exists()
+# The serving path imports skops; skip when the ML extra isn't installed (e.g. the
+# light `--all-groups` CI jobs) instead of erroring on import.
+_HAS_SKOPS = importlib.util.find_spec("skops") is not None
 
-_needs_model = pytest.mark.skipif(not _HAS_MODEL, reason="no trained model artifact present")
+_needs_model = pytest.mark.skipif(
+    not (_HAS_MODEL and _HAS_SKOPS),
+    reason="no trained model artifact present, or skops (ml extra) not installed",
+)
 
 
 @_needs_model
