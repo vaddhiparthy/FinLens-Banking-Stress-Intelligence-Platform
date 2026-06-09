@@ -91,6 +91,36 @@ Calibration: ECE 1.22e-04; in the top-scoring decile the model predicts 0.0035 v
 
 ---
 
+## Quickstart
+
+Runs locally on CPU with free public data ($0, no cloud). Requires Python 3.11–3.13 and [uv](https://docs.astral.sh/uv/).
+
+```bash
+git clone https://github.com/vaddhiparthy/FinLens-Banking-Stress-Intelligence-Platform.git
+cd FinLens-Banking-Stress-Intelligence-Platform
+
+# install runtime + ML + dev deps
+uv sync --extra ml --group dev
+
+# run the website (Business / Data Engineering / AI Engineering / Wiki surfaces)
+uv run streamlit run streamlit_app/app.py
+```
+
+Optional ML pipeline (builds the dataset from real FDIC data, trains, and serves):
+
+```bash
+uv run python ml/scripts/build_dataset.py --start 2008Q1   # ~448k bank-quarters into .duckdb
+uv run python ml/finlens_ml/train.py --horizon 4           # OOT eval + artifacts in ml/artifacts/
+uv run uvicorn finlens_ml.serve:app --port 8077            # FastAPI scoring (/health, /predict)
+```
+
+Run the tests with `uv run pytest -q`. The full multi-service topology (Streamlit, FastAPI,
+Postgres, Airflow) is defined in `docker-compose.prod.yml`; it targets the production VPS
+(external networks and vault-mounted secrets) and is not meant to be run as-is locally. See
+[docs/ml/RUN_LOCAL.md](docs/ml/RUN_LOCAL.md) for the detailed end-to-end ML walkthrough.
+
+---
+
 ## License
 
 This project is proprietary. All rights reserved. No use, copying, modification, distribution, or commercial use is permitted without the author's prior written authorization. See [LICENSE](LICENSE).
