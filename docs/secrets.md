@@ -19,9 +19,6 @@ No secret values belong in committed code, markdown, YAML, SQL, notebooks, or sh
 | `FRED_SERIES_IDS` | tracked series list | `ingestion/fred.py` |
 | `FDIC_QBP_SOURCE_URL` | normalized QBP CSV/JSON artifact URL | `ingestion/qbp.py`, Stress Pulse |
 | `NIC_CURRENT_PARENT_SOURCE_URL` | current-parent NIC artifact URL | `ingestion/nic.py` |
-| `AWS_ACCESS_KEY_ID` | AWS programmatic identity | optional export/deployment work |
-| `AWS_SECRET_ACCESS_KEY` | AWS programmatic secret | optional export/deployment work |
-| `AWS_DEFAULT_REGION` | default AWS region | optional export/deployment work |
 | `SNOWFLAKE_ACCOUNT` | Snowflake account locator | `snowflake`, `dbt` |
 | `SNOWFLAKE_USER` | Snowflake username | `snowflake`, `dbt` |
 | `SNOWFLAKE_PASSWORD` | Snowflake password | `snowflake`, `dbt` |
