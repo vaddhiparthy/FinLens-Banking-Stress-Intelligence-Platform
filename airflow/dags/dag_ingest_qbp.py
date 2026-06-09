@@ -21,8 +21,8 @@ with DAG(
             "--sources qbp --skip-warehouse"
         ),
     )
-    # Quarterly chain: fresh QBP financials ARE the model's training data, so once they
-    # land, rebuild the warehouse, then retrain the model on the new quarter.
+    # Quarterly chain: once fresh QBP financials land, rebuild the warehouse.
+    # Model retraining is intentionally skipped (trained offline + committed).
     transform = TriggerDagRunOperator(
         task_id="trigger_transform",
         trigger_dag_id="dag_transform_and_quality",
@@ -30,10 +30,4 @@ with DAG(
         poke_interval=60,
         reset_dag_run=True,
     )
-    retrain = TriggerDagRunOperator(
-        task_id="trigger_ml_retrain",
-        trigger_dag_id="dag_ml_retrain",
-        wait_for_completion=False,
-        reset_dag_run=True,
-    )
-    ingest >> transform >> retrain
+    ingest >> transform
