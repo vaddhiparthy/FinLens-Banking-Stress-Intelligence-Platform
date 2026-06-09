@@ -38,13 +38,11 @@ ml = [
   "skops>=0.11",
   "fairlearn>=0.12",
 ]
-# evidently pins plotly<6, which is mutually exclusive with the app's plotly>=6 in a
-# single resolved environment. It therefore lives in its OWN extra and is installed
-# isolated (the monitoring job uses only evidently's programmatic Report API, no
-# plotly rendering). Keeping it out of `ml` lets `uv sync --extra ml` resolve cleanly.
-monitor = [
-  "evidently>=0.7",
-]
+# Drift monitoring uses Evidently (see ml/finlens_ml/monitor.py, lazy import). Evidently
+# pins plotly<6, which is unsatisfiable against the app's plotly>=6 in a single resolved
+# environment, so it is NOT a declared extra (that made the universal lock unresolvable and
+# broke every CI job). Install it out-of-band for the isolated monitoring run, e.g.
+#   uv pip install "evidently>=0.7"   # in a throwaway env, plotly<6
 
 [dependency-groups]
 dev = [
