@@ -7,11 +7,17 @@ import pytest
 from finlens_ml.config import get_ml_settings
 from finlens_ml.features import FEATURE_COLUMNS
 
-_BOOSTER = get_ml_settings().artifact_dir / "booster_h4.txt"
+_settings = get_ml_settings()
+_BOOSTER = _settings.artifact_dir / "booster_h4.txt"
 _needs_model = pytest.mark.skipif(not _BOOSTER.exists(), reason="no trained booster present")
+# global_importance reads the warehouse for its background sample; needs the duckdb too.
+_needs_warehouse = pytest.mark.skipif(
+    not (_BOOSTER.exists() and _settings.duckdb_path.exists()),
+    reason="no trained booster or duckdb warehouse present",
+)
 
 
-@_needs_model
+@_needs_warehouse
 def test_global_importance_ranks_all_features() -> None:
     pytest.importorskip("shap")
     from finlens_ml.explain import global_importance
