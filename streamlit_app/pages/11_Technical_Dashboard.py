@@ -127,10 +127,6 @@ if st.session_state["td_view"] == "arch":
     page_footer()
     st.stop()
 
-st.markdown('<div class="dash-sub">The model and the pipeline at a glance: out-of-time performance, '
-            'calibration, feature drivers, and live data-engineering status. Real artifacts; no '
-            'commentary.</div>', unsafe_allow_html=True)
-
 oot = _oot()
 viz = mc.load_viz_pack()
 pf = mc.load_panel_facts() or {}

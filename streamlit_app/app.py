@@ -14,6 +14,7 @@ for sub in ("", "src", "ml"):
         sys.path.insert(0, p)
 
 from streamlit_app.lib.page_shell import home_navigation, page_footer
+from streamlit_app.lib.landing import render_landing
 from streamlit_app.lib.telemetry import record_page_view
 from streamlit_app.lib.theme import app_css, ensure_theme_state, get_theme_mode
 from streamlit_app.lib.ui_components import inject_styles
@@ -172,67 +173,8 @@ if not _acked:
 
 home_navigation()
 
-# FinLens title now lives in the global header (centered); the page opens straight on the intro.
-st.markdown(
-    """
-    <p class="home-intro">
-        FinLens turns free public banking data into an early-warning read on U.S. bank distress. It
-        lands FDIC Call Reports, the failed-bank list, FRED macro series, and FFIEC institution data
-        as immutable raw snapshots, runs them through a Bronze → Silver → Gold dbt pipeline on DuckDB
-        (quality-gated by Great Expectations), and scores each bank's probability of financial distress
-        within four quarters with a calibrated, monotone, 12-seed bagged LightGBM hazard model
-        evaluated out-of-time, explained with SHAP, served via FastAPI, and queryable through a
-        cited assistant.
-    </p>
-    """,
-    unsafe_allow_html=True,
-)
-
-_LEFT = [
-    ("AI Inference", "Chat with the cited model and watch a bank's live read appear.",
-     "pages/9_AI_Inference.py", None),
-    ("Machine Learning", "Score any bank, see what actually happened, and run what-ifs.",
-     "pages/3_Early_Warning.py", None),
-    ("Business Dashboard", "Earnings, asset quality, the 2023 shock, failures, macro: at a glance.",
-     "pages/10_Business_Dashboard.py", None),
-    ("FinLens-Wiki", "The encyclopedia: domain, architecture, data engineering, and the model.",
-     "pages/6_Wiki.py", None),
-]
-_RIGHT = [
-    ("Technical Dashboard", "Model performance, calibration, drivers, and live pipeline status.",
-     "pages/11_Technical_Dashboard.py", None),
-    ("AI Pipeline", "The AI Engineering surface: training, evaluation, SHAP, drift, governance.",
-     "pages/7_AI_Engineering.py", None),
-    ("Data Engineering Pipeline", "The DE surface: source contracts, warehouse, quality, operations.",
-     "pages/4_Data_Engineering.py", None),
-    ("Architecture Diagram", "The whole platform end to end, every component, hover for detail.",
-     "pages/11_Technical_Dashboard.py", "ARCH"),
-]
-
-
-def _nav(items: list, side: str) -> None:
-    for title, desc, target, article in items:
-        key = f"nav_{side}_{title.lower().replace(' ', '_')}"
-        # clean text link; the one-line description is the hover help (no boxes)
-        if st.button(title, key=key, help=desc, use_container_width=True):
-            if article == "ARCH":
-                st.session_state["td_view"] = "arch"  # open the full-screen architecture immersion
-            elif article:
-                st.session_state["wiki_article"] = article
-            elif target.endswith("4_Data_Engineering.py"):
-                st.session_state["technical_section"] = "pipeline"
-            elif target.endswith("11_Technical_Dashboard.py"):
-                st.session_state["td_view"] = "dashboard"
-            st.switch_page(target)
-
-
-with st.container(key="browse_box"):
-    col_l, col_r = st.columns(2)
-    with col_l:
-        st.markdown('<div class="browse-col-h">Interactive</div>', unsafe_allow_html=True)
-        _nav(_LEFT, "l")
-    with col_r:
-        st.markdown('<div class="browse-col-h">Technical</div>', unsafe_allow_html=True)
-        _nav(_RIGHT, "r")
+# The landing is a bento showcase: real-data preview tiles (chosen by adversarial value+aesthetic
+# review) that click through to the live surfaces. See streamlit_app/lib/landing.py.
+render_landing()
 
 page_footer()

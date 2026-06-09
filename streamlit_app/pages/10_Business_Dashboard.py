@@ -33,8 +33,8 @@ home_navigation()
 record_page_view("business_dashboard", "business")
 
 st.markdown('<div class="dash-title">Business Dashboard</div>'
-            '<div class="dash-sub">The banking story at a glance: earnings, asset quality, margins, '
-            'failures, and the macro backdrop. Live public data; no commentary.</div>',
+            '<div class="dash-sub">Earnings, asset quality, margins, failures, and the macro backdrop '
+            'across the U.S. banking system.</div>',
             unsafe_allow_html=True)
 
 stress = load_stress_pulse()

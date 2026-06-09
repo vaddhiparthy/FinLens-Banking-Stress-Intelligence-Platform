@@ -90,10 +90,14 @@ digraph FinLens {
   duck -> chat [style=dotted, dir=none];
   art -> chat [style=dotted, dir=none];
   chat -> streamlit;
-  airflow -> ingest [style=dashed];
-  airflow -> silver [style=dashed];
-  quality -> raw [style=dotted, dir=none];
-  quality -> gold [style=dotted, dir=none];
+  // Control-flow, NOT data-flow: Airflow's thin DAGs schedule the Python ingestion and the dbt
+  // build (they call the same entry points; data does not pass through Airflow). Distinct colour +
+  // open arrowhead + "schedules" label so these never read as a data source feeding Python.
+  airflow -> ingest [style=dashed, color="#9a86b8", fontcolor="#9a86b8", fontsize=8.5, label="schedules", arrowhead=vee, constraint=false];
+  airflow -> silver [style=dashed, color="#9a86b8", fontcolor="#9a86b8", fontsize=8.5, label="schedules", arrowhead=vee, constraint=false];
+  // Association, not flow: Great Expectations validates these layers (no data moves along the edge).
+  quality -> raw [style=dotted, dir=none, color="#5f9e87", fontcolor="#5f9e87", fontsize=8.5, label="validates", constraint=false];
+  quality -> gold [style=dotted, dir=none, color="#5f9e87", fontcolor="#5f9e87", fontsize=8.5, label="validates", constraint=false];
 }
 """
 

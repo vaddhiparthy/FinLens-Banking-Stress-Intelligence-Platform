@@ -201,9 +201,11 @@ def page_footer() -> None:
         '<div class="site-footer">'
         '<span class="site-footer-brand">FinLens</span>'
         '<span class="site-footer-note">Not financial, investment, or supervisory advice. '
-        'An AI/ML portfolio project — models can and will make mistakes; for any decision about a '
+        'An AI/ML portfolio project. Models can and will make mistakes; for any decision about a '
         'bank or financial institution, rely only on official U.S. government sources.</span>'
-        '<span class="site-footer-right">Surya Vaddhiparthy'
+        '<span class="site-footer-right">'
+        '<a class="name-link" href="https://surya.vaddhiparthy.com/" target="_blank" '
+        'rel="noopener">Surya Vaddhiparthy</a>'
         '<span class="site-footer-rights">All rights reserved</span></span>'
         '</div>',
         unsafe_allow_html=True,
@@ -294,7 +296,6 @@ def _render_section_tabs(active_page: str, mode: str) -> None:
 # sidebar so its open/closed state survives Streamlit reruns (expanders/popovers do not).
 _NAV_GROUPS = [
     ("Business", [
-        ("Business Dashboard", "pages/10_Business_Dashboard.py"),
         ("Stress Pulse", "pages/0_Stress_Pulse.py"),
         ("Failure Forensics", "pages/1_Failure_Forensics.py"),
         ("Macro Transmission", "pages/2_Macro_Transmission.py"),
@@ -304,7 +305,6 @@ _NAV_GROUPS = [
     ("AI Engineering", [
         ("AI Inference", "pages/9_AI_Inference.py"),
         ("AI Pipeline", "pages/7_AI_Engineering.py"),
-        ("Technical Dashboard", "pages/11_Technical_Dashboard.py"),
     ]),
     ("Data Engineering", [
         ("Data Engineering Pipeline", "pages/4_Data_Engineering.py"),
@@ -312,6 +312,10 @@ _NAV_GROUPS = [
     ("Architecture", [
         ("Architecture Diagram", "WIKI:system-architecture"),
         ("Wiki", "pages/6_Wiki.py"),
+    ]),
+    ("Dashboards", [
+        ("Technical Dashboard", "pages/11_Technical_Dashboard.py"),
+        ("Business Dashboard", "pages/10_Business_Dashboard.py"),
     ]),
 ]
 
@@ -343,7 +347,9 @@ def render_nav(active_page: str, mode: str) -> None:
                     unsafe_allow_html=True)
     with bar_r:
         st.markdown(
-            '<div class="hdr-name"><span class="hdr-name-main">Surya Vaddhiparthy</span>'
+            '<div class="hdr-name">'
+            '<a class="name-link" href="https://surya.vaddhiparthy.com/" target="_blank" '
+            'rel="noopener"><span class="hdr-name-main">Surya Vaddhiparthy</span></a>'
             '<span class="hdr-name-cred">M.S. Data Science</span></div>',
             unsafe_allow_html=True,
         )
@@ -356,7 +362,8 @@ def render_nav(active_page: str, mode: str) -> None:
                 '<span class="ham-brand-tag">Banking Stress Intelligence</span></div>'
                 '<div class="ham-metarow">'
                 f'<span class="ham-meta-date">{_date}</span>'
-                '<span class="ham-meta-name">Surya Vaddhiparthy</span></div>'
+                '<a class="name-link" href="https://surya.vaddhiparthy.com/" target="_blank" '
+                'rel="noopener"><span class="ham-meta-name">Surya Vaddhiparthy</span></a></div>'
                 f'<div class="ham-meta-time">{now.strftime("%I:%M %p ET")}</div>'
                 '<div class="ham-navlabel">Navigation</div>',
                 unsafe_allow_html=True,

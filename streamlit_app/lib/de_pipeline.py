@@ -44,8 +44,10 @@ def dag_chart(frame: pd.DataFrame) -> go.Figure:
     link_colors = []
     link_labels = []
     for row in frame.itertuples():
-        color = _status_color(row.status, palette)
-        link_colors.append(color)
+        # On-brand orange ribbons (soft orange for healthy flows, deep brick otherwise) instead of
+        # the off-brand teal/green, so the pipeline visual matches the cream + #bf6d47 brand.
+        ok = str(row.status).lower().startswith(("success", "ok", "pass", "active", "up", "fresh"))
+        link_colors.append("rgba(191,109,71,0.42)" if ok else "rgba(168,67,31,0.46)")
         link_labels.append(f"{row.flow_no}. {row.flow_name}, {row.status}")
     figure = go.Figure(
         go.Sankey(
@@ -55,14 +57,14 @@ def dag_chart(frame: pd.DataFrame) -> go.Figure:
                 pad=18,
                 thickness=18,
                 color=[
-                    palette["accent"],
-                    "rgba(180, 170, 156, 0.7)",
-                    palette["link"],
-                    "rgba(180, 170, 156, 0.7)",
-                    palette["accent_soft"],
-                    palette["teal_soft"],
-                    palette["content_bg"],
-                    palette["rose"],
+                    "#bf6d47",                  # FDIC
+                    "rgba(191,109,71,0.55)",    # QBP
+                    "#a8431f",                  # FRED
+                    "rgba(191,109,71,0.55)",    # NIC
+                    "#e6cba9",                  # Bronze
+                    "#d8b48f",                  # Silver
+                    "#cf9b6d",                  # Gold
+                    "#8f3f22",                  # Dashboards
                 ],
             ),
             link=dict(

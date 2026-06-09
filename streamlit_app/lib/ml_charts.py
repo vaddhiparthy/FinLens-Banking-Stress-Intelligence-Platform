@@ -231,8 +231,10 @@ def probability_gauge(prob: float, threshold: float, mode: str | None = None,
     axis maximum as a percentage (default 100). A smaller cap makes small, realistic distress
     probabilities (and slider moves) visible instead of a frozen needle near zero."""
     pal = get_palette(mode)
-    green, amber, red = pal["teal"], pal.get("sand", "#c69026"), pal["rose"]
-    amber = "#c69026"
+    # On-brand burnt-orange risk ramp (tan -> orange -> deep brick) instead of green/amber/red,
+    # so the signature gauge harmonizes with the cream + #bf6d47 brand.
+    green, amber, red = "#cdab86", "#d08a5e", "#a8431f"
+    amber = "#d08a5e"
     pct = prob * 100
     cap = 100.0 if cap is None else max(threshold * 100 * 1.2, float(cap))
     ndp = 2 if cap >= 20 else 3  # more decimals when the axis is zoomed in
@@ -250,9 +252,9 @@ def probability_gauge(prob: float, threshold: float, mode: str | None = None,
             "bgcolor": "rgba(0,0,0,0)",
             "borderwidth": 0,
             "steps": [
-                {"range": [0, threshold * 100 / 2], "color": "rgba(87,171,90,0.12)"},
-                {"range": [threshold * 100 / 2, threshold * 100], "color": "rgba(198,144,38,0.14)"},
-                {"range": [threshold * 100, cap], "color": "rgba(229,83,75,0.12)"},
+                {"range": [0, threshold * 100 / 2], "color": "rgba(205,171,134,0.14)"},
+                {"range": [threshold * 100 / 2, threshold * 100], "color": "rgba(208,138,94,0.16)"},
+                {"range": [threshold * 100, cap], "color": "rgba(168,67,31,0.13)"},
             ],
             "threshold": {"line": {"color": pal["text_soft"], "width": 2}, "thickness": 0.8,
                           "value": threshold * 100},

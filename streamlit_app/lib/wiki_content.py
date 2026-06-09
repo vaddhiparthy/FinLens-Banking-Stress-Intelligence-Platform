@@ -9,7 +9,7 @@ ARTICLES = {'About FinLens': {'cluster': 'Orientation',
                               'serves them through a deliberately small business surface and two substantive '
                               'engineering surfaces (Data Engineering and AI Engineering). The goal is to demonstrate '
                               'end-to-end data and ML engineering on a real banking problem.',
-                   'body': 'FinLens is built and maintained by Surya Vaddhiparthy (M.S., Data Science) as a '
+                   'body': 'FinLens is built and maintained by [Surya Vaddhiparthy](https://surya.vaddhiparthy.com/) (M.S., Data Science) as a '
                            'portfolio project at `https://surya.vaddhiparthy.com/finlens/`. The platform is documented '
                            'in full at the same address.\n'
                            '\n'

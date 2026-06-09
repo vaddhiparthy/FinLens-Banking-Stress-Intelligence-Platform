@@ -944,6 +944,10 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
     .hdr-name {{ text-align: right; line-height: 1.15; }}
     .hdr-name-main {{ display: block; font-weight: 700; font-size: .85rem; color: {palette["text_main"]}; }}
     .hdr-name-cred {{ display: block; font-size: .62rem; color: {palette["text_soft"]}; }}
+    /* name links to the personal homepage; text unchanged, color inherited, subtle accent on hover */
+    .name-link {{ color: inherit !important; text-decoration: none !important; cursor: pointer; }}
+    .name-link:hover, .name-link:hover .hdr-name-main, .name-link:hover .ham-meta-name {{
+        color: {palette["accent"]} !important; }}
     /* Declare a light color-scheme so mobile Chrome "auto dark" never force-darkens the app into
        black-on-black (it respects this and leaves light surfaces alone). */
     html, :root {{ color-scheme: light only !important; }}

@@ -23,6 +23,33 @@ RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
 RUN pip install --no-cache-dir uv \
     && uv pip install --system . "lightgbm>=4.5" "shap>=0.46" "skops>=0.11"
 
+# Force a light color scheme app-wide. The app is light-themed (base="light"), but Streamlit and its
+# baseweb/glide-data-grid components self-theme to DARK when the user's OS reports
+# prefers-color-scheme: dark, producing black popovers and black dataframes on dark-mode phones.
+# Overriding window.matchMedia (before Streamlit's bundle reads it) makes every component render light.
+RUN python3 - <<'PY'
+import streamlit, pathlib
+idx = pathlib.Path(streamlit.__file__).parent / "static" / "index.html"
+html = idx.read_text(encoding="utf-8")
+script = (
+    "<script>(function(){var o=window.matchMedia&&window.matchMedia.bind(window);if(!o)return;"
+    "window.matchMedia=function(q){try{"
+    "if(/prefers-color-scheme\\s*:\\s*dark/i.test(q))return{matches:false,media:q,onchange:null,"
+    "addEventListener:function(){},removeEventListener:function(){},addListener:function(){},"
+    "removeListener:function(){},dispatchEvent:function(){return false;}};"
+    "if(/prefers-color-scheme\\s*:\\s*light/i.test(q))return{matches:true,media:q,onchange:null,"
+    "addEventListener:function(){},removeEventListener:function(){},addListener:function(){},"
+    "removeListener:function(){},dispatchEvent:function(){return false;}};"
+    "}catch(e){}return o(q);};})();</script>"
+)
+if "matchMedia=function" not in html:
+    html = html.replace("<head>", "<head>" + script, 1)
+    idx.write_text(html, encoding="utf-8")
+    print("patched", idx)
+else:
+    print("already patched")
+PY
+
 EXPOSE 8501
 
 CMD ["streamlit", "run", "streamlit_app/app.py", "--server.address=0.0.0.0", "--server.port=8501", "--server.headless=true", "--server.enableCORS=false", "--server.enableXsrfProtection=false"]
