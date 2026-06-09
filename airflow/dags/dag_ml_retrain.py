@@ -17,7 +17,7 @@ from airflow import DAG
 with DAG(
     dag_id="dag_ml_retrain",
     start_date=datetime(2026, 4, 23),
-    schedule="0 6 5 1,4,7,10 *",  # quarterly, 5th of the month after quarter close
+    schedule=None,  # chain-triggered by the quarterly QBP -> transform pipeline
     catchup=False,
     default_args=default_args,
     tags=["ml", "retrain"],

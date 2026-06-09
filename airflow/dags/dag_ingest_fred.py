@@ -8,7 +8,7 @@ from airflow import DAG
 with DAG(
     dag_id="dag_ingest_fred",
     start_date=datetime(2026, 4, 23),
-    schedule="@hourly",
+    schedule="@daily",
     catchup=False,
     default_args=default_args,
 ) as dag:

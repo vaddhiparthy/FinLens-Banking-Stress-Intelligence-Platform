@@ -62,7 +62,7 @@ def _normalize_fdic_summary(payload: bytes) -> bytes:
     try:
         document = json.loads(payload.decode("utf-8-sig"))
     except (UnicodeDecodeError, json.JSONDecodeError):
-        return payload
+        return json.dumps([]).encode("utf-8")
 
     by_year: dict[str, dict[str, float | str | None]] = {}
     for item in document.get("data", []):
@@ -133,7 +133,7 @@ def _normalize_fdic_summary(payload: bytes) -> bytes:
         )
 
     if not rows:
-        return payload
+        return json.dumps([]).encode("utf-8")
     return json.dumps(rows, indent=2).encode("utf-8")
 
 

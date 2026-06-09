@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     fdic_failed_banks_url: str = "https://www.fdic.gov/bank-failures/download-data.csv"
     fdic_qbp_source_url: str | None = (
         "https://api.fdic.gov/banks/summary?"
-        "filters=STNAME:%22United%20States%22%20AND%20YEAR:%5B%221985%22%20TO%20%222025%22%5D&"
+        "filters=STNAME:%22All%20States%20and%20Territories%22%20AND%20YEAR:%5B%221985%22%20TO%20%222025%22%5D&"
         "fields=YEAR,STNAME,ASSET,DEP,EQ,NETINC,NIM,DRLNLS,P9LNLS&"
         "sort_by=YEAR&sort_order=ASC&limit=100&format=json"
     )

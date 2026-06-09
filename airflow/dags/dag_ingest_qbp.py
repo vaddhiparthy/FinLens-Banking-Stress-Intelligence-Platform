@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from airflow.operators.bash import BashOperator
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from common import default_args
 
 from airflow import DAG
@@ -12,7 +13,7 @@ with DAG(
     catchup=False,
     default_args=default_args,
 ) as dag:
-    BashOperator(
+    ingest = BashOperator(
         task_id="ingest_qbp",
         bash_command=(
             "cd /opt/finlens && "
@@ -20,3 +21,19 @@ with DAG(
             "--sources qbp --skip-warehouse"
         ),
     )
+    # Quarterly chain: fresh QBP financials ARE the model's training data, so once they
+    # land, rebuild the warehouse, then retrain the model on the new quarter.
+    transform = TriggerDagRunOperator(
+        task_id="trigger_transform",
+        trigger_dag_id="dag_transform_and_quality",
+        wait_for_completion=True,
+        poke_interval=60,
+        reset_dag_run=True,
+    )
+    retrain = TriggerDagRunOperator(
+        task_id="trigger_ml_retrain",
+        trigger_dag_id="dag_ml_retrain",
+        wait_for_completion=False,
+        reset_dag_run=True,
+    )
+    ingest >> transform >> retrain
