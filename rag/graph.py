@@ -162,7 +162,7 @@ def _pick_primary(cands: list, phrase: str):
     return pool[0][1], pool[0][2]
 
 
-def _detect_bank(question: str):
+def _detect_bank_single(question: str):
     """Resolve any bank the question names -> (cert, display_name), or None. When a name maps to
     several CERTs (e.g. a legacy charter ending 2009 plus the active 2026 entity), prefer the one
     with the freshest filing so 'tell me about Fifth Third Bank' resolves to the active bank."""
@@ -273,6 +273,193 @@ def _detect_bank(question: str):
         # resolve to the PRIMARY active entity for that core (not a Trust/regional sub-charter)
         return _pick_primary(cores[best_core[1]], best_core[1])
     return None
+
+
+# ---------------------------------------------------------------------------
+# Bank-name search + disambiguation (powers the chat). _detect_bank_single above
+# resolves the single best match (used to ground the model / bias retrieval). The
+# helpers below enumerate ALL institutions a short query could mean, collapse the
+# charters of one bank, and hand the chat a candidate list when the query is
+# ambiguous, so it asks "which one did you mean?" instead of guessing or dumping.
+# ---------------------------------------------------------------------------
+
+_RESOLVE_STOP = {"the", "a", "an", "of", "and", "or", "what", "how", "why", "when", "where",
+                 "which", "who", "tell", "me", "about", "is", "are", "was", "were", "did",
+                 "does", "do", "it", "this", "that", "model", "data", "give", "show", "happened",
+                 "to", "for", "on", "in", "explain", "you", "your", "can", "could", "would",
+                 "should", "please", "more", "most", "risky", "risk", "score", "vs", "versus",
+                 "compare", "compared", "between", "with"}
+
+
+def _qord(quarter: str) -> int:
+    """'2026Q1' -> a sortable quarter ordinal (year*4 + q). 0 if unparseable. Freshness proxy:
+    live_bank_directory exposes `quarter` but not obs_qord, so we derive recency from it."""
+    import re
+    m = re.match(r"(\d{4})q([1-4])", str(quarter).strip().lower())
+    return int(m.group(1)) * 4 + int(m.group(2)) if m else 0
+
+
+@lru_cache(maxsize=1)
+def _search_rows():
+    """Per-bank search records over the WHOLE live directory (cert, display, lower-name,
+    distinctive-token tuple, alnum core, recency ordinal, state), plus the freshest ordinal in
+    the panel. This is the dropdown's own source, so the chat searches exactly what it lists."""
+    import re
+    from finlens_ml import scenario
+    df = scenario.live_bank_directory()
+    rows = []
+    maxq = 0
+    for _, r in df.iterrows():
+        nm = str(r.get("bank_name") or "").strip()
+        if not nm:
+            continue
+        nl = nm.lower()
+        dtoks = tuple(t for t in re.findall(r"[a-z0-9]+", nl)
+                      if t not in _GENERIC_NAME_WORDS and len(t) >= 3)
+        core = re.sub(r"[^a-z0-9]", "", nl)
+        oq = _qord(r.get("quarter"))
+        maxq = max(maxq, oq)
+        rows.append({"cert": int(r["cert"]), "disp": nm, "nl": nl, "dtoks": dtoks, "core": core,
+                     "oq": oq, "state": str(r.get("state") or "")})
+    return rows, maxq
+
+
+def _prefix_tokens(a, b) -> bool:
+    """True if token tuple a is a non-empty leading prefix of b (so b is a sub-charter of a)."""
+    return bool(a) and len(a) <= len(b) and tuple(b[:len(a)]) == tuple(a)
+
+
+def _charter_of(lead, sub) -> bool:
+    """Treat `sub` as a charter of `lead` only when lead's distinctive tokens prefix sub's AND
+    the shared lead is specific: >=2 tokens ([jpmorgan, chase] vs [..., dearborn]) or an exact
+    duplicate. A single shared common token (e.g. 'america') must NOT merge unrelated banks."""
+    return _prefix_tokens(lead, sub) and (len(lead) >= 2 or tuple(lead) == tuple(sub))
+
+
+def _dedupe_entities(ranked: list) -> list:
+    """Collapse the charters of one institution while keeping the lead charter."""
+    kept: list = []
+    for b in ranked:
+        dt = b["dtoks"]
+        drop = False
+        for i, k in enumerate(kept):
+            if _charter_of(k["dtoks"], dt):
+                drop = True
+                break
+            if _charter_of(dt, k["dtoks"]):
+                kept[i] = b
+                drop = True
+                break
+        if not drop:
+            kept.append(b)
+    return kept
+
+
+_CARRIER = {"tell", "me", "about", "whats", "what", "is", "are", "was", "were", "the", "a", "an",
+            "how", "why", "when", "which", "show", "give", "research", "please", "can", "could",
+            "you", "explain", "does", "do", "know", "i", "want", "need", "info", "information",
+            "describe", "details", "detail", "anything", "hey", "hi", "ok", "risky", "risk"}
+
+
+def _name_phrase(question: str) -> str:
+    """The bank-name part of a query: the text with leading/trailing carrier words ('tell me
+    about', 'how risky is', '?') stripped, e.g. 'tell me about wells' -> 'wells'. Generic NAME
+    words (bank, of, national) are KEPT so 'bank of america' stays intact."""
+    import re
+    toks = re.findall(r"[a-z0-9&.]+", question.lower())
+    while toks and toks[0] in _CARRIER:
+        toks.pop(0)
+    while toks and toks[-1] in _CARRIER:
+        toks.pop()
+    return " ".join(toks)
+
+
+def _token_candidates(question: str, limit: int = 8) -> list:
+    """Every distinct institution a query could name, ranked. Anchors on the typed name phrase:
+    a whole-words match inside a bank name scores highest ('chase' -> 'JPMorgan Chase Bank'),
+    a glued/prefix match catches partials and spacing ('citi' -> 'Citibank', 'towne bank' ->
+    'TowneBank'). Prefers active charters and collapses each bank's charters to one entry."""
+    import re
+    rows, maxq = _search_rows()
+    phrase = _name_phrase(question)
+    words = phrase.split()
+    if not phrase or len(phrase) < 3:
+        return []
+    # the phrase must carry a distinctive (non-generic, non-carrier) word, else 'the bank' /
+    # 'first national' would match nearly everything.
+    if not any(w not in _GENERIC_NAME_WORDS and w not in _CARRIER for w in words):
+        return []
+    pj = re.escape(phrase)
+    pcore = re.sub(r"[^a-z0-9]", "", phrase)
+    fresh_cut = maxq - 5  # ~last five quarters still counts as an active institution
+    scored = []
+    for b in rows:
+        nl, core = b["nl"], b["core"]
+        if nl == phrase or core == pcore:
+            score = 6                        # exact name (modulo spacing/punctuation)
+        elif re.match(rf"{pj}(?![a-z0-9])", nl):
+            score = 5                        # name STARTS WITH the phrase ("PNC Bank ...")
+        elif re.search(rf"(?<![a-z0-9]){pj}(?![a-z0-9])", nl):
+            score = 4                        # phrase appears as whole words inside ("JPMorgan Chase")
+        elif len(pcore) >= 4 and core.startswith(pcore):
+            score = 3                        # glued prefix ("citi"->citibank, "townebank")
+        elif len(pcore) >= 4 and pcore in core:
+            score = 2                        # glued anywhere inside
+        else:
+            continue
+        scored.append((score, b))
+    if not scored:
+        return []
+    fresh = [s for s in scored if s[1]["oq"] >= fresh_cut]
+    pool = fresh or scored
+    best = max(s for s, _b in pool)
+    top = [t for t in pool if t[0] == best]
+    # freshest first, then the lead charter (fewest distinctive tokens), then the shortest name
+    top.sort(key=lambda x: (-x[1]["oq"], len(x[1]["dtoks"]), len(x[1]["nl"])))
+    deduped = _dedupe_entities([b for _s, b in top])
+    return [(b["cert"], b["disp"]) for b in deduped[:limit]]
+
+
+def _resolve_banks(question: str, limit: int = 8) -> list:
+    """Resolve a query to candidate (cert, name) pairs. One element -> answer it directly;
+    several -> the chat asks which one; empty -> no bank named, take the methodology/LLM path."""
+    q = question.lower()
+    for frag, cert in _SHORT_FORMS.items():
+        if frag in q:
+            return [(cert, _cert_to_name().get(cert, frag.title()))]
+    cands = _token_candidates(question, limit=limit)
+    if cands:
+        return cands
+    single = _detect_bank_single(question)
+    return [single] if single else []
+
+
+def _detect_bank(question: str):
+    """Single best bank for a query (or None); used to ground the model and bias retrieval."""
+    cands = _resolve_banks(question)
+    return cands[0] if cands else None
+
+
+def answer_for_cert(cert: int, name: str | None = None) -> dict:
+    """Deterministic answer for an explicitly chosen institution (a disambiguation button)."""
+    cert = int(cert)
+    if not name:
+        rows, _maxq = _search_rows()
+        name = next((b["disp"] for b in rows if b["cert"] == cert), f"FDIC CERT {cert}")
+    return _bank_answer(name, cert, name)
+
+
+def _disambiguation_answer(question: str, cands: list) -> dict:
+    """Ask the user to choose when a query names more than one institution. The chat renders
+    `candidates` as clickable buttons; picking one answers that exact bank by CERT."""
+    rows, _maxq = _search_rows()
+    state_by_cert = {b["cert"]: b["state"] for b in rows}
+    return {"question": question,
+            "answer": "More than one bank matches that name. Which one did you mean?",
+            "candidates": [{"cert": c, "name": n, "state": state_by_cert.get(c, "")}
+                           for c, n in cands],
+            "citations": [], "retrieved": [], "model_pred": None,
+            "used_llm": False, "bank_name": None, "bank_cert": None}
 
 
 # ---- nodes ----
@@ -476,11 +663,15 @@ def _bank_answer(question: str, cert: int, name: str) -> dict:
 
 
 def answer_question(question: str) -> dict:
-    # A question that names any bank gets a fast, deterministic, model-grounded answer (and the
-    # report offer). Only open-ended/methodology questions go through the retrieval + LLM path.
-    hit = _detect_bank(question)
-    if hit:
-        return _bank_answer(question, hit[0], hit[1])
+    # Resolve the query to candidate institutions. Exactly one -> a fast, deterministic,
+    # model-grounded answer (and the report offer). More than one -> ask which one (rendered as
+    # clickable buttons in the chat). None named -> the open-ended/methodology retrieval + LLM
+    # path.
+    cands = _resolve_banks(question)
+    if len(cands) == 1:
+        return _bank_answer(question, cands[0][0], cands[0][1])
+    if len(cands) > 1:
+        return _disambiguation_answer(question, cands)
     # methodology / open-ended path: run retrieve -> ground -> synthesize directly (no langgraph)
     state: State = {"question": question}
     state.update(retrieve(state))
