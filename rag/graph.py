@@ -84,13 +84,20 @@ def _bank_index() -> list:
     """Every bank in the panel as (name_lower, cert, display_name, quarter), so a question can
     name ANY institution (not just failures). quarter lets us prefer the active entity when one
     name maps to several CERTs (legacy/merged charters)."""
+    import re
     from finlens_ml import scenario
     items = []
     for _, r in scenario.live_bank_directory().iterrows():
         nm = str(r.get("bank_name") or "").strip()
-        # multi-word, reasonably specific names only, to avoid matching generic words
-        if len(nm) >= 7 and " " in nm:
-            items.append((nm.lower(), int(r["cert"]), nm, str(r.get("quarter") or "")))
+        nl = nm.lower()
+        core = re.sub(r"[^a-z0-9]", "", nl)
+        # Include multi-word names AND single-token names the dropdown lists but a space-only
+        # filter silently drops ("BancFirst", "EagleBank", "TowneBank", "EVB", "BANK 7"). Skip a
+        # bare generic word ("BANK") so it can never match ordinary prose, and require a >=3-char
+        # core to drop noise. Verbatim matching in _detect_bank is word-boundary-guarded, so even
+        # short single-token names stay false-positive-safe.
+        if (len(nm) >= 7 and " " in nm) or (len(core) >= 3 and core not in _GENERIC_NAME_WORDS):
+            items.append((nl, int(r["cert"]), nm, str(r.get("quarter") or "")))
     return items
 
 
@@ -171,10 +178,12 @@ def _detect_bank(question: str):
                    "is", "are", "was", "did", "does", "do", "it", "this", "that", "model",
                    "data", "give", "show", "happened", "to", "for", "on", "in"}
 
-    # 1) exact-ish: the longest full bank name that appears verbatim in the question
+    # 1) exact-ish: the longest full bank name that appears verbatim (as whole tokens) in the
+    # question. Word-boundary guarded so short single-token names ("EVB", "UBANK", "BANK 7")
+    # only match when typed as their own word, never as a substring buried in ordinary prose.
     matched = None
     for name_lower, _cert, _disp, _qtr in sorted(idx, key=lambda x: len(x[0]), reverse=True):
-        if name_lower in q:
+        if re.search(rf"(?<![a-z0-9]){re.escape(name_lower)}(?![a-z0-9])", q):
             matched = name_lower
             break
 
