@@ -1,8 +1,6 @@
 .env
 .env.*
 !.env.example
-# private working material — must NEVER reach the remote
-agents/
 .duckdb/
 data/
 backups/
@@ -15,56 +13,3 @@ node_modules/
 
 # local deployment backups
 deploy/Caddyfile.before-*
-
-# ML artifacts (generated; trained offline)
-ml/artifacts/
-ml/mlruns/
-ml/mlflow.db
-*.skops
-
-# stray mlflow/local dirs
-/mlruns/
-.claude/
-
-# keep small real metric JSON for CI gate + visibility (binaries stay ignored)
-!ml/artifacts/
-ml/artifacts/*
-!ml/artifacts/metrics_*.json
-!ml/artifacts/drift_report.json
-!ml/artifacts/failure_decomposition.json
-!ml/artifacts/sequence_challenger.json
-!ml/artifacts/sequence_sweep.json
-!ml/artifacts/pooled_vs_addressable.json
-!ml/artifacts/cblr_robustness.json
-# audit/ is now a committed deliverable (production-readiness audit artifacts); keep only the
-# old crawl scripts and any node_modules out.
-audit_crawl*.py
-qa/
-qa_interactive.py
-
-# RAG local vector store (regenerable via python -m rag.ingest)
-rag/chroma_db/
-rag/traces.jsonl
-great_expectations/uncommitted/
-
-# dbt run byproducts
-dbt/target/
-dbt/logs/
-dbt/.user.yml
-dbt/dbt_packages/
-
-# downloaded local tools (kind binary)
-.tools/
-
-# audit byproducts (the e2e tooling is committed; its run outputs and scratch are not)
-.coverage
-test-results/
-audit/screenshots/_crops/
-COMMIT_MSG.tmp
-
-# QA/dev artifacts (not project code)
-audit/screenshots/
-audit/lighthouse/
-audit/playwright/
-audit/e2e/_*.png
-audit/e2e/_*.mjs

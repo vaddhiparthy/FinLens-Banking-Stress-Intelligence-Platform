@@ -9,7 +9,9 @@ from airflow import DAG
 with DAG(
     dag_id="dag_ingest_qbp",
     start_date=datetime(2026, 4, 23),
-    schedule="0 3 1 */3 *",
+    # FDIC publishes the QBP about 55 days after quarter end; day 1 of
+    # March/June/September/December is a bounded post-release refresh window.
+    schedule="0 3 1 3,6,9,12 *",
     catchup=False,
     default_args=default_args,
 ) as dag:

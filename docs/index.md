@@ -8,10 +8,10 @@ engineering backbone.
 - `Stress Pulse`
 - `Failure Forensics`
 - `Macro Transmission`
-- `Predictive Analytics` (live, model-backed)
+- `Predictive Analytics` (planned)
 - `Wiki`
 
-## Data Engineering Surface
+## Technical Surface
 
 - `Live Pipeline`
 - `Source Contracts`
@@ -21,26 +21,16 @@ engineering backbone.
 - `Administration`
 - `Wiki`
 
-## AI Engineering Surface
-
-- `AI Pipeline`
-- `Feature Contracts`
-- `AI Stack`
-- `Model Quality` (real out-of-time metrics, calibration, drift)
-- `Model Decisions`
-- `Administration`
-- `AI Wiki`
-
 The Streamlit Architecture Decisions tab is the in-app knowledge surface. These markdown docs are
 the repository-facing companion for code review, onboarding, and implementation history.
 
 ## Resume Stack
 
-- VPS local filesystem for raw storage (`data/raw`, partitioned by source and ingestion date; one retained version per source via the rotation policy)
+- AWS S3 for bronze artifacts
 - Airflow for orchestration
 - dbt for transformations
-- Caddy + docker-compose.prod.yml on the VPS for deployment (no infrastructure-as-code needed; no cloud resources to provision)
-- Snowflake for warehouse-grade modeling (optional, credential-gated)
+- Terraform for provisioning
+- Snowflake for warehouse-grade modeling
 - FastAPI for health and telemetry
 - Streamlit for presentation
 - Cloudflare for the public edge

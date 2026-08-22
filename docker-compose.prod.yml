@@ -12,8 +12,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    mem_limit: 512m
-    memswap_limit: 512m
+    mem_limit: 1g
+    memswap_limit: 1g
     env_file:
       - /opt/platform/vault/secrets/professional/finlens.env
     environment:
@@ -39,8 +39,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    mem_limit: 512m
-    memswap_limit: 512m
+    mem_limit: 2g
+    memswap_limit: 2g
     env_file:
       - /opt/platform/vault/secrets/professional/finlens.env
     environment:
@@ -53,7 +53,7 @@ services:
       - --server.port=8501
       - --server.headless=true
       - --server.enableCORS=false
-      - --server.enableXsrfProtection=false
+      - --server.enableXsrfProtection=true
       - --server.baseUrlPath=finlens
     volumes:
       - ./data:/app/data
@@ -110,6 +110,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    command: ["postgres", "-c", "max_connections=25", "-c", "effective_cache_size=384MB"]
     expose:
       - "5432"
     networks:
@@ -132,6 +133,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    command: ["postgres", "-c", "max_connections=30", "-c", "effective_cache_size=384MB"]
     expose:
       - "5432"
     networks:
@@ -160,6 +162,7 @@ services:
       - ./data:/opt/finlens/data
       - ./.duckdb:/opt/finlens/.duckdb
       - ./airflow/dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
     command: >
       bash -c "airflow db migrate &&
       airflow users create --username admin --password admin --firstname Fin --lastname Lens --role Admin --email admin@example.com || true;
@@ -198,15 +201,20 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@professional-finlens-airflow-db:5432/airflow
       POSTGRES_SYNC_DSN: postgresql://finlens:finlens@professional-finlens-db:5432/finlens
       FINLENS_DUCKDB_PATH: /opt/finlens/.duckdb/finlens.duckdb
+      AIRFLOW__WEBSERVER__BASE_URL: https://airflow.vaddhiparthy.vip
+      AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "true"
+      AIRFLOW__FAB__UPDATE_FAB_PERMS: "True"
     command: webserver
     volumes:
       - ./data:/opt/finlens/data
       - ./.duckdb:/opt/finlens/.duckdb
       - ./airflow/dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
     expose:
       - "8080"
     networks:
       - professional_net
+      - platform_edge
 
   scheduler:
     build:
@@ -234,15 +242,18 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@professional-finlens-airflow-db:5432/airflow
       POSTGRES_SYNC_DSN: postgresql://finlens:finlens@professional-finlens-db:5432/finlens
       FINLENS_DUCKDB_PATH: /opt/finlens/.duckdb/finlens.duckdb
+      AIRFLOW__FAB__UPDATE_FAB_PERMS: "True"
     command: scheduler
     volumes:
       - ./data:/opt/finlens/data
       - ./.duckdb:/opt/finlens/.duckdb
       - ./airflow/dags:/opt/airflow/dags
+      - airflow_logs:/opt/airflow/logs
     networks:
       - professional_net
 
 volumes:
+  airflow_logs:
   professional_finlens_control_db:
     external: true
   professional_finlens_airflow_db:

@@ -12,17 +12,17 @@ Target public application:
 | Presentation | Streamlit | Business and technical surfaces |
 | API | FastAPI | Health, telemetry, and machine-facing status |
 | Orchestration | Airflow | Scheduled ingestion, transforms, and sync |
-| Raw storage | VPS local filesystem | `data/raw`, partitioned by source and ingestion date; one retained version per source via the rotation policy |
+| Raw storage | AWS S3 | Bronze artifact mirror |
 | Modeling | dbt | Silver and Gold transformation contracts |
 | Warehouse | Snowflake | Resume-grade warehouse target |
-| Infrastructure | Caddy + docker-compose.prod.yml on the VPS | Deployment and ingress (no infrastructure-as-code needed; no cloud resources to provision) |
+| Infrastructure | Terraform | Repeatable provisioning |
 | Control sync | Postgres | Home copy of telemetry and control-plane snapshots |
 
 ## Ready-To-Plug Posture
 
 - FDIC ingestion runs locally now.
 - FRED, QBP, and NIC are wired behind connector values and source contracts.
-- Raw data is written to the VPS local filesystem under `data/raw` (partitioned by source and ingestion date), with one retained version per source enforced by `scripts/rotate_raw_data.py`.
+- S3 mirroring is implemented behind `AWS_S3_MIRROR_ENABLED`.
 - Airflow DAGs call the current bootstrap, transform, and sync scripts.
 - dbt models reflect the approved source set.
 - FastAPI exposes `/health`, `/healthz`, `/telemetry/events`, and `/telemetry/summary`.

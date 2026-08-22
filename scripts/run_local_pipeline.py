@@ -45,6 +45,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Skip rebuilding the local DuckDB demo warehouse after ingestion.",
     )
     parser.add_argument(
+        "--skip-ingestion",
+        action="store_true",
+        help="Run warehouse, quality, probe, and sync stages without fetching or rotating source data.",
+    )
+    parser.add_argument(
         "--skip-rotate",
         action="store_true",
         help="Skip the raw-data rotation policy (which retains one version per source).",
@@ -187,44 +192,73 @@ def _run_dbt_build(target: str) -> dict:
     return payload
 
 
+def _run_required_platform_probes() -> dict:
+    from finlens.platform_probes import probe_platform_stack
+
+    result = probe_platform_stack()
+    required = ("airflow", "dbt", "raw_storage", "postgres")
+    failures = {
+        name: result.get(name, {}).get("status", "Missing")
+        for name in required
+        if result.get(name, {}).get("status") != "Ready"
+    }
+    if failures:
+        details = ", ".join(f"{name}={status}" for name, status in sorted(failures.items()))
+        raise RuntimeError(f"Required platform probe failure: {details}")
+    return result
+
+
 def main() -> None:
     from finlens.bootstrap import run_active_sources
     from finlens.logging import get_logger
     from finlens.pipeline_runs import PipelineRunRecorder
-    from finlens.platform_probes import probe_platform_stack, summarize_probe
+    from finlens.platform_probes import summarize_probe
     from finlens.state import save_state
     from finlens.warehouse import initialise_local_duckdb
 
     logger = get_logger(__name__)
-    args = build_parser().parse_args()
+    parser = build_parser()
+    args = parser.parse_args()
     selected_sources = args.sources
     report_sources = selected_sources
     recorder = PipelineRunRecorder("local_pipeline")
 
-    recorder.record(
-        "Connector readiness",
-        lambda: _print_connector_report(selected_sources),
-        detail=lambda _: "Connector report refreshed",
-    )
-    if args.check_connectors:
-        recorder.finish()
-        return
+    if args.skip_ingestion and (
+        args.check_connectors or args.sources is not None or args.allow_missing_connectors
+    ):
+        parser.error(
+            "--skip-ingestion cannot be combined with --check-connectors, --sources, "
+            "or --allow-missing-connectors"
+        )
 
-    if args.allow_missing_connectors:
-        selected_sources = _ready_sources(selected_sources)
+    if args.skip_ingestion:
+        results = {}
+        print("Source ingestion skipped; existing landed source data is authoritative.")
+    else:
+        recorder.record(
+            "Connector readiness",
+            lambda: _print_connector_report(selected_sources),
+            detail=lambda _: "Connector report refreshed",
+        )
+        if args.check_connectors:
+            recorder.finish()
+            return
 
-    logger.info("run_active_sources", selected_sources=selected_sources)
-    results = recorder.record(
-        "Source ingestion",
-        lambda: run_active_sources(selected_sources=selected_sources),
-        detail=lambda result: (
-            f"Completed sources: {', '.join(result) if result else '(none)'}"
-        ),
-        metadata=lambda result: {"sources": list(result)},
-    )
-    if args.allow_missing_connectors:
-        _print_connector_report(report_sources)
-    print(f"Completed source runs: {', '.join(results) if results else '(none)'}")
+        if args.allow_missing_connectors:
+            selected_sources = _ready_sources(selected_sources)
+
+        logger.info("run_active_sources", selected_sources=selected_sources)
+        results = recorder.record(
+            "Source ingestion",
+            lambda: run_active_sources(selected_sources=selected_sources),
+            detail=lambda result: (
+                f"Completed sources: {', '.join(result) if result else '(none)'}"
+            ),
+            metadata=lambda result: {"sources": list(result)},
+        )
+        if args.allow_missing_connectors:
+            _print_connector_report(report_sources)
+        print(f"Completed source runs: {', '.join(results) if results else '(none)'}")
 
     if not args.skip_warehouse:
         logger.info("run_local_warehouse")
@@ -236,7 +270,7 @@ def main() -> None:
         )
         print(f"Local warehouse ready at: {db_path}")
 
-    if not args.skip_rotate:
+    if not args.skip_rotate and not args.skip_ingestion:
         from finlens.retention import rotate_raw_and_dlq
 
         def _rotate() -> dict:
@@ -270,7 +304,6 @@ def main() -> None:
                 else f"dbt build failed for target {result['target']}"
             ),
             metadata=lambda result: result,
-            allow_failure=True,
         )
         if dbt_result is not None:
             print(f"dbt build status: {dbt_result['status']}")
@@ -278,12 +311,11 @@ def main() -> None:
     if args.probe_platform:
         probes = recorder.record(
             "Platform probes",
-            probe_platform_stack,
+            _run_required_platform_probes,
             detail=lambda result: "; ".join(
                 summarize_probe(name, payload) for name, payload in result.items()
             ),
             metadata=lambda result: result,
-            allow_failure=True,
         )
         if probes is not None:
             save_state("platform_probe_report", probes)
@@ -302,7 +334,6 @@ def main() -> None:
                 f"Synced {result['synced_events']} events to schema {result['schema']}"
             ),
             metadata=lambda result: result,
-            allow_failure=True,
         )
         if sync_result is not None:
             print(f"Postgres sync complete: {sync_result}")

@@ -79,6 +79,7 @@ def probe_airflow_project() -> dict[str, Any]:
         response.raise_for_status()
         payload = response.json()
     except Exception:
+        result["status"] = "Failed"
         result["runtime_status"] = "Unavailable"
         result["detail"] = (
             f"{len(dags)} DAG definitions found; webserver health endpoint not reachable "
@@ -88,9 +89,13 @@ def probe_airflow_project() -> dict[str, Any]:
 
     metadatabase = payload.get("metadatabase", {}).get("status")
     scheduler = payload.get("scheduler", {}).get("status")
-    result["runtime_status"] = "Ready"
     result["metadatabase"] = metadatabase
     result["scheduler"] = scheduler
+    if metadatabase != "healthy" or scheduler != "healthy":
+        result["status"] = "Failed"
+        result["runtime_status"] = "Unhealthy"
+    else:
+        result["runtime_status"] = "Ready"
     result["detail"] = (
         f"{len(dags)} DAGs found; Airflow webserver healthy; "
         f"metadatabase={metadatabase}; scheduler={scheduler}"
@@ -107,12 +112,19 @@ def probe_snowflake_connection() -> dict[str, Any]:
         and settings.snowflake_role
     )
     result: dict[str, Any] = {
+        "enabled": settings.snowflake_probe_enabled,
         "configured": configured,
         "account": settings.snowflake_account,
         "role": settings.snowflake_role,
         "warehouse": settings.snowflake_transforming_warehouse,
         "database": settings.snowflake_database_marts,
     }
+    if not settings.snowflake_probe_enabled:
+        result["status"] = "Disabled"
+        result["detail"] = (
+            "Snowflake probe disabled; the active FinLens warehouse is VPS-local DuckDB/Postgres"
+        )
+        return result
     if not configured:
         result["status"] = "Scaffolded"
         result["detail"] = "Snowflake credentials are not fully configured for this runtime"

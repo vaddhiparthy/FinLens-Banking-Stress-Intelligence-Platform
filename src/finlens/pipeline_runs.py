@@ -50,6 +50,10 @@ class PipelineRunRecorder:
             )
             if allow_failure:
                 return None
+            try:
+                self.finish(status="Failed")
+            except Exception:
+                pass
             raise
 
         self.steps.append(
@@ -63,7 +67,9 @@ class PipelineRunRecorder:
         )
         return result
 
-    def finish(self, status: str = "Success") -> dict[str, Any]:
+    def finish(self, status: str | None = None) -> dict[str, Any]:
+        if status is None:
+            status = "Degraded" if any(step.status == "Failed" for step in self.steps) else "Success"
         finished_at = datetime.now(UTC)
         payload = {
             "run_id": self.run_id,

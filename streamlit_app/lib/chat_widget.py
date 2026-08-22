@@ -63,8 +63,29 @@ def _ask(question: str, *, example: bool) -> dict:
                 "citations": [], "used_llm": False}
 
 
+def _pick_candidate(cand: dict) -> None:
+    """A disambiguation button was clicked: answer that exact institution by CERT and append it
+    to the chat as if the user had typed its full name."""
+    from rag.graph import answer_for_cert
+    ans = answer_for_cert(cand["cert"], cand.get("name"))
+    ss = st.session_state
+    ss.setdefault("chat_history", [])
+    ss["chat_history"].append({"role": "user", "content": cand.get("name", "")})
+    ss["chat_history"].append({"role": "assistant", "content": ans.get("answer", ""), "out": ans})
+    st.rerun()
+
+
 def _render_answer(out: dict, idx: int) -> None:
     st.markdown(out.get("answer", ""))
+    # Disambiguation: when a query named more than one bank, offer the matches as clickable
+    # buttons (picking one answers that exact institution). No report/score block for this turn.
+    cands = out.get("candidates")
+    if cands:
+        for j, cand in enumerate(cands):
+            label = cand["name"] + (f" ({cand['state']})" if cand.get("state") else "")
+            if st.button(label, key=f"chat_pick_{idx}_{j}", use_container_width=True):
+                _pick_candidate(cand)
+        return
     mp = out.get("model_pred")
     if mp:
         st.caption(

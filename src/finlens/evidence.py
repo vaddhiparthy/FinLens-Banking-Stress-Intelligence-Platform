@@ -14,11 +14,17 @@ def source_landing_rows() -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for source_dir in sorted(RAW_DATA_DIR.glob("source=*")):
         source = source_dir.name.replace("source=", "")
-        files = sorted(source_dir.glob("ingestion_date=*/*.json"))
+        files = sorted(
+            path
+            for path in source_dir.glob("ingestion_date=*/*.json")
+            if not path.name.endswith(".data.json")
+        )
         if not files:
             continue
         latest = max(files, key=lambda path: path.stat().st_mtime)
         payload = json.loads(latest.read_text(encoding="utf-8"))
+        if isinstance(payload, list):
+            payload = {"records": payload}
         record_count = payload.get("record_count")
         if record_count is None and isinstance(payload.get("records"), list):
             record_count = len(payload["records"])
@@ -27,6 +33,10 @@ def source_landing_rows() -> list[dict[str, Any]]:
             artifact = Path(artifact_path)
             if not artifact.is_absolute():
                 artifact = ROOT_DIR / artifact
+            if not artifact.exists():
+                sibling = latest.parent / Path(artifact_path).name
+                if sibling.exists():
+                    artifact = sibling
             if artifact.exists() and artifact.suffix.lower() == ".json":
                 artifact_payload = json.loads(artifact.read_text(encoding="utf-8"))
                 if isinstance(artifact_payload, list):

@@ -143,9 +143,13 @@ def _disclaimer_persistence() -> None:
           }
           if (accepted()) {
             kill();
-            var obs = new MutationObserver(kill);
-            obs.observe(doc.body, { childList: true, subtree: true });
-            setTimeout(function () { obs.disconnect(); }, 6000);
+            var root = doc.body || doc.documentElement;
+            var Observer = window.parent.MutationObserver;
+            if (root && Observer) {
+              var obs = new Observer(kill);
+              obs.observe(root, { childList: true, subtree: true });
+              setTimeout(function () { obs.disconnect(); }, 6000);
+            }
           }
           // persist as soon as the user accepts (and on any future render where ack=1 is in the URL)
           if (new URLSearchParams(doc.location.search).get('ack') === '1') {

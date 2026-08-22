@@ -17,6 +17,6 @@ with DAG(
         bash_command=(
             "cd /opt/finlens && "
             "/opt/finlens/.venv/bin/python scripts/run_local_pipeline.py "
-            "--allow-missing-connectors --run-dbt-build --probe-platform --sync-postgres"
+            "--skip-ingestion --run-dbt-build --probe-platform --sync-postgres"
         ),
     )
