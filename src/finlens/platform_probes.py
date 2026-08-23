@@ -75,7 +75,10 @@ def probe_airflow_project() -> dict[str, Any]:
     try:
         import requests
 
-        response = requests.get(f"{settings.airflow_api_base_url}/health", timeout=8)
+        response = requests.get(
+            f"{settings.airflow_api_base_url}/api/v2/monitor/health",
+            timeout=8,
+        )
         response.raise_for_status()
         payload = response.json()
     except Exception:
@@ -89,16 +92,23 @@ def probe_airflow_project() -> dict[str, Any]:
 
     metadatabase = payload.get("metadatabase", {}).get("status")
     scheduler = payload.get("scheduler", {}).get("status")
+    dag_processor = payload.get("dag_processor", {}).get("status")
     result["metadatabase"] = metadatabase
     result["scheduler"] = scheduler
-    if metadatabase != "healthy" or scheduler != "healthy":
+    result["dag_processor"] = dag_processor
+    if (
+        metadatabase != "healthy"
+        or scheduler != "healthy"
+        or dag_processor != "healthy"
+    ):
         result["status"] = "Failed"
         result["runtime_status"] = "Unhealthy"
     else:
         result["runtime_status"] = "Ready"
     result["detail"] = (
         f"{len(dags)} DAGs found; Airflow webserver healthy; "
-        f"metadatabase={metadatabase}; scheduler={scheduler}"
+        f"metadatabase={metadatabase}; scheduler={scheduler}; "
+        f"dag_processor={dag_processor}"
     )
     return result
 
