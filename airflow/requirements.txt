@@ -1,4 +1,6 @@
-apache-airflow==2.9.3
-apache-airflow-providers-postgres==5.11.3
-astronomer-cosmos==1.6.0
-requests>=2.32.3
+# Runtime packages supplied and constrained by the pinned official Airflow image.
+apache-airflow==3.3.1
+apache-airflow-providers-fab==3.8.0
+apache-airflow-providers-postgres==7.0.1
+apache-airflow-providers-standard==1.17.0
+requests==2.34.2

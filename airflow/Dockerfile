@@ -1,7 +1,4 @@
-FROM apache/airflow:2.9.3-python3.11
-
-COPY airflow/requirements.txt /requirements.txt
-RUN pip install --no-cache-dir -r /requirements.txt
+FROM apache/airflow:3.3.1-python3.11@sha256:9417c2bba39de23e375f1fe98f284aee1561cedafd521edf1171b26c3b1e46e5
 
 USER root
 RUN mkdir -p /opt/finlens && chown -R airflow:0 /opt/finlens

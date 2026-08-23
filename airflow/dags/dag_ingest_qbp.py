@@ -1,10 +1,9 @@
 from datetime import datetime
 
-from airflow.operators.bash import BashOperator
-from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+from airflow.providers.standard.operators.bash import BashOperator
+from airflow.providers.standard.operators.trigger_dagrun import TriggerDagRunOperator
+from airflow.sdk import DAG
 from common import default_args
-
-from airflow import DAG
 
 with DAG(
     dag_id="dag_ingest_qbp",

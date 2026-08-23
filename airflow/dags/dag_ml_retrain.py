@@ -9,10 +9,9 @@ filing; a drift-threshold trigger can also fire this DAG from the monitoring job
 
 from datetime import datetime
 
-from airflow.operators.bash import BashOperator
+from airflow.providers.standard.operators.bash import BashOperator
+from airflow.sdk import DAG
 from common import default_args
-
-from airflow import DAG
 
 with DAG(
     dag_id="dag_ml_retrain",

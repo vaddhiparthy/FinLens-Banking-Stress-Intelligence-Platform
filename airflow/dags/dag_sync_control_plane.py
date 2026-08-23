@@ -1,9 +1,8 @@
 from datetime import datetime, timedelta
 
-from airflow.operators.bash import BashOperator
+from airflow.providers.standard.operators.bash import BashOperator
+from airflow.sdk import DAG
 from common import default_args
-
-from airflow import DAG
 
 with DAG(
     dag_id="dag_sync_control_plane",
@@ -18,7 +17,7 @@ with DAG(
         task_id="sync_control_plane_to_postgres",
         bash_command=(
             "cd /opt/finlens && "
-            "airflow dags list-runs -d dag_transform_and_quality --output json "
+            "airflow dags list-runs dag_transform_and_quality --output json "
             ">/tmp/finlens_airflow_check.json && "
             "/opt/finlens/.venv/bin/python scripts/collect_airflow_evidence.py && "
             "/opt/finlens/.venv/bin/python scripts/sync_control_plane_to_postgres.py"
