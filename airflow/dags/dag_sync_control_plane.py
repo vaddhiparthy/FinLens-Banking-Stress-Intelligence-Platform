@@ -2,12 +2,17 @@ from datetime import datetime, timedelta
 
 from airflow.providers.standard.operators.bash import BashOperator
 from airflow.sdk import DAG
+from airflow.timetables.trigger import CronTriggerTimetable
 from common import default_args
 
 with DAG(
     dag_id="dag_sync_control_plane",
     start_date=datetime(2026, 4, 23),
-    schedule="0 5 * * *",
+    schedule=CronTriggerTimetable(
+        "0 5 * * *",
+        timezone="UTC",
+        run_immediately=False,
+    ),
     catchup=False,
     default_args=default_args,
     max_active_runs=1,
