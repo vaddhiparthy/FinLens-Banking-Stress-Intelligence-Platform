@@ -7,7 +7,7 @@ from common import default_args
 
 with DAG(
     dag_id="dag_sync_control_plane",
-    start_date=datetime(2026, 4, 23),
+    start_date=datetime(2026, 8, 24),
     schedule=CronTriggerTimetable(
         "0 5 * * *",
         timezone="UTC",

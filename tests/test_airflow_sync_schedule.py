@@ -28,3 +28,18 @@ def test_control_sync_uses_clock_time_trigger_timetable() -> None:
     assert ast.literal_eval(timetable.args[0]) == "0 5 * * *"
     keywords = {keyword.arg: ast.literal_eval(keyword.value) for keyword in timetable.keywords}
     assert keywords == {"timezone": "UTC", "run_immediately": False}
+
+    dag_calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "DAG"
+    ]
+    assert len(dag_calls) == 1
+    dag_keywords = {keyword.arg: keyword.value for keyword in dag_calls[0].keywords}
+    start_date = dag_keywords["start_date"]
+    assert isinstance(start_date, ast.Call)
+    assert isinstance(start_date.func, ast.Name)
+    assert start_date.func.id == "datetime"
+    assert [ast.literal_eval(arg) for arg in start_date.args] == [2026, 8, 24]
