@@ -255,6 +255,7 @@ services:
       AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://professional-finlens-airflow-web:8080/execution/
       AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: "true"
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@professional-finlens-airflow-db:5432/airflow
+      AIRFLOW_METADATA_DSN: postgresql://airflow:airflow@professional-finlens-airflow-db:5432/airflow
       POSTGRES_SYNC_DSN: postgresql://finlens:finlens@professional-finlens-db:5432/finlens
       FINLENS_DUCKDB_PATH: /opt/finlens/.duckdb/finlens.duckdb
       AIRFLOW__FAB__UPDATE_FAB_PERMS: "True"
@@ -263,6 +264,7 @@ services:
       - ./data:/opt/finlens/data
       - ./.duckdb:/opt/finlens/.duckdb
       - ./airflow/dags:/opt/airflow/dags
+      - ./scripts/collect_airflow_evidence.py:/opt/finlens/scripts/collect_airflow_evidence.py:ro
       - ./scripts/retain_control_plane_postgres.py:/opt/finlens/scripts/retain_control_plane_postgres.py:ro
       - airflow_logs:/opt/airflow/logs
     networks:
