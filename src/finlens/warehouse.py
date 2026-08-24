@@ -216,6 +216,37 @@ def _stress_pulse_frame():
     return frame.copy()
 
 
+def _annual_legacy_stress_pulse_frame():
+    expected_columns = [
+        "quarter",
+        "net_income",
+        "roa",
+        "nim",
+        "problem_banks",
+        "asset_yield",
+        "funding_cost",
+        "noncurrent_rate",
+        "nco_rate",
+        "afs_losses",
+        "htm_losses",
+        "total_assets",
+        "total_deposits",
+        "total_equity",
+        "source_code",
+    ]
+    payload = _latest_source_json("qbp_annual_legacy")
+    if not payload or not payload.get("artifact_path"):
+        return pd.DataFrame(columns=expected_columns)
+    path = Path(payload["artifact_path"])
+    if not path.exists() or path.suffix.lower() != ".json":
+        return pd.DataFrame(columns=expected_columns)
+    frame = pd.DataFrame(json.loads(path.read_text(encoding="utf-8")))
+    for column in expected_columns:
+        if column not in frame.columns:
+            frame[column] = None
+    return frame[expected_columns].copy()
+
+
 def _nic_current_parent_frame():
     expected_columns = [
         "rssd_id",
@@ -300,6 +331,7 @@ def initialise_local_duckdb() -> Path:
     metrics = _fred_metrics_frame()
     acquirers = _fdic_acquirers_frame(failures)
     stress_pulse = _stress_pulse_frame()
+    annual_legacy_stress_pulse = _annual_legacy_stress_pulse_frame()
     nic_current_parent = _nic_current_parent_frame()
 
     with duckdb.connect(str(db_path)) as conn:
@@ -316,6 +348,7 @@ def initialise_local_duckdb() -> Path:
         conn.register("metrics_df", metrics)
         conn.register("acquirers_df", acquirers)
         conn.register("stress_pulse_df", stress_pulse)
+        conn.register("annual_legacy_stress_pulse_df", annual_legacy_stress_pulse)
         conn.register("nic_current_parent_df", nic_current_parent)
         update_flow_status(
             "bronze_to_silver",
@@ -341,6 +374,12 @@ def initialise_local_duckdb() -> Path:
         conn.execute("create or replace table raw.fdic_qbp_raw as select * from stress_pulse_df")
         conn.execute(
             """
+            create or replace table raw.fdic_qbp_annual_legacy_raw as
+            select * from annual_legacy_stress_pulse_df
+            """
+        )
+        conn.execute(
+            """
             create or replace table raw.nic_current_parent_raw as
             select * from nic_current_parent_df
             """
@@ -354,6 +393,12 @@ def initialise_local_duckdb() -> Path:
         conn.execute("create or replace table marts.dim_acquirer as select * from acquirers_df")
         conn.execute(
             "create or replace table marts.fct_stress_pulse as select * from stress_pulse_df"
+        )
+        conn.execute(
+            """
+            create or replace table marts.fct_stress_pulse_annual_legacy as
+            select * from annual_legacy_stress_pulse_df
+            """
         )
         update_flow_status(
             "silver_to_gold",

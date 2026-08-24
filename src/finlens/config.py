@@ -20,12 +20,7 @@ class Settings(BaseSettings):
     finlens_api_base_url: str | None = None
     finlens_telemetry_enabled: bool = True
     fdic_failed_banks_url: str = "https://www.fdic.gov/bank-failures/download-data.csv"
-    fdic_qbp_source_url: str | None = (
-        "https://api.fdic.gov/banks/summary?"
-        "filters=STNAME:%22All%20States%20and%20Territories%22%20AND%20YEAR:%5B%221985%22%20TO%20%222025%22%5D&"
-        "fields=YEAR,STNAME,ASSET,DEP,EQ,NETINC,NIM,DRLNLS,P9LNLS&"
-        "sort_by=YEAR&sort_order=ASC&limit=100&format=json"
-    )
+    fdic_qbp_source_url: str | None = "https://www.fdic.gov/quarterly-banking-profile"
     fred_api_key: str | None = None
     fred_base_url: str = "https://api.stlouisfed.org/fred"
     fred_series_ids: str = "UNRATE,DGS10,DGS2,BAA10Y,NFCI,CPIAUCSL"

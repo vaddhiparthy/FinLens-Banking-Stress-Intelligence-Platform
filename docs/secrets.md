@@ -17,7 +17,7 @@ No secret values belong in committed code, markdown, YAML, SQL, notebooks, or sh
 | `FRED_API_KEY` | FRED authentication | `ingestion/fred.py` |
 | `FRED_BASE_URL` | FRED API base URL | `ingestion/fred.py` |
 | `FRED_SERIES_IDS` | tracked series list | `ingestion/fred.py` |
-| `FDIC_QBP_SOURCE_URL` | normalized QBP CSV/JSON artifact URL | `ingestion/qbp.py`, Stress Pulse |
+| `FDIC_QBP_SOURCE_URL` | FDIC QBP landing page or official time-series XLSX URL | `ingestion/qbp.py`, Stress Pulse |
 | `NIC_CURRENT_PARENT_SOURCE_URL` | current-parent NIC artifact URL | `ingestion/nic.py` |
 | `SNOWFLAKE_ACCOUNT` | Snowflake account locator | `snowflake`, `dbt` |
 | `SNOWFLAKE_USER` | Snowflake username | `snowflake`, `dbt` |

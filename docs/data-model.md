@@ -9,6 +9,7 @@ Raw source snapshots are stored unchanged, tagged with ingest metadata.
 Approved Bronze domains:
 - `fdic_bankfind`
 - `fdic_qbp`
+- `fdic_qbp_annual_legacy` (preserved pre-cutover annual aggregate)
 - `fred`
 - `nic_current_parent`
 
@@ -43,6 +44,7 @@ Current Gold contracts:
 - no dashboard reads raw provider fields directly
 - no threshold logic lives in UI code
 - every displayed metric must have a source and as-of date
+- annual legacy QBP rows never replace or masquerade as true quarterly rows
 
 ## Warehouse Target
 
