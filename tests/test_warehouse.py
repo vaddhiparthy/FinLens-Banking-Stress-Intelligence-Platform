@@ -34,3 +34,40 @@ def test_stress_pulse_source_mode_is_live_for_valid_csv(tmp_path: Path, monkeypa
     )
 
     assert warehouse.stress_pulse_source_mode() == "live"
+
+
+def test_stress_pulse_source_mode_resolves_container_specific_manifest_path(
+    tmp_path: Path, monkeypatch
+) -> None:
+    source_dir = tmp_path / "source=qbp" / "ingestion_date=2026-08-24"
+    source_dir.mkdir(parents=True)
+    data_path = source_dir / "quarterly.data.json"
+    data_path.write_text(
+        """[
+          {
+            "quarter": "2026Q1",
+            "net_income": 80.461,
+            "roa": 1.2581,
+            "nim": 3.3112,
+            "problem_banks": null,
+            "asset_yield": 5.3302,
+            "funding_cost": 2.0191,
+            "noncurrent_rate": 0.9808,
+            "nco_rate": 0.5904,
+            "afs_losses": -110.604,
+            "htm_losses": -214.498
+          }
+        ]""",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(warehouse, "RAW_DATA_DIR", tmp_path)
+    monkeypatch.setattr(
+        warehouse,
+        "_latest_source_json",
+        lambda source: {
+            "artifact_path": "/opt/finlens/data/raw/source=qbp/"
+            "ingestion_date=2026-08-24/quarterly.data.json"
+        },
+    )
+
+    assert warehouse.stress_pulse_source_mode() == "live"

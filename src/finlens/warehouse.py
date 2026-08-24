@@ -39,6 +39,20 @@ def latest_source_manifest(source: str) -> dict | None:
     return _latest_source_json(source)
 
 
+def _artifact_path_for_runtime(source: str, payload: dict) -> Path | None:
+    artifact_path = payload.get("artifact_path")
+    if not artifact_path:
+        return None
+    recorded = Path(artifact_path)
+    if recorded.exists():
+        return recorded
+    source_dir = RAW_DATA_DIR / f"source={source}"
+    candidates = list(source_dir.glob(f"ingestion_date=*/{recorded.name}"))
+    if not candidates:
+        return recorded
+    return max(candidates, key=lambda path: path.stat().st_mtime)
+
+
 def _latest_source_payloads(source: str) -> list[dict]:
     source_dir = RAW_DATA_DIR / f"source={source}"
     if not source_dir.exists():
@@ -187,13 +201,11 @@ def _stress_pulse_frame():
             return pd.DataFrame(columns=expected_columns)
         return pd.DataFrame(columns=expected_columns)
 
-    artifact_path = payload.get("artifact_path")
-    if not artifact_path:
+    path = _artifact_path_for_runtime("qbp", payload)
+    if path is None:
         if settings.finlens_data_mode == "live":
             return pd.DataFrame(columns=expected_columns)
         return pd.DataFrame(columns=expected_columns)
-
-    path = Path(artifact_path)
     if not path.exists():
         if settings.finlens_data_mode == "live":
             return pd.DataFrame(columns=expected_columns)
@@ -235,9 +247,11 @@ def _annual_legacy_stress_pulse_frame():
         "source_code",
     ]
     payload = _latest_source_json("qbp_annual_legacy")
-    if not payload or not payload.get("artifact_path"):
+    if not payload:
         return pd.DataFrame(columns=expected_columns)
-    path = Path(payload["artifact_path"])
+    path = _artifact_path_for_runtime("qbp_annual_legacy", payload)
+    if path is None:
+        return pd.DataFrame(columns=expected_columns)
     if not path.exists() or path.suffix.lower() != ".json":
         return pd.DataFrame(columns=expected_columns)
     frame = pd.DataFrame(json.loads(path.read_text(encoding="utf-8")))
@@ -268,10 +282,9 @@ def _nic_current_parent_frame():
     payload = _latest_source_json("nic")
     if not payload:
         return pd.DataFrame(columns=expected_columns)
-    artifact_path = payload.get("artifact_path")
-    if not artifact_path:
+    path = _artifact_path_for_runtime("nic", payload)
+    if path is None:
         return pd.DataFrame(columns=expected_columns)
-    path = Path(artifact_path)
     if not path.exists() or path.suffix.lower() != ".json":
         return pd.DataFrame(columns=expected_columns)
     frame = pd.DataFrame(json.loads(path.read_text(encoding="utf-8")))
@@ -288,12 +301,11 @@ def stress_pulse_source_mode() -> str:
         if settings.finlens_data_mode == "live":
             return "pending"
         return "demo"
-    artifact_path = payload.get("artifact_path")
-    if not artifact_path:
+    path = _artifact_path_for_runtime("qbp", payload)
+    if path is None:
         if settings.finlens_data_mode == "live":
             return "pending"
         return "demo"
-    path = Path(artifact_path)
     if not path.exists():
         if settings.finlens_data_mode == "live":
             return "pending"
