@@ -11,10 +11,13 @@ COPY --chown=airflow:0 src /opt/finlens/src
 COPY --chown=airflow:0 ingestion /opt/finlens/ingestion
 COPY --chown=airflow:0 dbt /opt/finlens/dbt
 COPY --chown=airflow:0 scripts /opt/finlens/scripts
+COPY --chown=airflow:0 airflow/fix_fab_moment_bundle.py /tmp/fix_fab_moment_bundle.py
 
 RUN python -m venv /opt/finlens/.venv \
     && /opt/finlens/.venv/bin/pip install --no-cache-dir uv \
-    && /opt/finlens/.venv/bin/uv pip install --python /opt/finlens/.venv/bin/python .
+    && /opt/finlens/.venv/bin/uv pip install --python /opt/finlens/.venv/bin/python . \
+    && python /tmp/fix_fab_moment_bundle.py \
+    && rm /tmp/fix_fab_moment_bundle.py
 
 ENV PYTHONPATH=/opt/finlens/src:/opt/finlens
 ENV PATH=/opt/finlens/.venv/bin:${PATH}
