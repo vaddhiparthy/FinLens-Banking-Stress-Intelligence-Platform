@@ -118,11 +118,12 @@ def _legal_disclaimer() -> None:
 
 
 def _disclaimer_persistence() -> None:
-    """Remember acceptance in the browser (localStorage) so the use-notice shows ONCE, ever — it
-    survives server restarts, refreshes, new sessions, and arriving at home from another page.
-    Streamlit's sandboxed component iframe can't redirect the top frame, but it CAN read/write the
-    parent DOM (same-origin), so: if the browser already accepted, remove the dialog the moment it
-    renders; and persist acceptance when 'I understand' is clicked."""
+    """Remember acceptance without bypassing Streamlit's modal lifecycle.
+
+    A prior version removed the rendered modal node directly. That bypassed FocusScope cleanup and
+    could leave the entire application root inert. Reusing the real acknowledgement button lets
+    Streamlit close the dialog, clear focus guards, update session state, and rerun normally.
+    """
     import streamlit.components.v1 as _components
     _components.html(
         """
@@ -133,30 +134,34 @@ def _disclaimer_persistence() -> None:
           function accepted() { try { return window.localStorage.getItem(KEY) === '1'; }
                                 catch (e) { return false; } }
           function isNotice(el) { return /Important Use Notice/i.test(el.textContent || ''); }
-          function kill() {
-            doc.querySelectorAll('[role="dialog"]').forEach(function (d) {
-              if (isNotice(d)) {
-                var modal = d.closest('[data-baseweb="modal"]') || d.closest('[data-testid="stDialog"]');
-                (modal || d).remove();
+          function acknowledgeNotice() {
+            var dialogs = doc.querySelectorAll('[role="dialog"]');
+            for (var i = 0; i < dialogs.length; i += 1) {
+              var dialog = dialogs[i];
+              if (!isNotice(dialog)) { continue; }
+              var buttons = dialog.querySelectorAll('button');
+              for (var j = 0; j < buttons.length; j += 1) {
+                if (/I understand/i.test(buttons[j].textContent || '')) {
+                  buttons[j].click();
+                  return true;
+                }
               }
-            });
-          }
-          if (accepted()) {
-            kill();
-            var root = doc.body || doc.documentElement;
-            var Observer = window.parent.MutationObserver;
-            if (root && Observer) {
-              var obs = new Observer(kill);
-              obs.observe(root, { childList: true, subtree: true });
-              setTimeout(function () { obs.disconnect(); }, 6000);
             }
+            return false;
           }
-          // persist as soon as the user accepts (and on any future render where ack=1 is in the URL)
-          if (new URLSearchParams(doc.location.search).get('ack') === '1') {
+          var ackInUrl = new URLSearchParams(doc.location.search).get('ack') === '1';
+          if (ackInUrl) {
             try { window.localStorage.setItem(KEY, '1'); } catch (e) {}
           }
+          if (accepted() && !ackInUrl && !acknowledgeNotice()) {
+            var attempts = 0;
+            var timer = window.setInterval(function () {
+              attempts += 1;
+              if (acknowledgeNotice() || attempts >= 60) { window.clearInterval(timer); }
+            }, 100);
+          }
           doc.addEventListener('click', function (e) {
-            var b = e.target.closest('button');
+            var b = e.target && e.target.closest ? e.target.closest('button') : null;
             if (b && /I understand/i.test(b.textContent || '')) {
               try { window.localStorage.setItem(KEY, '1'); } catch (e) {}
             }
