@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
-from finlens.state import load_state, save_state, state_file
+from finlens.state import load_state, save_state
 
 
 @dataclass
@@ -103,15 +103,7 @@ def save_pipeline_run(payload: dict[str, Any]) -> None:
 
 
 def latest_pipeline_run() -> dict[str, Any]:
-    # History is committed first; the separate latest-run file is a legacy cache.
-    history = load_state("pipeline_run_history", default=None)
-    if history is not None or state_file("pipeline_run_history").exists():
-        if not isinstance(history, list) or not history:
-            return {}
-        latest = history[-1]
-        return latest if isinstance(latest, dict) else {}
-    latest = load_state("latest_pipeline_run", default={})
-    return latest if isinstance(latest, dict) else {}
+    return load_state("latest_pipeline_run", default={})
 
 
 def pipeline_run_history() -> list[dict[str, Any]]:
