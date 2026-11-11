@@ -30,7 +30,7 @@ for p in (REPO, REPO / "src", REPO / "ml"):
         sys.path.insert(0, str(p))
 
 from finlens_ml.config import get_ml_settings  # noqa: E402
-from finlens_ml.ffiec_pit import _LABELS, RAW, _is_noncurrent_label, _num, _read  # noqa: E402
+from finlens_ml.ffiec_pit import RAW, _is_noncurrent_label, _LABELS, _num, _read  # noqa: E402
 
 ART = REPO / "ml" / "artifacts"
 

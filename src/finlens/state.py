@@ -11,8 +11,8 @@ def state_file(name: str) -> Path:
     return STATE_DIR / f"{name}.json"
 
 
-def load_state(name: str, *, default: Any) -> Any:
-    return read_json(state_file(name), default=default)
+def load_state(name: str, *, default: Any, quarantine_corrupt: bool = False) -> Any:
+    return read_json(state_file(name), default=default, quarantine_corrupt=quarantine_corrupt)
 
 
 def save_state(name: str, payload: Any) -> Path:

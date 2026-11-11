@@ -22,6 +22,8 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
+
 REPO = Path(__file__).resolve().parents[2]
 for p in (REPO, REPO / "src", REPO / "ml"):
     if str(p) not in sys.path:

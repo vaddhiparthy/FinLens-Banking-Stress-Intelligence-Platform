@@ -19,6 +19,7 @@ for p in (REPO, REPO / "src", REPO / "ml"):
 
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
+
 from finlens_ml.config import get_ml_settings  # noqa: E402
 from finlens_ml.features import FEATURE_COLUMNS, MONOTONE_CONSTRAINTS  # noqa: E402
 from finlens_ml.scenario import SLIDER_FEATURES  # noqa: E402
@@ -79,9 +80,10 @@ def export_meta(metrics: dict) -> dict:
 
 
 def export_performance(metrics: dict, conn) -> dict:
+    from sklearn.metrics import precision_recall_curve, roc_curve
+
     from finlens_ml.predict import score_frame
     from finlens_ml.splits import final_holdout_split
-    from sklearn.metrics import precision_recall_curve, roc_curve
 
     label = "label_4"
     df = conn.execute("select * from ml.training_dataset").df()
@@ -111,6 +113,10 @@ def export_performance(metrics: dict, conn) -> dict:
 
 def export_timeline(conn) -> list:
     # failures per quarter (from labeled positives' transition), for the hero chart
+    df = conn.execute(
+        "select quarter, obs_qord, fail_qord from ml.training_dataset where fail_qord is not null"
+    ).df()
+    fails = df.drop_duplicates("fail_qord") if "fail_qord" in df else df
     counts = (
         conn.execute(
             "select cast(fail_qord as int) fq, count(distinct cert) n "

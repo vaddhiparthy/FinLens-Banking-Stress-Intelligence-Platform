@@ -16,6 +16,9 @@ with DAG(
         bash_command=(
             "cd /opt/finlens && "
             "/opt/finlens/.venv/bin/python scripts/run_local_pipeline.py "
-            "--skip-ingestion --run-dbt-build --probe-platform --sync-postgres"
+            "--skip-ingestion --run-dbt-build --probe-platform --sync-postgres "
+            "|| { status=$?; echo 'Pipeline failed; latest dbt report follows (check timestamp):'; "
+            "tail -c 8000 /opt/finlens/data/state/dbt_build_report.json; "
+            "exit $status; }"
         ),
     )

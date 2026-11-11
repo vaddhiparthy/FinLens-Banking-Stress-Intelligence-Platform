@@ -240,6 +240,21 @@ def _failure_timeline(frame: pd.DataFrame) -> go.Figure:
     return apply_readable_axes(figure)
 
 
+def _series_chart(frame: pd.DataFrame, series: list[str]) -> go.Figure:
+    figure = go.Figure()
+    for name in series:
+        if name in frame and frame[name].notna().any():
+            figure.add_scatter(x=frame["date"], y=frame[name], mode="lines", name=name)
+    figure.update_layout(
+        margin=dict(l=10, r=10, t=40, b=10),
+        paper_bgcolor="rgba(255,255,255,0)",
+        plot_bgcolor="rgba(255,255,255,0)",
+        font=dict(color="#1f2933"),
+        legend=dict(orientation="h"),
+    )
+    return apply_readable_axes(figure)
+
+
 def _single_series_chart(frame: pd.DataFrame, series: str, title: str) -> go.Figure:
     figure = go.Figure()
     if series in frame and frame[series].notna().any():

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pandas as pd
+
 from finlens_ml.features import (
     FEATURE_COLUMNS,
     MONOTONE_CONSTRAINTS,

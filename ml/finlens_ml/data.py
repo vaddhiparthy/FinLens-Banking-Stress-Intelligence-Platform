@@ -11,6 +11,8 @@ imports ``finlens.aws`` / ``boto3`` / ``snowflake`` ($0 invariant).
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 
 from finlens.paths import RAW_DATA_DIR
@@ -61,9 +63,7 @@ def load_financials_frame(records: list[dict] | None = None) -> pd.DataFrame:
     numeric_cols = [c for c in frame.columns if c not in _ID_COLS + ["cert", "repdte", "quarter"]]
     for col in numeric_cols:
         frame[col] = pd.to_numeric(frame[col], errors="coerce")
-    frame = frame.rename(
-        columns={"NAMEFULL": "bank_name", "STALP": "state", "BKCLASS": "bank_class"}
-    )
+    frame = frame.rename(columns={"NAMEFULL": "bank_name", "STALP": "state", "BKCLASS": "bank_class"})
     frame = frame.dropna(subset=["cert", "repdte"]).copy()
     # panel key invariant: one row per (cert, quarter). FDIC returns one row per
     # CERT/REPDTE; this guards against accidental double-ingestion.
@@ -103,3 +103,14 @@ def build_panel(
     return fin
 
 
+def materialize_panel(duckdb_path: Path, panel: pd.DataFrame, schema: str = "ml") -> int:
+    """Persist the panel to an immutable DuckDB table (the visible DE/AI artifact)."""
+    import duckdb
+
+    duckdb_path.parent.mkdir(parents=True, exist_ok=True)
+    with duckdb.connect(str(duckdb_path)) as conn:
+        conn.execute(f"create schema if not exists {schema}")
+        conn.register("panel_df", panel)
+        conn.execute(f"create or replace table {schema}.bank_quarter_panel as select * from panel_df")
+        count = conn.execute(f"select count(*) from {schema}.bank_quarter_panel").fetchone()[0]
+    return int(count)

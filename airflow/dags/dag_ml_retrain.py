@@ -23,17 +23,11 @@ with DAG(
 ) as dag:
     build = BashOperator(
         task_id="build_dataset",
-        bash_command=(
-            "cd /opt/finlens && /opt/finlens/.venv/bin/python "
-            "ml/scripts/build_dataset.py --start 2008Q1"
-        ),
+        bash_command="cd /opt/finlens && /opt/finlens/.venv/bin/python ml/scripts/build_dataset.py --start 2008Q1",
     )
     train = BashOperator(
         task_id="train_and_register",
-        bash_command=(
-            "cd /opt/finlens && /opt/finlens/.venv/bin/python "
-            "ml/finlens_ml/train.py --horizon 4"
-        ),
+        bash_command="cd /opt/finlens && /opt/finlens/.venv/bin/python ml/finlens_ml/train.py --horizon 4",
     )
     gate = BashOperator(
         task_id="metric_gate",  # blocks promotion if the model regresses / shows leakage
@@ -41,9 +35,6 @@ with DAG(
     )
     export = BashOperator(
         task_id="export_web_data",
-        bash_command=(
-            "cd /opt/finlens && /opt/finlens/.venv/bin/python "
-            "ml/scripts/export_web_data.py"
-        ),
+        bash_command="cd /opt/finlens && /opt/finlens/.venv/bin/python ml/scripts/export_web_data.py",
     )
     build >> train >> gate >> export

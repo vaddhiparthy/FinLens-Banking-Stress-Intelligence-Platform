@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+
 PATCH_SCRIPT = Path(__file__).parents[1] / "airflow" / "fix_fab_moment_bundle.py"
 SPEC = importlib.util.spec_from_file_location("fix_fab_moment_bundle", PATCH_SCRIPT)
 if SPEC is None or SPEC.loader is None:

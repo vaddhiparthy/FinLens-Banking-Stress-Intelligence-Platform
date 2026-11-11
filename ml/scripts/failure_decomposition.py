@@ -218,7 +218,7 @@ def main() -> None:
     sensitivity = []
     for name, nc_t, t1_t, un_t, sec_t in grids:
         cls = np.array([_classify_t(te_df.iloc[i], nc_t, t1_t, un_t, sec_t) for i in pos_idx])
-        def _dom(year, cls=cls):
+        def _dom(year):
             m = cls[fy == year]
             return (pd.Series(m).value_counts().index[0] if len(m) else None)
         # addressable PR-AUC under THIS grid's invisible boundary

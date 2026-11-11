@@ -20,18 +20,14 @@ def test_chart_builders_return_plotly_figures() -> None:
     figures = [
         failures_by_year_chart(failures),
         state_assets_map(failures),
+        macro_trend_chart(metrics[metrics["series_id"] == metrics["series_id"].iloc[0]], "UNRATE"),
         acquirer_chart(acquirers),
         state_mix_donut(failures),
         top_states_chart(failures),
         largest_failures_chart(failures),
+        macro_compare_chart(metrics),
+        latest_macro_snapshot(metrics),
     ]
-    if not metrics.empty:
-        first_series = metrics[metrics["series_id"] == metrics["series_id"].iloc[0]]
-        figures += [
-            macro_trend_chart(first_series, "UNRATE"),
-            macro_compare_chart(metrics),
-            latest_macro_snapshot(metrics),
-        ]
 
     for figure in figures:
         assert figure.to_dict()

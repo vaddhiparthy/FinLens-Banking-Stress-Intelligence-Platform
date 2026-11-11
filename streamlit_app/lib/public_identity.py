@@ -8,10 +8,10 @@ from threading import Lock
 from time import monotonic
 from urllib.request import Request, urlopen
 
-DEFAULT_PROFILE_URL = "https://srivaddhiparthy.com/data/site-content.json"
-DEFAULT_DISPLAY_NAME = "Sri Vaddhiparthy"
-DEFAULT_PORTFOLIO_URL = "https://srivaddhiparthy.com/"
-DEFAULT_GITHUB_URL = "https://github.com/svaddhiparthy/"
+DEFAULT_PROFILE_URL = "https://vaddhiparthy.com/data/site-content.json"
+DEFAULT_DISPLAY_NAME = "Surya Vaddhiparthy"
+DEFAULT_PORTFOLIO_URL = "https://vaddhiparthy.com/"
+DEFAULT_GITHUB_URL = "https://github.com/vaddhiparthy/"
 PROFILE_CACHE_SECONDS = 300
 
 
@@ -70,14 +70,14 @@ def public_identity() -> PublicIdentity:
 def apply_public_identity(text: str) -> str:
     identity = public_identity()
     for legacy_name in (
-        "Sri Surya Sameer Vaddhiparthy",
-        "Sri Surya S. Vaddhiparthy",
         "Surya Vaddhiparthy",
-        "Sri Vaddhiparthy",
+        "Surya Vaddhiparthy",
+        "Surya Vaddhiparthy",
+        "Surya Vaddhiparthy",
     ):
         text = text.replace(legacy_name, identity.display_name)
-    for origin in ("https://surya.vaddhiparthy.com", "https://srivaddhiparthy.com"):
+    for origin in ("https://vaddhiparthy.com", "https://vaddhiparthy.com"):
         text = text.replace(origin, identity.portfolio_url.rstrip("/"))
-    for profile in ("https://github.com/vaddhiparthy", "https://github.com/svaddhiparthy"):
+    for profile in ("https://github.com/vaddhiparthy", "https://github.com/vaddhiparthy"):
         text = text.replace(profile, identity.github_url.rstrip("/"))
     return text

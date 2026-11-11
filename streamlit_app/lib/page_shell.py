@@ -9,6 +9,7 @@ from streamlit_app.lib.public_identity import public_identity
 
 BUSINESS_PAGE = "business"
 TECHNICAL_PAGE = "technical"
+SIDEBAR_ENABLED = True
 AI_PAGE = "ai"  # third surface: Machine Learning / AI engineering
 
 
@@ -32,6 +33,22 @@ def _page_path(page_key: str) -> str:
         "decisions": "pages/4_Data_Engineering.py",
     }
     return page_map[page_key]
+
+
+def _business_pages() -> list[tuple[str, str, str, str]]:
+    pages = [
+        ("overview", "pages/0_Stress_Pulse.py", "Stress Pulse", ":material/space_dashboard:"),
+        ("banks", "pages/1_Failure_Forensics.py", "Failure Forensics", ":material/account_balance:"),
+        ("metrics", "pages/2_Macro_Transmission.py", "Macro Transmission", ":material/show_chart:"),
+        (
+            "predictive",
+            "pages/3_Early_Warning.py",
+            "Early Warning",
+            ":material/neurology:",
+        ),
+        ("wiki", "pages/6_Wiki.py", "Wiki", ":material/menu_book:"),
+    ]
+    return pages
 
 
 def _business_sections() -> list[tuple[str, str]]:
@@ -82,6 +99,101 @@ def get_ai_section() -> str:
     return st.session_state["ai_section"]
 
 
+def _current_section_label(active_page: str, mode: str) -> str:
+    if mode == AI_PAGE:
+        lookup = dict(_ai_sections())
+        return lookup.get(get_ai_section(), "")
+    if mode == TECHNICAL_PAGE:
+        lookup = dict(_technical_sections())
+        return lookup.get(get_technical_section(), "")
+    lookup = dict(_business_sections())
+    return lookup.get(active_page, "")
+
+
+@st.fragment(run_every="1s")
+def _render_sidebar_clock() -> None:
+    now = datetime.now(ZoneInfo("America/New_York"))
+    st.markdown(
+        f"""
+        <div class="sidebar-time">{now.strftime("%A, %B %d, %Y")}</div>
+        <div class="sidebar-time">{now.strftime("%I:%M:%S %p ET")}</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+_SURFACE_META = {
+    BUSINESS_PAGE: ("Business", "Banking, risk, and executive view"),
+    TECHNICAL_PAGE: ("Data Engineering", "Sourcing, transforms, and serving"),
+    AI_PAGE: ("AI Engineering", "The bank-distress model, end to end"),
+}
+
+
+def render_sidebar(active_page: str, mode: str) -> None:
+    if not SIDEBAR_ENABLED:
+        return
+    surface_label, _ = _SURFACE_META.get(mode, _SURFACE_META[BUSINESS_PAGE])
+    with st.sidebar:
+        st.markdown(
+            f"""
+            <div class="rail-brand">
+                <span class="rail-brand-name">FinLens</span>
+                <span class="rail-brand-surface">{surface_label}</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        _render_sidebar_sections(active_page, mode)
+        st.markdown('<div class="rail-foot">', unsafe_allow_html=True)
+        _render_sidebar_clock()
+        identity = public_identity()
+        st.markdown(
+            f'<a class="sidebar-credit" href="{escape(identity.portfolio_url, quote=True)}" '
+            f'target="_blank">Built by {escape(identity.display_name)}</a></div>',
+            unsafe_allow_html=True,
+        )
+
+
+def _render_sidebar_sections(active_page: str, mode: str) -> None:
+    """Section navigation rendered as side-tabs in the left rail. The surface switch
+    lives in the top bar; sections (one axis down) live here for every surface."""
+    st.markdown('<div class="sidebar-section-label">Sections</div>', unsafe_allow_html=True)
+    if mode == AI_PAGE:
+        current = get_ai_section()
+        if st.button("Home", key=f"side_ai_home_{active_page}", use_container_width=True):
+            st.switch_page(_page_path("home"))
+        for key, label in _ai_sections():
+            if st.button(
+                label, key=f"side_ai_{key}_{active_page}", use_container_width=True,
+                disabled=current == key,
+            ):
+                st.session_state["ai_section"] = key
+                st.rerun()
+        return
+    if mode == BUSINESS_PAGE:
+        sections = [("home", "Home"), *_business_sections()]
+        for key, label in sections:
+            if st.button(
+                label, key=f"side_b_{key}_{active_page}", use_container_width=True,
+                disabled=active_page == key,
+            ):
+                st.switch_page(_page_path(key))
+        return
+    # technical / data engineering
+    sections = [("home", "Home"), *_technical_sections()]
+    current = get_technical_section()
+    for key, label in sections:
+        if key in ("home", "wiki"):
+            if st.button(label, key=f"side_t_{key}_{active_page}", use_container_width=True):
+                st.switch_page(_page_path(key))
+            continue
+        if st.button(
+            label, key=f"side_t_{key}_{active_page}", use_container_width=True,
+            disabled=current == key,
+        ):
+            st.session_state["technical_section"] = key
+            st.switch_page("pages/4_Data_Engineering.py")
+
 def status_ribbon(text: str) -> None:
     st.markdown(f'<div class="status-ribbon">{text}</div>', unsafe_allow_html=True)
 
@@ -124,6 +236,13 @@ def page_intro(eyebrow: str, title: str, copy: str, wiki_slug: str | None = None
         """,
         unsafe_allow_html=True,
     )
+
+
+_SURFACES = [
+    (TECHNICAL_PAGE, "Data Engineering", "pages/4_Data_Engineering.py"),
+    (AI_PAGE, "AI Engineering", "pages/7_AI_Engineering.py"),
+    (BUSINESS_PAGE, "Business", "pages/0_Stress_Pulse.py"),
+]
 
 
 def _navigate_section(mode: str, key: str) -> None:

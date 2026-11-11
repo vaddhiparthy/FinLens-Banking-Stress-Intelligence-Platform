@@ -1,10 +1,12 @@
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src:/app
 
 WORKDIR /app
+
+RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin appuser
 
 COPY pyproject.toml uv.lock README.md /app/
 COPY src /app/src
@@ -21,7 +23,10 @@ RUN mkdir -p /app/data /app/.duckdb
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir uv \
-    && uv pip install --system . "lightgbm>=4.5" "shap>=0.46" "skops>=0.11"
+    && uv sync --frozen --no-dev --no-editable \
+    && uv pip install --python /app/.venv/bin/python "lightgbm>=4.5" "shap>=0.46" "skops>=0.11"
+
+ENV PATH="/app/.venv/bin:${PATH}"
 
 # Force a light color scheme app-wide. The app is light-themed (base="light"), but Streamlit and its
 # baseweb/glide-data-grid components self-theme to DARK when the user's OS reports
@@ -50,6 +55,10 @@ else:
     print("already patched")
 PY
 
+RUN pip uninstall -y pip setuptools wheel uv
+
 EXPOSE 8501
 
 CMD ["streamlit", "run", "streamlit_app/app.py", "--server.address=0.0.0.0", "--server.port=8501", "--server.headless=true", "--server.enableCORS=false", "--server.enableXsrfProtection=false"]
+
+USER appuser

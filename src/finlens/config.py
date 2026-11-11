@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     project_name: str = "FinLens"
     finlens_environment: str = "local"
     root_domain: str = "vaddhiparthy.com"
-    project_domain: str = "srivaddhiparthy.com"
+    project_domain: str = "vaddhiparthy.com"
     finlens_data_mode: str = "live"
     finlens_active_sources: str = "fdic,fred,qbp,nic"
     finlens_artifact_dir: str = "data"

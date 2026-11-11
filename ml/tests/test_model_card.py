@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from finlens_ml.config import get_ml_settings
 
 _settings = get_ml_settings()

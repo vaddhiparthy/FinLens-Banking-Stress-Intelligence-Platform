@@ -5,6 +5,8 @@ from datetime import date, datetime
 from numbers import Real
 
 import pandas as pd
+from fastapi import HTTPException
+from finlens.config import get_settings
 
 from finlens.datasets import load_demo_bundle
 from finlens.warehouse import read_table
@@ -41,7 +43,9 @@ def _json_safe_records(frame: pd.DataFrame) -> list[dict]:
 def list_failures() -> list[dict]:
     try:
         frame = read_table("marts.fct_bank_failures")
-    except Exception:
+    except Exception as error:
+        if get_settings().finlens_data_mode != "demo":
+            raise HTTPException(status_code=503, detail="Live data is temporarily unavailable. Please try again later.") from error
         frame = load_demo_bundle().failures
     return _json_safe_records(frame)
 
@@ -56,6 +60,8 @@ def get_bank(bank_id: str) -> dict | None:
 def get_metrics(series_id: str) -> list[dict]:
     try:
         frame = read_table("marts.fct_financial_metrics")
-    except Exception:
+    except Exception as error:
+        if get_settings().finlens_data_mode != "demo":
+            raise HTTPException(status_code=503, detail="Live data is temporarily unavailable. Please try again later.") from error
         frame = load_demo_bundle().metrics
     return [row for row in _json_safe_records(frame) if row["series_id"] == series_id]

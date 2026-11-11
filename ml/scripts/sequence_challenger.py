@@ -131,7 +131,7 @@ def main() -> None:
 
     n = len(Xtr_t); bs = 512
     best_va = -1.0; best_state = None; patience = 0
-    for _epoch in range(80):
+    for epoch in range(80):
         model.train()
         perm = torch.randperm(n)
         for b in range(0, n, bs):

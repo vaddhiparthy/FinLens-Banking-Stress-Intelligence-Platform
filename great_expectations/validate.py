@@ -30,9 +30,8 @@ TABLE = "marts.bank_quarterly_risk_facts"
 
 
 def _load_mart():
-    from finlens_ml.config import get_ml_settings
-
     import duckdb
+    from finlens_ml.config import get_ml_settings
     con = duckdb.connect(str(get_ml_settings().duckdb_path), read_only=True)
     return con.execute(f"select * from {TABLE}").df()
 

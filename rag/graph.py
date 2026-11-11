@@ -12,7 +12,6 @@ the model prediction used (if any). Run a demo: python -m rag.graph "Why did SVB
 from __future__ import annotations
 
 import sys
-from functools import lru_cache
 from pathlib import Path
 from typing import TypedDict
 
@@ -39,6 +38,7 @@ class State(TypedDict, total=False):
     used_llm: bool
 
 
+from functools import lru_cache
 
 
 @lru_cache(maxsize=1)
@@ -85,7 +85,6 @@ def _bank_index() -> list:
     name ANY institution (not just failures). quarter lets us prefer the active entity when one
     name maps to several CERTs (legacy/merged charters)."""
     import re
-
     from finlens_ml import scenario
     items = []
     for _, r in scenario.live_bank_directory().iterrows():
@@ -306,7 +305,6 @@ def _search_rows():
     distinctive-token tuple, alnum core, recency ordinal, state), plus the freshest ordinal in
     the panel. This is the dropdown's own source, so the chat searches exactly what it lists."""
     import re
-
     from finlens_ml import scenario
     df = scenario.live_bank_directory()
     rows = []
@@ -402,7 +400,7 @@ def _token_candidates(question: str, limit: int = 8) -> list:
         elif re.match(rf"{pj}(?![a-z0-9])", nl):
             score = 5                        # name STARTS WITH the phrase ("PNC Bank ...")
         elif re.search(rf"(?<![a-z0-9]){pj}(?![a-z0-9])", nl):
-            score = 4                        # phrase appears as whole words ("JPMorgan Chase")
+            score = 4                        # phrase appears as whole words inside ("JPMorgan Chase")
         elif len(pcore) >= 4 and core.startswith(pcore):
             score = 3                        # glued prefix ("citi"->citibank, "townebank")
         elif len(pcore) >= 4 and pcore in core:

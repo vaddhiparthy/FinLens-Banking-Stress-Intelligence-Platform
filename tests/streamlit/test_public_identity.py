@@ -20,18 +20,18 @@ class _Response:
 def test_loads_central_portfolio_identity(monkeypatch) -> None:
     payload = {
         "identity": {
-            "display_name": "Sri Vaddhiparthy",
-            "portfolio_url": "https://srivaddhiparthy.com/",
-            "github_url": "https://github.com/svaddhiparthy/",
+            "display_name": "Surya Vaddhiparthy",
+            "portfolio_url": "https://vaddhiparthy.com/",
+            "github_url": "https://github.com/vaddhiparthy/",
         }
     }
     monkeypatch.setattr(identity_module, "urlopen", lambda *_args, **_kwargs: _Response(payload))
 
     identity = identity_module._load_public_identity("http://portfolio/data/site-content.json")
 
-    assert identity.display_name == "Sri Vaddhiparthy"
-    assert identity.portfolio_url == "https://srivaddhiparthy.com/"
-    assert identity.github_url == "https://github.com/svaddhiparthy/"
+    assert identity.display_name == "Surya Vaddhiparthy"
+    assert identity.portfolio_url == "https://vaddhiparthy.com/"
+    assert identity.github_url == "https://github.com/vaddhiparthy/"
 
 
 def test_applies_central_identity_to_current_urls(monkeypatch) -> None:
@@ -46,8 +46,8 @@ def test_applies_central_identity_to_current_urls(monkeypatch) -> None:
     )
 
     rendered = identity_module.apply_public_identity(
-        "Sri Vaddhiparthy https://srivaddhiparthy.com/x "
-        "https://github.com/svaddhiparthy/project"
+        "Surya Vaddhiparthy https://vaddhiparthy.com/x "
+        "https://github.com/vaddhiparthy/project"
     )
 
     assert rendered == "Example Name https://example.test/x https://github.com/example/project"

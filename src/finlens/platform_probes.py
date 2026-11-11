@@ -158,6 +158,9 @@ def probe_snowflake_connection() -> dict[str, Any]:
             schema="PUBLIC",
             login_timeout=20,
             network_timeout=20,
+            client_store_temporary_credential=False,
+            disable_ocsp_checks=False,
+            ocsp_fail_open=True,
         )
         try:
             with conn.cursor() as cur:
@@ -231,3 +234,5 @@ def summarize_probe(name: str, payload: dict[str, Any]) -> str:
     return f"{name}: {status}. {detail}".strip()
 
 
+def local_path_exists(path: str | Path) -> bool:
+    return Path(path).exists()

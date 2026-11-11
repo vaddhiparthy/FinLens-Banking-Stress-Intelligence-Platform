@@ -147,7 +147,7 @@ def _tune_hyperparameters(
         return {}, {"tuned": False, "reason": "not enough inner folds with positives"}
     mc = [MONOTONE_CONSTRAINTS[c] for c in FEATURE_COLUMNS]
 
-    def objective(trial: optuna.Trial) -> float:
+    def objective(trial: "optuna.Trial") -> float:
         sp = {
             "num_leaves": trial.suggest_int("num_leaves", 15, 63),
             "min_child_samples": trial.suggest_int("min_child_samples", 40, 300),

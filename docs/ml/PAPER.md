@@ -20,7 +20,7 @@ constrained and unconstrained gradient boosting), so the gap is a property of th
 not of any model. The result is stable to the label source (author thresholds vs regulator
 cause agree on 92% of positives) and to a 2020 reporting-regime feature break. We are not aware
 of prior work that conditions failure-prediction evaluation on failure cause or reports an
-addressable-versus-pooled metric.
+addressable-versus-pooled metric. Full framing: [ABSTRACT.md](ABSTRACT.md).
 
 ## 1. Introduction
 
@@ -106,7 +106,8 @@ Airflow DAGs, dbt medallion + the `bank_quarterly_risk_facts` gold mart, Great E
 gate), an ML serving layer (MLflow registry, FastAPI `/predict-failure-risk` with SHAP,
 Evidently drift), and a RAG Analyst Assistant (local Chroma index of the regulator failure
 corpus, LangGraph retrieve -> live-model-grounding -> cited synthesis via local Ollama, RAGAS-style
-20-Q eval with hit@4 1.0 and citation-grounding 1.0, local observability, a Streamlit page).
+20-Q eval with hit@4 1.0 and citation-grounding 1.0, local observability, a Streamlit page). See
+[PROJECT_CAPSTONES.md](../PROJECT_CAPSTONES.md).
 
 ## References
 

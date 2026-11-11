@@ -52,8 +52,7 @@ def _methodology_docs():
     docs, ids, metas = [], [], []
 
     def add(key, text, src):
-        docs.append(text)
-        ids.append(f"method::{key}")
+        docs.append(text); ids.append(f"method::{key}")
         metas.append({"type": "methodology", "topic": key, "source": src})
 
     def _j(name):

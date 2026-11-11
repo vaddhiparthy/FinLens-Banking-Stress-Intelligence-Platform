@@ -40,13 +40,13 @@ _CENSUS_REGION = {
     "VA": "South", "WV": "South", "DC": "South", "AL": "South", "KY": "South", "MS": "South",
     "TN": "South", "AR": "South", "LA": "South", "OK": "South", "TX": "South",
     "AZ": "West", "CO": "West", "ID": "West", "MT": "West", "NV": "West", "NM": "West",
-    "UT": "West", "WY": "West", "AK": "West", "CA": "West", "HI": "West", "OR": "West",
-    "WA": "West",
+    "UT": "West", "WY": "West", "AK": "West", "CA": "West", "HI": "West", "OR": "West", "WA": "West",
 }
 
 
 def _oot_scored(horizon_q: int = 4) -> pd.DataFrame:
     import duckdb
+
     from finlens_ml.predict import score_frame
 
     settings = get_ml_settings()
@@ -84,8 +84,7 @@ def cross_segment_equity(horizon_q: int = 4) -> dict[str, pd.DataFrame]:
             test["ASSET"].rank(method="first"), 4,
             labels=["Q1 smallest", "Q2", "Q3", "Q4 largest"],
         )
-    state = test.get("state", pd.Series(index=test.index))
-    test["region"] = state.map(_CENSUS_REGION).fillna("Other")
+    test["region"] = test.get("state", pd.Series(index=test.index)).map(_CENSUS_REGION).fillna("Other")
     out = {}
     if "size_tier" in test.columns:
         out["asset_size_tier"] = _segment_table(test, "size_tier")

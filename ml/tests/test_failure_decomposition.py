@@ -143,8 +143,7 @@ def test_decomposition_artifact_reconciles():
     assert d["story_robust_to_thresholds"] is True
     # the addressable headline must carry its own bootstrap CI, and the credit-vs-rate/liquidity
     # boundary must not move it (only the invisible boundary does)
-    assert "pr_auc_full_ci" in d
-    addr_ci = d["pr_auc_addressable_ci"]
+    full_ci = d["pr_auc_full_ci"]; addr_ci = d["pr_auc_addressable_ci"]
     assert addr_ci[0] <= d["pr_auc_addressable"] <= addr_ci[1]
     assert d["ci_overlap_full_addressable"] is True  # honest: intervals overlap heavily
     assert d["addressable_depends_only_on_invisible_boundary"] is True

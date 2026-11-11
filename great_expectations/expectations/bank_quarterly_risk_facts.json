@@ -1,7 +1,7 @@
 {
   "expectation_suite_name": "bank_quarterly_risk_facts",
   "meta": {
-    "purpose": "Capstone-1 data-quality gate on the gold mart marts.bank_quarterly_risk_facts: schema (columns exist), freshness (data includes recent quarters), and null-rate thresholds on the risk ratios. tier1_rwa_ratio is intentionally allowed a high null-rate (~37%) because of the 2020Q1 Community Bank Leverage Ratio election.",
+    "purpose": "Capstone-1 data-quality gate on the gold mart marts.bank_quarterly_risk_facts: schema (columns exist), freshness (data includes recent quarters), and null-rate thresholds on the risk ratios. tier1_rwa_ratio is intentionally allowed a high null-rate (~37%) because of the 2020Q1 Community Bank Leverage Ratio election (see docs/ml/CEILING_BACKLOG.md / C4).",
     "great_expectations_format": "expectation-suite v3"
   },
   "expectations": [

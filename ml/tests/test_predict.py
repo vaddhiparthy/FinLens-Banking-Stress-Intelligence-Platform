@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import pytest
+
 from finlens_ml.config import get_ml_settings
 
 _ARTIFACT = get_ml_settings().artifact_dir / "calibrated_h4.skops"
@@ -15,7 +16,6 @@ _needs_model = pytest.mark.skipif(not _HAS_MODEL, reason="no trained model artif
 
 @_needs_model
 def test_distressed_scores_higher_than_healthy() -> None:
-    pytest.importorskip("skops")
     from finlens_ml.predict import score_record
 
     distressed = {

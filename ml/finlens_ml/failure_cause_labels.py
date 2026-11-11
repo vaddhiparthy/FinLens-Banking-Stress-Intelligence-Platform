@@ -154,6 +154,11 @@ def load_failure_causes() -> pd.DataFrame:
     return pd.DataFrame(rows).sort_values(["failure_year", "name"]).reset_index(drop=True)
 
 
+def cause_for_cert(cert: int) -> str | None:
+    r = FAILURE_CAUSES.get(int(cert))
+    return r["cause"] if r else None
+
+
 def visibility_for_cert(cert: int) -> str | None:
     r = FAILURE_CAUSES.get(int(cert))
     return CAUSE_TO_VISIBILITY[r["cause"]] if r else None

@@ -23,6 +23,12 @@ class NicIngestionResult:
     size_bytes: int
 
 
+def _artifact_extension(source_url: str) -> str:
+    path = urlparse(source_url).path
+    suffix = Path(path).suffix
+    return suffix or ".bin"
+
+
 def _read_source_payload(source_url: str) -> bytes:
     parsed = urlparse(source_url)
     if parsed.scheme in {"http", "https"}:

@@ -93,11 +93,7 @@ def attach_labels(
     out["obs_qord"] = out["quarter"].map(_quarter_ordinal_from_quarter)
     last_qord = out.groupby("cert")["obs_qord"].transform("max")
 
-    fail_map = (
-        dict(zip(failures["cert"], failures["fail_qord"], strict=True))
-        if not failures.empty
-        else {}
-    )
+    fail_map = dict(zip(failures["cert"], failures["fail_qord"])) if not failures.empty else {}
     out["fail_qord"] = out["cert"].map(fail_map).astype("Float64")
 
     h = horizon_q

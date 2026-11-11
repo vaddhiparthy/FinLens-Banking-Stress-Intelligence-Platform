@@ -194,6 +194,7 @@ def run_coverage(dgp_name, draw_fn, true_ap, methods, rng):
     """draw_fn(rng) -> (y, s) for one n_pos~66 dataset. Returns coverage per method."""
     hit = {m: 0 for m in methods}
     valid = {m: 0 for m in methods}
+    jeff_hit = 0
     jeff_valid = 0
     for _ in range(N_SIMS):
         y, s = draw_fn(rng)

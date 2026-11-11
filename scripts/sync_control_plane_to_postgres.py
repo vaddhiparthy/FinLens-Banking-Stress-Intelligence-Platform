@@ -21,7 +21,14 @@ def _connect():
 
 def _ensure_tables(conn, schema: str) -> None:
     with conn.cursor() as cur:
-        cur.execute(f"create schema if not exists {schema}")
+        cur.execute(
+            "select 1 from pg_catalog.pg_namespace where nspname = %s",
+            (schema,),
+        )
+        if cur.fetchone() is None:
+            raise RuntimeError(
+                f"PostgreSQL sync schema {schema!r} must be provisioned before runtime sync"
+            )
         cur.execute(
             f"""
             create table if not exists {schema}.telemetry_events (

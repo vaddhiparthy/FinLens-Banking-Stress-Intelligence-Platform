@@ -22,8 +22,9 @@ for p in (REPO, REPO / "src", REPO / "ml"):
 
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
+
 from finlens_ml.config import get_ml_settings  # noqa: E402
-from finlens_ml.features import FEATURE_COLUMNS  # noqa: E402
+from finlens_ml.features import FEATURE_COLUMNS, MONOTONE_CONSTRAINTS  # noqa: E402
 
 ART = REPO / "ml" / "artifacts"
 OOT_YEAR = 2019

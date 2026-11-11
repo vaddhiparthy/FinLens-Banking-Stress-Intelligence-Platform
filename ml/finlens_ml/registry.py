@@ -42,6 +42,15 @@ def latest_version() -> str | None:
         return None
 
 
+def champion_version() -> str | None:
+    s = get_ml_settings()
+    try:
+        mv = _client().get_model_version_by_alias(s.registered_model_name, s.champion_alias)
+        return str(mv.version)
+    except Exception:
+        return None
+
+
 def promote_latest_to_champion() -> str | None:
     """Set the champion alias to the newest registered version. Returns the version, or None."""
     v = latest_version()

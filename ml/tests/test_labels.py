@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pandas as pd
+
 from finlens_ml.labels import attach_labels
 
 
@@ -25,7 +26,7 @@ def test_positive_within_horizon_and_already_failed_dropped() -> None:
     fq = _qord("2008Q3")
     panel = _panel([(1, "2008Q1"), (1, "2008Q2"), (1, "2008Q3"), (1, "2008Q4")])
     out = attach_labels(panel, _failures([(1, fq)]), horizon_q=4)
-    by_q = dict(zip(out["quarter"], out["label_status_4"], strict=True))
+    by_q = dict(zip(out["quarter"], out["label_status_4"]))
     assert by_q["2008Q1"] == "positive"  # fails in 2 quarters
     assert by_q["2008Q2"] == "positive"  # fails in 1 quarter
     # at/after failure quarter -> already failed, dropped (label NA)
@@ -35,13 +36,10 @@ def test_positive_within_horizon_and_already_failed_dropped() -> None:
 
 def test_survivor_observed_through_horizon_is_negative() -> None:
     # bank observed 2008Q1..2010Q1 (9 quarters), never fails
-    quarters = [
-        "2008Q1", "2008Q2", "2008Q3", "2008Q4",
-        "2009Q1", "2009Q2", "2009Q3", "2009Q4", "2010Q1",
-    ]
+    quarters = [f"2008Q1", "2008Q2", "2008Q3", "2008Q4", "2009Q1", "2009Q2", "2009Q3", "2009Q4", "2010Q1"]
     panel = _panel([(2, q) for q in quarters])
     out = attach_labels(panel, _failures([]), horizon_q=4)
-    by_q = dict(zip(out["quarter"], out["label_4"], strict=True))
+    by_q = dict(zip(out["quarter"], out["label_4"]))
     assert by_q["2008Q1"] == 0  # observed 4 quarters later -> survived
     # last 4 quarters cannot confirm horizon -> censored (NA)
     assert pd.isna(by_q["2009Q2"])

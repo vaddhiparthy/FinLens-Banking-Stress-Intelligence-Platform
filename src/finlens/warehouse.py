@@ -35,6 +35,10 @@ def _latest_source_json(source: str) -> dict | None:
     return json.loads(latest.read_text(encoding="utf-8"))
 
 
+def latest_source_manifest(source: str) -> dict | None:
+    return _latest_source_json(source)
+
+
 def _artifact_path_for_runtime(source: str, payload: dict) -> Path | None:
     artifact_path = payload.get("artifact_path")
     if not artifact_path:
@@ -429,7 +433,8 @@ def initialise_local_duckdb() -> Path:
 def read_table(name: str) -> pd.DataFrame:
     import duckdb
 
-    if not local_duckdb_path().exists():
-        initialise_local_duckdb()  # builds from real ingested payloads only (no demo data)
-    with duckdb.connect(str(local_duckdb_path())) as conn:
+    db_path = local_duckdb_path()
+    if not db_path.exists():
+        raise FileNotFoundError(f"Serving warehouse is unavailable: {db_path}")
+    with duckdb.connect(str(db_path), read_only=True) as conn:
         return conn.execute(f"select * from {name}").df()

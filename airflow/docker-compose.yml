@@ -6,10 +6,13 @@ services:
       POSTGRES_PASSWORD: airflow
       POSTGRES_DB: airflow
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "airflow"]
+      test:
+      - CMD
+      - pg_isready
+      - -U
+      - airflow
       interval: 10s
       retries: 5
-
   airflow-init:
     build:
       context: ..
@@ -22,18 +25,33 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
       AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-webserver:8080/execution/
-      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: "true"
+      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: 'true'
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     command:
-      - bash
-      - -c
-      - |
-        set -euo pipefail
-        airflow db migrate
-        if ! airflow users list --output json | python -c 'import json, sys; users=json.load(sys.stdin); raise SystemExit(0 if any(user.get("username") == "admin" for user in users) else 1)'; then
-          airflow users create --username admin --password admin --firstname Fin --lastname Lens --role Admin --email admin@example.com
-        fi
+    - bash
+    - -c
+    - 'set -euo pipefail
 
+      airflow db migrate
+
+      python -B -c ''import os,pathlib,shlex,shutil; p=pathlib.Path(shutil.which(''"''"''airflow''"''"''));
+      argv=shlex.split(p.open().readline()[2:].strip()); assert len(argv)==1 and argv[0].startswith(''"''"''/''"''"'')
+      and os.path.isfile(argv[0]); os.execv(argv[0],[argv[0],''"''"''-B''"''"'',''"''"''/opt/finlens-bootstrap-admin.py''"''"''])''
+
+      '
+    volumes:
+    - type: bind
+      source: /opt/apps/professional/finlens-airflow/bootstrap/bootstrap_admin.py
+      target: /opt/finlens-bootstrap-admin.py
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: /opt/apps/professional/finlens-airflow/bootstrap/secret
+      target: /run/finlens-airflow-bootstrap
+      read_only: true
+      bind:
+        create_host_path: false
   airflow-webserver:
     build:
       context: ..
@@ -43,22 +61,21 @@ services:
       airflow-init:
         condition: service_completed_successfully
     ports:
-      - "8080:8080"
+    - 8080:8080
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
       AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-webserver:8080/execution/
-      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: "true"
+      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: 'true'
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__API__BASE_URL: http://localhost:8080
     command: api-server
     volumes:
-      - ./dags:/opt/airflow/dags
-      - ../dbt:/opt/finlens/dbt
-      - ../src:/opt/finlens/src
-      - ../ingestion:/opt/finlens/ingestion
-
+    - ./dags:/opt/airflow/dags
+    - ../dbt:/opt/finlens/dbt
+    - ../src:/opt/finlens/src
+    - ../ingestion:/opt/finlens/ingestion
   airflow-scheduler:
     build:
       context: ..
@@ -73,16 +90,15 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
       AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-webserver:8080/execution/
-      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: "true"
+      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: 'true'
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     command: scheduler
     volumes:
-      - ./dags:/opt/airflow/dags
-      - ../dbt:/opt/finlens/dbt
-      - ../src:/opt/finlens/src
-      - ../ingestion:/opt/finlens/ingestion
-
+    - ./dags:/opt/airflow/dags
+    - ../dbt:/opt/finlens/dbt
+    - ../src:/opt/finlens/src
+    - ../ingestion:/opt/finlens/ingestion
   airflow-dag-processor:
     build:
       context: ..
@@ -97,9 +113,9 @@ services:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
       AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
       AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-webserver:8080/execution/
-      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: "true"
+      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: 'true'
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
     command: dag-processor
     volumes:
-      - ./dags:/opt/airflow/dags
+    - ./dags:/opt/airflow/dags

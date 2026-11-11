@@ -1,15 +1,85 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from datetime import UTC, datetime
+import json
+import os
+import stat
+import tempfile
 from uuid import uuid4
 
 from finlens.config import get_settings
-from finlens.state import load_state, save_state
+from finlens.state import state_file
+
+
+MAX_TELEMETRY_EVENTS = 10_000
 
 
 def load_telemetry_events() -> list[dict]:
-    payload = load_state("telemetry_events", default=[])
+    try:
+        payload = json.loads(state_file("telemetry_events").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        payload = []
     return payload if isinstance(payload, list) else []
+
+
+@contextmanager
+def _telemetry_update_lock():
+    path = state_file("telemetry_events")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if os.name == "nt":
+        import msvcrt
+        with path.with_name(".telemetry-events.lock").open("a+b") as lock:
+            lock.seek(0, os.SEEK_END)
+            if lock.tell() == 0:
+                lock.write(b"\0")
+                lock.flush()
+            lock.seek(0)
+            msvcrt.locking(lock.fileno(), msvcrt.LK_LOCK, 1)
+            try:
+                yield path
+            finally:
+                lock.seek(0)
+                msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
+    else:
+        import fcntl
+        descriptor = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            yield path
+        finally:
+            os.close(descriptor)
+
+
+def _write_telemetry_events(path, events):
+    mode = 0o660
+    try:
+        info = path.lstat()
+        if not stat.S_ISREG(info.st_mode):
+            raise ValueError("Telemetry storage must be a regular file")
+        mode = stat.S_IMODE(info.st_mode)
+    except FileNotFoundError:
+        pass
+    descriptor, temporary = tempfile.mkstemp(prefix=".telemetry-", suffix=".tmp", dir=path.parent)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            if hasattr(os, "fchmod"):
+                os.fchmod(stream.fileno(), mode)
+            else:
+                os.chmod(temporary, mode)
+            json.dump(events, stream, indent=2, sort_keys=True)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+        if os.name != "nt":
+            directory = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
 
 
 def append_telemetry_event(
@@ -23,7 +93,6 @@ def append_telemetry_event(
     settings = get_settings()
     if not settings.finlens_telemetry_enabled:
         return {}
-    events = load_telemetry_events()
     event = {
         "event_id": str(uuid4()),
         "event_type": event_type,
@@ -33,8 +102,15 @@ def append_telemetry_event(
         "payload": payload or {},
         "captured_at": datetime.now(UTC).isoformat(),
     }
-    events.append(event)
-    save_state("telemetry_events", events)
+    with _telemetry_update_lock() as path:
+        try:
+            events = json.loads(path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            events = []
+        if not isinstance(events, list):
+            raise ValueError("Telemetry history must be a list")
+        events.append(event)
+        _write_telemetry_events(path, events[-MAX_TELEMETRY_EVENTS:])
     return event
 
 

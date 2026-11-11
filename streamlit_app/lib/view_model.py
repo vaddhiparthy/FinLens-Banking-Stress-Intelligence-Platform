@@ -23,6 +23,19 @@ class DashboardKpis:
     top_acquirer_assets_millions: float
 
 
+def default_states(failures: pd.DataFrame) -> list[str]:
+    return sorted(failures["state"].dropna().unique().tolist())
+
+
+def default_decades(acquirers: pd.DataFrame) -> list[str]:
+    return sorted(acquirers["decade"].dropna().unique().tolist())
+
+
+def default_metric(metrics: pd.DataFrame) -> str:
+    unique = sorted(metrics["series_id"].dropna().unique().tolist())
+    return unique[0] if unique else ""
+
+
 def apply_dashboard_filters(
     failures: pd.DataFrame,
     metrics: pd.DataFrame,

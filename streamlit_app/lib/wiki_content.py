@@ -9,8 +9,8 @@ ARTICLES = {'About FinLens': {'cluster': 'Orientation',
                               'serves them through a deliberately small business surface and two substantive '
                               'engineering surfaces (Data Engineering and AI Engineering). The goal is to demonstrate '
                               'end-to-end data and ML engineering on a real banking problem.',
-                   'body': 'FinLens is built and maintained by [Sri Vaddhiparthy](https://srivaddhiparthy.com/) (M.S., Data Science) as a '
-                           'portfolio project at `https://srivaddhiparthy.com/finlens/`. The platform is documented '
+                   'body': 'FinLens is built and maintained by [Surya Vaddhiparthy](https://vaddhiparthy.com/) (M.S., Data Science) as a '
+                           'portfolio project at `https://vaddhiparthy.com/finlens/`. The platform is documented '
                            'in full at the same address.\n'
                            '\n'
                            'It is worth being clear about what FinLens is not: it is not a regulator, not a bank, not an '
@@ -31,7 +31,7 @@ ARTICLES = {'About FinLens': {'cluster': 'Orientation',
                                    'authoritative reference, but it should not be needed to follow along.'},
  'Author and Project Intent': {'cluster': 'Orientation',
                                'branch': 'Orientation',
-                               'summary': 'FinLens was designed and built by Sri Vaddhiparthy (M.S., Data Science) '
+                               'summary': 'FinLens was designed and built by Surya Vaddhiparthy (M.S., Data Science) '
                                           'as a portfolio-grade demonstration of data engineering, data '
                                           'architecture, and analytical-engineering work on public banking data.',
                                'body': 'The project pursues two goals. First, the engineering surface is meant to show '
@@ -43,7 +43,7 @@ ARTICLES = {'About FinLens': {'cluster': 'Orientation',
                                        'boring, and a platform that says useful things but is engineered badly falls '
                                        'apart the moment it has to be maintained.\n'
                                        '\n'
-                                       'The author portfolio lives at `https://srivaddhiparthy.com`. Contact '
+                                       'The author portfolio lives at `https://vaddhiparthy.com`. Contact '
                                        'details, the source code, and other projects are reachable from the portfolio root.\n'
                                        '\n'
                                        '---'},
@@ -1103,7 +1103,7 @@ ARTICLES = {'About FinLens': {'cluster': 'Orientation',
                                'over the warehouse output.'},
  'Edge and Operations': {'cluster': 'Serving',
                          'branch': 'Serving',
-                         'summary': 'Cloudflare is the edge for the public domain `srivaddhiparthy.com`. It is used '
+                         'summary': 'Cloudflare is the edge for the public domain `vaddhiparthy.com`. It is used '
                                     'for TLS termination, optional Turnstile bot protection on the telemetry POST '
                                     'endpoint, and DNS. Cloudflare was chosen for free-tier coverage and DNS '
                                     'simplicity.',
@@ -1355,7 +1355,7 @@ ARTICLES = {'About FinLens': {'cluster': 'Orientation',
                                     'Streamlit serves the user-facing application. FastAPI serves the machine-facing '
                                     'health and read endpoints. Uptime Kuma monitors service reachability. Postgres '
                                     'holds the control-plane state synchronised from local telemetry.',
-                         'body': 'The public route is `https://srivaddhiparthy.com/finlens/`. It is placed on a path '
+                         'body': 'The public route is `https://vaddhiparthy.com/finlens/`. It is placed on a path '
                                  'under the main portfolio because Streamlit is naturally simpler at a root path; '
                                  'routing under a subpath is doable but needs careful Caddy reverse-proxy '
                                  'configuration to handle WebSocket asset paths correctly.\n'

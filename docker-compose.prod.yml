@@ -1,41 +1,75 @@
 name: professional
 services:
   finlens-web:
-    build:
-      context: .
-      dockerfile: Dockerfile.streamlit
+    image: sha256:8d13baa93aaf8e8f2d004c849bc8281af596708be7e01e2e11d815d8ffc8563c
     pull_policy: never
     container_name: professional-finlens-web
+    user: 10001:10001
+    read_only: true
+    cap_drop:
+    - ALL
+    security_opt:
+    - no-new-privileges:true
+    tmpfs:
+    - /tmp:rw,exec,nosuid,nodev,size=256m,mode=1777
     healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=5)"]
+      test:
+      - CMD
+      - python3
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health',
+        timeout=5)
       interval: 60s
       timeout: 10s
       retries: 3
       start_period: 30s
     mem_limit: 1g
     memswap_limit: 1g
+    cpus: '1.0'
+    pids_limit: 512
     env_file:
-      - /opt/platform/vault/secrets/professional/finlens.env
+    - /opt/platform/vault/secrets/professional/finlens-app.env
     environment:
-      POSTGRES_SYNC_DSN: postgresql://finlens:finlens@professional-finlens-db:5432/finlens
+      POSTGRES_SYNC_DSN: ${FINLENS_APP_DSN:?required}
       PORTFOLIO_PROFILE_URL: http://portfolio-qa-site:8088/data/site-content.json
+      HOME: /tmp
+    command:
+    - streamlit
+    - run
+    - streamlit_app/app.py
+    - --server.address=0.0.0.0
+    - --server.port=8501
+    - --server.headless=true
+    - --server.enableCORS=true
+    - --server.corsAllowedOrigins=https://vaddhiparthy.com
+    - --server.enableXsrfProtection=true
     volumes:
-      - ./data:/app/data
-      - ./.duckdb:/app/.duckdb
-    restart: unless-stopped
+    - ./data:/app/data
+    - ./.duckdb:/app/.duckdb
+    restart: 'no'
     expose:
-      - "8501"
+    - '8501'
     networks:
-      - professional_net
-
+    - professional_net
   finlens-public:
-    build:
-      context: .
-      dockerfile: Dockerfile.streamlit
+    image: sha256:0dbda7dcf873f73220700cf912cec0b741f9c59e3deea5be2eeba5fc9a7a8c7e
     pull_policy: never
     container_name: professional-finlens-public
+    user: 10001:10001
+    read_only: true
+    cap_drop:
+    - ALL
+    security_opt:
+    - no-new-privileges:true
+    tmpfs:
+    - /tmp:rw,exec,nosuid,nodev,size=256m,mode=1777
     healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/finlens/_stcore/health', timeout=5)"]
+      test:
+      - CMD
+      - python3
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/finlens/_stcore/health',
+        timeout=5)
       interval: 60s
       timeout: 10s
       retries: 3
@@ -45,283 +79,387 @@ services:
     cpus: 1.0
     pids_limit: 512
     env_file:
-      - /opt/platform/vault/secrets/professional/finlens.env
+    - /opt/platform/vault/secrets/professional/finlens-app.env
     environment:
-      POSTGRES_SYNC_DSN: postgresql://finlens:finlens@professional-finlens-db:5432/finlens
+      POSTGRES_SYNC_DSN: ${FINLENS_APP_DSN:?required}
       PORTFOLIO_PROFILE_URL: http://portfolio-qa-site:8088/data/site-content.json
+      HOME: /tmp
     command:
-      - streamlit
-      - run
-      - streamlit_app/app.py
-      - --server.address=0.0.0.0
-      - --server.port=8501
-      - --server.headless=true
-      - --server.enableCORS=false
-      - --server.enableXsrfProtection=true
-      - --server.baseUrlPath=finlens
+    - streamlit
+    - run
+    - streamlit_app/app.py
+    - --server.address=0.0.0.0
+    - --server.port=8501
+    - --server.headless=true
+    - --server.enableCORS=true
+    - --server.corsAllowedOrigins=https://vaddhiparthy.com
+    - --server.enableXsrfProtection=true
+    - --server.baseUrlPath=finlens
     volumes:
-      - ./data:/app/data
-      - ./.duckdb:/app/.duckdb
-    restart: unless-stopped
+    - ./data:/app/data
+    - ./.duckdb:/app/.duckdb
+    restart: 'no'
     expose:
-      - "8501"
+    - '8501'
     networks:
-      - platform_edge
-      - professional_net
-
+    - platform_edge
+    - professional_net
   finlens-api:
-    build:
-      context: .
-      dockerfile: api/Dockerfile
+    image: sha256:83671beb38010d447e1e968704cf4a763686c914bc05d678816fb5040b6da06f
     pull_policy: never
     container_name: professional-finlens-api
+    user: 10001:10001
+    read_only: true
+    cap_drop:
+    - ALL
+    security_opt:
+    - no-new-privileges:true
+    pids_limit: 512
+    tmpfs:
+    - /tmp:rw,exec,nosuid,nodev,size=64m,mode=1777
     healthcheck:
-      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
+      test:
+      - CMD
+      - python3
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health',
+        timeout=5)
       interval: 60s
       timeout: 10s
       retries: 3
       start_period: 30s
     mem_limit: 512m
     memswap_limit: 512m
+    cpus: '1.0'
     env_file:
-      - /opt/platform/vault/secrets/professional/finlens.env
+    - /opt/platform/vault/secrets/professional/finlens-app.env
     environment:
-      POSTGRES_SYNC_DSN: postgresql://finlens:finlens@professional-finlens-db:5432/finlens
+      POSTGRES_SYNC_DSN: ${FINLENS_APP_DSN:?required}
     volumes:
-      - ./data:/app/data
-      - ./.duckdb:/app/.duckdb
-    restart: unless-stopped
+    - ./data:/app/data
+    - ./.duckdb:/app/.duckdb
+    restart: 'no'
     expose:
-      - "8000"
+    - '8000'
     networks:
-      - platform_edge
-      - professional_net
-
+    - platform_edge
+    - professional_net
   finlens-db:
-    image: postgres@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685  # PostgreSQL 16.15-alpine3.24, pinned 2026-08-23
+    image: sha256:e3541a307e4c7ea2f931f3fa5110859f12215b8ae486d08a9331fb6564dfab8d
     container_name: professional-finlens-db
     mem_limit: 512m
     memswap_limit: 512m
-    restart: unless-stopped
+    cpus: '1.0'
+    pids_limit: 512
+    restart: 'no'
+    read_only: true
+    security_opt:
+    - no-new-privileges:true
+    tmpfs:
+    - /tmp:rw,noexec,nosuid,nodev,size=64m
+    - /run:rw,nosuid,nodev,size=32m
+    - /var/run/postgresql:rw,nosuid,nodev,size=32m,uid=70,gid=70,mode=0775
     environment:
       POSTGRES_USER: finlens
-      POSTGRES_PASSWORD: finlens
+      POSTGRES_PASSWORD: ${FINLENS_DB_PASSWORD:?required}
       POSTGRES_DB: finlens
     volumes:
-      - professional_finlens_control_db:/var/lib/postgresql/data
+    - professional_finlens_control_db_pg18:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U finlens -d finlens"]
+      test:
+      - CMD-SHELL
+      - pg_isready -U finlens -d finlens
       interval: 10s
       timeout: 5s
       retries: 5
-    command: ["postgres", "-c", "max_connections=25", "-c", "effective_cache_size=384MB"]
+    command:
+    - postgres
+    - -c
+    - max_connections=25
+    - -c
+    - effective_cache_size=384MB
     expose:
-      - "5432"
+    - '5432'
     networks:
-      - professional_net
-
+    - professional_net
   airflow-db:
-    image: postgres@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685  # PostgreSQL 16.15-alpine3.24, pinned 2026-08-23
+    image: sha256:e3541a307e4c7ea2f931f3fa5110859f12215b8ae486d08a9331fb6564dfab8d
     container_name: professional-finlens-airflow-db
     mem_limit: 512m
     memswap_limit: 512m
-    restart: unless-stopped
+    cpus: '1.0'
+    pids_limit: 512
+    restart: 'no'
+    read_only: true
+    security_opt:
+    - no-new-privileges:true
+    tmpfs:
+    - /tmp:rw,noexec,nosuid,nodev,size=64m
+    - /run:rw,nosuid,nodev,size=32m
+    - /var/run/postgresql:rw,nosuid,nodev,size=32m,uid=70,gid=70,mode=0775
     environment:
       POSTGRES_USER: airflow
-      POSTGRES_PASSWORD: airflow
+      POSTGRES_PASSWORD: ${AIRFLOW_DB_PASSWORD:?required}
       POSTGRES_DB: airflow
     volumes:
-      - professional_finlens_airflow_db:/var/lib/postgresql/data
+    - professional_finlens_airflow_db_pg18:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      test:
+      - CMD-SHELL
+      - pg_isready -U airflow -d airflow
       interval: 10s
       timeout: 5s
       retries: 5
-    command: ["postgres", "-c", "max_connections=30", "-c", "effective_cache_size=384MB"]
+    command:
+    - postgres
+    - -c
+    - max_connections=30
+    - -c
+    - effective_cache_size=384MB
     expose:
-      - "5432"
+    - '5432'
     networks:
-      - professional_net
-
+    - professional_net
   airflow-init:
-    build:
-      context: .
-      dockerfile: airflow/Dockerfile
+    image: sha256:d380286e94bb43ea25a8629d4f148d43fd7363a8013efcbc0255fc22d0017b36
     pull_policy: never
     container_name: professional-finlens-airflow-init
+    group_add:
+    - '10001'
     depends_on:
       airflow-db:
         condition: service_healthy
       finlens-db:
         condition: service_healthy
     env_file:
-      - /opt/platform/vault/secrets/professional/finlens.env
+    - /opt/platform/vault/secrets/professional/finlens-app.env
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
       AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://professional-finlens-airflow-web:8080/execution/
-      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: "true"
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@professional-finlens-airflow-db:5432/airflow
-      POSTGRES_SYNC_DSN: postgresql://finlens:finlens@professional-finlens-db:5432/finlens
+      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: 'true'
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW_APP_SQL_DSN:?required}
+      POSTGRES_SYNC_DSN: ${FINLENS_APP_DSN:?required}
       FINLENS_DUCKDB_PATH: /opt/finlens/.duckdb/finlens.duckdb
     volumes:
-      - ./data:/opt/finlens/data
-      - ./.duckdb:/opt/finlens/.duckdb
-      - ./airflow/dags:/opt/airflow/dags
-      - ./scripts/retain_control_plane_postgres.py:/opt/finlens/scripts/retain_control_plane_postgres.py:ro
-      - airflow_logs:/opt/airflow/logs
+    - ./data:/opt/finlens/data
+    - ./.duckdb:/opt/finlens/.duckdb
+    - ./airflow/dags:/opt/airflow/dags
+    - ./scripts/retain_control_plane_postgres.py:/opt/finlens/scripts/retain_control_plane_postgres.py:ro
+    - airflow_logs:/opt/airflow/logs
+    - type: bind
+      source: /opt/apps/professional/finlens-airflow/bootstrap/bootstrap_admin.py
+      target: /opt/finlens-bootstrap-admin.py
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: /opt/apps/professional/finlens-airflow/bootstrap/secret
+      target: /run/finlens-airflow-bootstrap
+      read_only: true
+      bind:
+        create_host_path: false
     command:
-      - bash
-      - -c
-      - |
-        set -euo pipefail
-        airflow db migrate
-        if ! airflow users list --output json | python -c 'import json, sys; users=json.load(sys.stdin); raise SystemExit(0 if any(user.get("username") == "admin" for user in users) else 1)'; then
-          airflow users create --username admin --password admin --firstname Fin --lastname Lens --role Admin --email admin@example.com
-        fi
-    networks:
-      - professional_net
+    - bash
+    - -c
+    - 'set -euo pipefail
 
+      airflow db migrate
+
+      python -B -c ''import os,pathlib,shlex,shutil; p=pathlib.Path(shutil.which(''"''"''airflow''"''"''));
+      argv=shlex.split(p.open().readline()[2:].strip()); assert len(argv)==1 and argv[0].startswith(''"''"''/''"''"'')
+      and os.path.isfile(argv[0]); os.execv(argv[0],[argv[0],''"''"''-B''"''"'',''"''"''/opt/finlens-bootstrap-admin.py''"''"''])''
+
+      '
+    networks:
+    - professional_net
   airflow-web:
-    build:
-      context: .
-      dockerfile: airflow/Dockerfile
+    image: sha256:45bccbd25b1492651d262d8893c548e6b14184b33fde0b53b6527a5e5cb96a13
     pull_policy: never
     container_name: professional-finlens-airflow-web
+    group_add:
+    - '10001'
     healthcheck:
-      test: ["CMD-SHELL", "python -c 'import urllib.request; urllib.request.urlopen(\"http://127.0.0.1:8080/api/v2/monitor/health\", timeout=8).read()'"]
+      test:
+      - CMD-SHELL
+      - python -c 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8080/api/v2/monitor/health",
+        timeout=8).read()'
       interval: 60s
       timeout: 10s
       retries: 3
       start_period: 60s
     mem_limit: 2g
     memswap_limit: 2g
-    restart: unless-stopped
+    cpus: '2.0'
+    pids_limit: 1024
+    restart: 'no'
+    read_only: true
+    security_opt:
+    - no-new-privileges:true
+    tmpfs:
+    - /tmp:rw,noexec,nosuid,nodev,size=256m
+    - /var/tmp:rw,noexec,nosuid,nodev,size=64m
+    - /run:rw,nosuid,nodev,size=32m
     depends_on:
       airflow-init:
         condition: service_completed_successfully
     env_file:
-      - /opt/platform/vault/secrets/professional/finlens.env
+    - /opt/platform/vault/secrets/professional/finlens-app.env
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
       AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://professional-finlens-airflow-web:8080/execution/
-      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: "true"
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@professional-finlens-airflow-db:5432/airflow
-      POSTGRES_SYNC_DSN: postgresql://finlens:finlens@professional-finlens-db:5432/finlens
+      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: 'true'
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW_APP_SQL_DSN:?required}
+      POSTGRES_SYNC_DSN: ${FINLENS_APP_DSN:?required}
       FINLENS_DUCKDB_PATH: /opt/finlens/.duckdb/finlens.duckdb
       AIRFLOW__API__BASE_URL: https://airflow.vaddhiparthy.vip
       AIRFLOW__FAB__CONFIG_FILE: /opt/airflow/webserver_config.py
-      AIRFLOW__FAB__ENABLE_PROXY_FIX: "true"
-      AIRFLOW__FAB__UPDATE_FAB_PERMS: "True"
+      AIRFLOW__FAB__ENABLE_PROXY_FIX: 'true'
+      AIRFLOW__FAB__UPDATE_FAB_PERMS: 'True'
     command: api-server
     volumes:
-      - ./data:/opt/finlens/data
-      - ./.duckdb:/opt/finlens/.duckdb
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/webserver_config.py:/opt/airflow/webserver_config.py:ro
-      - ./scripts/retain_control_plane_postgres.py:/opt/finlens/scripts/retain_control_plane_postgres.py:ro
-      - airflow_logs:/opt/airflow/logs
+    - ./data:/opt/finlens/data
+    - ./.duckdb:/opt/finlens/.duckdb
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/webserver_config.py:/opt/airflow/webserver_config.py:ro
+    - ./scripts/retain_control_plane_postgres.py:/opt/finlens/scripts/retain_control_plane_postgres.py:ro
+    - airflow_logs:/opt/airflow/logs
     expose:
-      - "8080"
+    - '8080'
     networks:
-      - professional_net
-      - platform_edge
-
+    - professional_net
+    - platform_edge
   scheduler:
-    build:
-      context: .
-      dockerfile: airflow/Dockerfile
+    image: sha256:d380286e94bb43ea25a8629d4f148d43fd7363a8013efcbc0255fc22d0017b36
     pull_policy: never
     container_name: professional-finlens-scheduler
+    group_add:
+    - '10001'
     healthcheck:
-      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob >/dev/null 2>&1 || exit 1"]
+      test:
+      - CMD-SHELL
+      - python -c 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8974/health", timeout=8).read()'
       interval: 60s
       timeout: 10s
       retries: 3
       start_period: 60s
+      start_interval: 10s
     mem_limit: 1.5g
     memswap_limit: 1.5g
-    restart: unless-stopped
+    cpus: '2.0'
+    pids_limit: 1024
+    restart: 'no'
+    read_only: true
+    security_opt:
+    - no-new-privileges:true
+    tmpfs:
+    - /tmp:rw,noexec,nosuid,nodev,size=256m
+    - /var/tmp:rw,noexec,nosuid,nodev,size=64m
+    - /run:rw,nosuid,nodev,size=32m
     depends_on:
       airflow-init:
         condition: service_completed_successfully
       airflow-web:
         condition: service_healthy
     env_file:
-      - /opt/platform/vault/secrets/professional/finlens.env
+    - /opt/platform/vault/secrets/professional/finlens-app.env
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
       AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://professional-finlens-airflow-web:8080/execution/
-      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: "true"
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@professional-finlens-airflow-db:5432/airflow
-      AIRFLOW_METADATA_DSN: postgresql://airflow:airflow@professional-finlens-airflow-db:5432/airflow
-      POSTGRES_SYNC_DSN: postgresql://finlens:finlens@professional-finlens-db:5432/finlens
+      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: 'true'
+      AIRFLOW__CORE__PARALLELISM: '8'
+      AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'True'
+      AIRFLOW__SCHEDULER__SCHEDULER_HEALTH_CHECK_SERVER_HOST: '127.0.0.1'
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW_APP_SQL_DSN:?required}
+      AIRFLOW_METADATA_DSN: ${AIRFLOW_APP_METADATA_DSN:?required}
+      POSTGRES_SYNC_DSN: ${FINLENS_APP_DSN:?required}
       FINLENS_DUCKDB_PATH: /opt/finlens/.duckdb/finlens.duckdb
-      AIRFLOW__FAB__UPDATE_FAB_PERMS: "True"
+      AIRFLOW__FAB__UPDATE_FAB_PERMS: 'True'
     command: scheduler
     volumes:
-      - ./data:/opt/finlens/data
-      - ./.duckdb:/opt/finlens/.duckdb
-      - ./airflow/dags:/opt/airflow/dags
-      - ./scripts/collect_airflow_evidence.py:/opt/finlens/scripts/collect_airflow_evidence.py:ro
-      - ./scripts/retain_control_plane_postgres.py:/opt/finlens/scripts/retain_control_plane_postgres.py:ro
-      - airflow_logs:/opt/airflow/logs
+    - /opt/apps/professional/projects/finlens/.dbt-runtime/scheduler/logs:/opt/finlens/dbt/logs
+    - /opt/apps/professional/projects/finlens/.dbt-runtime/scheduler/target:/opt/finlens/dbt/target
+    - ./data:/opt/finlens/data
+    - ./.duckdb:/opt/finlens/.duckdb
+    - ./airflow/dags:/opt/airflow/dags
+    - ./scripts/sync_control_plane_to_postgres.py:/opt/finlens/scripts/sync_control_plane_to_postgres.py:ro
+    - ./scripts/collect_airflow_evidence.py:/opt/finlens/scripts/collect_airflow_evidence.py:ro
+    - ./scripts/retain_control_plane_postgres.py:/opt/finlens/scripts/retain_control_plane_postgres.py:ro
+    - airflow_logs:/opt/airflow/logs
     networks:
-      - professional_net
-
+    - professional_net
   dag-processor:
-    build:
-      context: .
-      dockerfile: airflow/Dockerfile
+    image: sha256:d380286e94bb43ea25a8629d4f148d43fd7363a8013efcbc0255fc22d0017b36
     pull_policy: never
     container_name: professional-finlens-dag-processor
     healthcheck:
-      test: ["CMD-SHELL", "airflow jobs check --job-type DagProcessorJob --local >/dev/null 2>&1 || exit 1"]
-      interval: 60s
+      test:
+      - CMD-SHELL
+      - airflow jobs check --job-type DagProcessorJob --local >/dev/null 2>&1 || exit
+        1
+      interval: 180s
       timeout: 10s
       retries: 3
       start_period: 60s
+      start_interval: 10s
     mem_limit: 768m
     memswap_limit: 768m
-    restart: unless-stopped
+    cpus: '2.0'
+    pids_limit: 1024
+    restart: 'no'
+    read_only: true
+    security_opt:
+    - no-new-privileges:true
+    tmpfs:
+    - /tmp:rw,noexec,nosuid,nodev,size=256m
+    - /var/tmp:rw,noexec,nosuid,nodev,size=64m
+    - /run:rw,nosuid,nodev,size=32m
     depends_on:
       airflow-init:
         condition: service_completed_successfully
       airflow-web:
         condition: service_healthy
     env_file:
-      - /opt/platform/vault/secrets/professional/finlens.env
+    - /opt/platform/vault/secrets/professional/finlens-app.env
     environment:
       AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
       AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
       AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://professional-finlens-airflow-web:8080/execution/
-      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: "true"
-      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@professional-finlens-airflow-db:5432/airflow
-      POSTGRES_SYNC_DSN: postgresql://finlens:finlens@professional-finlens-db:5432/finlens
+      AIRFLOW__SCHEDULER__CREATE_CRON_DATA_INTERVALS: 'true'
+      AIRFLOW__DAG_PROCESSOR__MIN_FILE_PROCESS_INTERVAL: '300'
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: ${AIRFLOW_APP_SQL_DSN:?required}
+      POSTGRES_SYNC_DSN: ${FINLENS_APP_DSN:?required}
       FINLENS_DUCKDB_PATH: /opt/finlens/.duckdb/finlens.duckdb
-      AIRFLOW__FAB__UPDATE_FAB_PERMS: "True"
+      AIRFLOW__FAB__UPDATE_FAB_PERMS: 'True'
     command: dag-processor
     volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - airflow_logs:/opt/airflow/logs
+    - /opt/apps/professional/projects/finlens/.dbt-runtime/dag-processor/logs:/opt/finlens/dbt/logs
+    - /opt/apps/professional/projects/finlens/.dbt-runtime/dag-processor/target:/opt/finlens/dbt/target
+    - ./airflow/dags:/opt/airflow/dags
+    - airflow_logs:/opt/airflow/logs
+    - /opt/apps/professional/projects/finlens/data/state:/opt/finlens/data/state:rw
     networks:
-      - professional_net
-
+    - professional_net
+    group_add:
+    - '10001'
 volumes:
-  airflow_logs:
+  airflow_logs: null
   professional_finlens_control_db:
     external: true
+  professional_finlens_control_db_pg18:
+    external: true
   professional_finlens_airflow_db:
+    external: true
+  professional_finlens_airflow_db_pg18:
     external: true
 networks:
   platform_edge:
     external: true
   professional_net:
     external: true
-

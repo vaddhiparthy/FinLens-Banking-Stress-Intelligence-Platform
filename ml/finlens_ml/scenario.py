@@ -15,7 +15,7 @@ from functools import lru_cache
 import pandas as pd
 
 from finlens_ml.config import get_ml_settings
-from finlens_ml.features import FEATURE_COLUMNS
+from finlens_ml.features import FEATURE_COLUMNS, MONOTONE_CONSTRAINTS
 
 SLIDER_LABELS: dict[str, str] = {
     "tier1_rwa_ratio": "Tier 1 risk-based capital ratio (%)",
@@ -81,6 +81,17 @@ SLIDER_FEATURES: dict[str, tuple[float, float, float]] = {
     "nim": (0.0, 8.0, 3.2),
     "efficiency_ratio": (20.0, 120.0, 62.0),
 }
+
+
+@lru_cache(maxsize=1)
+def _dataset() -> pd.DataFrame:
+    import duckdb
+
+    settings = get_ml_settings()
+    with duckdb.connect(str(settings.duckdb_path), read_only=True) as conn:
+        return conn.execute(
+            "select * from ml.training_dataset"
+        ).df()
 
 
 def _conn():
@@ -254,3 +265,9 @@ def score_hypothetical(slider_values: dict, horizon_q: int = 4) -> dict:
     return score_features(full, horizon_q)
 
 
+def default_hypothetical() -> dict:
+    return {f: d for f, (_, _, d) in SLIDER_FEATURES.items()}
+
+
+def feature_monotone(feature: str) -> int:
+    return MONOTONE_CONSTRAINTS.get(feature, 0)

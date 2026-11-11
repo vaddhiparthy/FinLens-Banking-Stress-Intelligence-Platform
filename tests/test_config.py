@@ -3,18 +3,18 @@ from finlens.config import Settings
 
 def test_masked_dict_redacts_sensitive_values() -> None:
     settings = Settings(
-        snowflake_password="secret-value",
-        cloudflare_api_token="token-value",
+        aws_access_key_id="abc123",
+        aws_secret_access_key="secret-value",
         fred_api_key="fred-secret",
         finlens_environment="test",
     )
 
     masked = settings.as_masked_dict(
-        ["snowflake_password", "cloudflare_api_token", "fred_api_key", "finlens_environment"]
+        ["aws_access_key_id", "aws_secret_access_key", "fred_api_key", "finlens_environment"]
     )
 
-    assert masked["snowflake_password"] == "***"
-    assert masked["cloudflare_api_token"] == "***"
+    assert masked["aws_access_key_id"] == "***"
+    assert masked["aws_secret_access_key"] == "***"
     assert masked["fred_api_key"] == "***"
     assert masked["finlens_environment"] == "test"
 

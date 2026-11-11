@@ -27,6 +27,7 @@ from finlens.evidence import (
 from finlens.pipeline_runs import latest_pipeline_run
 from finlens.pipeline_status import pipeline_status_rows
 from finlens.state import load_state
+from finlens.telemetry import telemetry_summary
 from finlens.warehouse import stress_pulse_source_mode
 from streamlit_app.lib.architecture_docs import render_architecture_decisions
 from streamlit_app.lib.de_pipeline import (
@@ -100,6 +101,28 @@ def reconciliation_table() -> pd.DataFrame:
                 "Status": status,
                 "Validation note": detail,
             },
+        ]
+    )
+
+
+def freshness_table() -> pd.DataFrame:
+    connector_report = load_state("connector_report", default={})
+    sources = connector_report.get("sources", [])
+    if not sources:
+        return pd.DataFrame(
+            [{"Source": "No connector report", "Freshness": "—", "SLA": "—", "Status": "Missing"}]
+        )
+    return pd.DataFrame(
+        [
+            {
+                "Source": item["label"],
+                "Freshness": "Success" if item["ready"] else "Not Activated",
+                "SLA": item["cadence"],
+                "Status": item["status"],
+                "Required input": ", ".join(item.get("required_env", [])) or "None required",
+                "Missing input": ", ".join(item.get("missing_env", [])) or "—",
+            }
+            for item in sources
         ]
     )
 
@@ -520,6 +543,42 @@ def latest_pipeline_run_frame() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def dbt_build_frame() -> pd.DataFrame:
+    report = load_state("dbt_build_report", default={})
+    if not report:
+        return pd.DataFrame(
+            [
+                {
+                    "Target": "local",
+                    "Status": "Pending",
+                    "Return code": "—",
+                    "Captured at": "—",
+                    "Summary": "Run scripts/run_local_pipeline.py --run-dbt-build",
+                }
+            ]
+        )
+    stdout = str(report.get("stdout_tail", ""))
+    summary_line = next(
+        (
+            line.strip()
+            for line in reversed(stdout.splitlines())
+            if line.strip().startswith("Done.")
+        ),
+        report.get("status", "Unknown"),
+    )
+    return pd.DataFrame(
+        [
+            {
+                "Target": report.get("target"),
+                "Status": report.get("status"),
+                "Return code": report.get("returncode"),
+                "Captured at": report.get("captured_at"),
+                "Summary": summary_line,
+            }
+        ]
+    )
+
+
 def dbt_quality_summary_frame() -> pd.DataFrame:
     summary = dbt_artifact_summary()
     return pd.DataFrame(
@@ -583,6 +642,29 @@ def gx_results_frame(report: dict) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def deploy_artifacts_frame() -> pd.DataFrame:
+    """Containerization + Kubernetes deployment recipe for the ML serving API. Manifests are
+    committed under deploy/k8s/ and the Dockerfiles under their service folders."""
+    return pd.DataFrame(
+        [
+            {"Artifact": "ml/Dockerfile", "Kind": "Container image",
+             "Role": "FastAPI ML serving (calibrated probability + SHAP) on :8077"},
+            {"Artifact": "api/Dockerfile", "Kind": "Container image",
+             "Role": "Health / telemetry API service"},
+            {"Artifact": "Dockerfile.streamlit", "Kind": "Container image",
+             "Role": "Streamlit presentation surfaces"},
+            {"Artifact": "airflow/Dockerfile", "Kind": "Container image",
+             "Role": "Airflow scheduler / workers for ingestion + transforms"},
+            {"Artifact": "docker-compose.prod.yml", "Kind": "Compose stack",
+             "Role": "Local multi-service production-shaped bring-up"},
+            {"Artifact": "deploy/k8s/kind-config.yaml", "Kind": "Kubernetes (kind)",
+             "Role": "Single-node local cluster definition ($0)"},
+            {"Artifact": "deploy/k8s/ml-serve.yaml", "Kind": "Kubernetes (kind)",
+             "Role": "Deployment + NodePort Service for the ML API, readiness/liveness probes"},
+        ]
+    )
+
+
 def dbt_results_frame() -> pd.DataFrame:
     rows = dbt_result_rows()
     if not rows:
@@ -611,6 +693,24 @@ def warehouse_inventory_frame() -> pd.DataFrame:
                     "Table": "Run pipeline",
                     "Rows": "—",
                     "Columns": "—",
+                }
+            ]
+        )
+    return pd.DataFrame(rows)
+
+
+def source_landing_frame() -> pd.DataFrame:
+    rows = source_landing_rows()
+    if not rows:
+        return pd.DataFrame(
+            [
+                {
+                    "Source": "No raw files",
+                    "Raw files": 0,
+                    "Latest artifact": "—",
+                    "Latest record count": "—",
+                    "Ingested at": "—",
+                    "Storage path": "Run ingestion",
                 }
             ]
         )
@@ -736,6 +836,122 @@ def airflow_runs_frame() -> pd.DataFrame:
             ]
         )
     return pd.DataFrame(rows)
+
+
+def service_endpoints_frame() -> pd.DataFrame:
+    settings = get_settings()
+    base = settings.finlens_api_base_url or "http://127.0.0.1:8010"
+    public = settings.finlens_public_base_url or "http://127.0.0.1:8501"
+    return pd.DataFrame(
+        [
+            {
+                "Endpoint": "/health",
+                "Served by": "FastAPI",
+                "Purpose": "Structured service and connector health payload",
+                "Path": f"{base}/health",
+            },
+            {
+                "Endpoint": "/healthz",
+                "Served by": "FastAPI",
+                "Purpose": "Machine-facing uptime check for Uptime Kuma",
+                "Path": f"{base}/healthz",
+            },
+            {
+                "Endpoint": "/telemetry/events",
+                "Served by": "FastAPI",
+                "Purpose": "Receives interaction events and optional Turnstile validation",
+                "Path": f"{base}/telemetry/events",
+            },
+            {
+                "Endpoint": "/telemetry/summary",
+                "Served by": "FastAPI",
+                "Purpose": "Returns the current event summary",
+                "Path": f"{base}/telemetry/summary",
+            },
+            {
+                "Endpoint": "/predict-failure-risk",
+                "Served by": "FastAPI (ML serve)",
+                "Purpose": "Calibrated bank-distress probability + SHAP for a feature payload",
+                "Path": "POST :8077/predict-failure-risk",
+            },
+            {
+                "Endpoint": "/predict, /predict/batch",
+                "Served by": "FastAPI (ML serve)",
+                "Purpose": "Single and batch scoring against the served champion model",
+                "Path": "POST :8077/predict · /predict/batch",
+            },
+            {
+                "Endpoint": "/ready",
+                "Served by": "FastAPI (ML serve)",
+                "Purpose": "Model-loaded readiness probe (used by the k8s readinessProbe)",
+                "Path": "GET :8077/ready",
+            },
+            {
+                "Endpoint": "/failures, /banks/{id}",
+                "Served by": "FastAPI (data API)",
+                "Purpose": "Public bank-failure feed and per-institution lookup",
+                "Path": f"{base}/failures · /banks/{{bank_id}}",
+            },
+            {
+                "Endpoint": "/metrics/{series_id}",
+                "Served by": "FastAPI (data API)",
+                "Purpose": "Macro/FRED series values for the business surfaces",
+                "Path": f"{base}/metrics/{{series_id}}",
+            },
+            {
+                "Endpoint": "Streamlit app",
+                "Served by": "Streamlit",
+                "Purpose": "Business, data engineering, and AI presentation surfaces",
+                "Path": public,
+            },
+        ]
+    )
+
+
+def control_sync_frame() -> pd.DataFrame:
+    settings = get_settings()
+    probes = load_state("platform_probe_report", default={})
+    sync_status = _probe_status(
+        probes,
+        "postgres",
+        "Success" if settings.postgres_sync_dsn else "Waiting on DSN",
+    )
+    telemetry = telemetry_summary()
+    # The Home Postgres control DB is not reachable in this portfolio environment.
+    # Report that honestly as "Deferred" rather than a red "Failed" that reads as broken.
+    if sync_status in {"Failed", "Unavailable", "Missing"}:
+        sync_status = "Deferred"
+        env_note = " · control Postgres not connected in this environment"
+    else:
+        env_note = ""
+    return pd.DataFrame(
+        [
+            {
+                "Channel": "Telemetry events",
+                "Destination": "Home Postgres",
+                "Status": sync_status,
+                "Detail": (
+                    f"{telemetry['event_count']} local events captured"
+                    f"{env_note}"
+                ),
+            },
+            {
+                "Channel": "Connector report snapshots",
+                "Destination": "Home Postgres",
+                "Status": sync_status,
+                "Detail": f"Target schema: {settings.postgres_sync_schema}{env_note}",
+            },
+            {
+                "Channel": "Pipeline status snapshots",
+                "Destination": "Home Postgres",
+                "Status": sync_status,
+                "Detail": (
+                    "Sync script persists pipeline, connector, and telemetry summaries"
+                    f"{env_note}"
+                ),
+            },
+        ]
+    )
 
 
 st.set_page_config(

@@ -150,6 +150,13 @@ def slug(title: str) -> str:
         "(", "").replace(")", "").replace("/", "-").replace(" ", "-")
 
 
+_SLUG_TO_TITLE = {slug(t): t for t in ARTICLES}
+
+
+def title_for_slug(s: str) -> str | None:
+    return _SLUG_TO_TITLE.get(s)
+
+
 def article(title: str) -> dict | None:
     return ARTICLES.get(title)
 
@@ -169,6 +176,16 @@ def all_titles_in_order() -> list[str]:
         for _sub, titles in groups:
             out.extend(t for t in titles if t in ARTICLES)
     return out
+
+
+def neighbours(title: str) -> tuple[str | None, str | None]:
+    order = all_titles_in_order()
+    if title not in order:
+        return None, None
+    i = order.index(title)
+    prev = order[i - 1] if i > 0 else None
+    nxt = order[i + 1] if i < len(order) - 1 else None
+    return prev, nxt
 
 
 def stats() -> dict:

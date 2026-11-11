@@ -24,12 +24,13 @@ for p in (REPO, REPO / "src", REPO / "ml"):
 
 
 def main() -> None:
+    import duckdb
+
     from finlens_ml.config import get_ml_settings
     from finlens_ml.data import build_panel, load_financials_frame
     from finlens_ml.features import FEATURE_COLUMNS, build_features
     from finlens_ml.labels import attach_labels, fetch_failures
 
-    import duckdb
     from ingestion.fdic_institutions import fetch_financials
 
     parser = argparse.ArgumentParser()

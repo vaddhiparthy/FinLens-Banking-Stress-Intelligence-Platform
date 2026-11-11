@@ -47,10 +47,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--skip-ingestion",
         action="store_true",
-        help=(
-            "Run warehouse, quality, probe, and sync stages without fetching or "
-            "rotating source data."
-        ),
+        help="Run warehouse, quality, probe, and sync stages without fetching or rotating source data.",
     )
     parser.add_argument(
         "--skip-rotate",
@@ -285,8 +282,7 @@ def main() -> None:
             detail=lambda report: (
                 "Retained "
                 f"{args.retain_versions} version(s) per source; purged "
-                f"{sum(len(r.removed) for rots in report.values() for r in rots)} "
-                "stale partition(s)"
+                f"{sum(len(r.removed) for rots in report.values() for r in rots)} stale partition(s)"
             ),
             metadata=lambda report: {
                 zone: {r.source: {"kept": r.kept, "removed": r.removed} for r in rots}
