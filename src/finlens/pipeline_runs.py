@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
-from finlens.state import load_state, save_state, state_file
+from finlens.state import load_state, save_state, load_state_for_update, state_update_lock, state_file
 
 
 @dataclass
@@ -94,12 +94,13 @@ class PipelineRunRecorder:
 
 
 def save_pipeline_run(payload: dict[str, Any]) -> None:
-    history = load_state("pipeline_run_history", default=[])
-    if not isinstance(history, list):
-        history = []
-    history.append(payload)
-    save_state("pipeline_run_history", history[-25:])
-    save_state("latest_pipeline_run", payload)
+    with state_update_lock():
+        history = load_state_for_update("pipeline_run_history", default=[])
+        if not isinstance(history, list):
+            raise ValueError("Pipeline run history must be a list")
+        history.append(payload)
+        save_state("pipeline_run_history", history[-25:])
+        save_state("latest_pipeline_run", payload)
 
 
 def latest_pipeline_run() -> dict[str, Any]:

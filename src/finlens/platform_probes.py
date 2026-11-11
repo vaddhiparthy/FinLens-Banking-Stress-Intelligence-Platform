@@ -158,9 +158,6 @@ def probe_snowflake_connection() -> dict[str, Any]:
             schema="PUBLIC",
             login_timeout=20,
             network_timeout=20,
-            client_store_temporary_credential=False,
-            disable_ocsp_checks=False,
-            ocsp_fail_open=True,
         )
         try:
             with conn.cursor() as cur:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from finlens.state import load_state, save_state
+from finlens.state import load_state, save_state, load_state_for_update, state_update_lock
 
 FLOW_LABELS = {
     "fdic": ("FDIC -> Bronze", "FDIC BankFind"),
@@ -54,12 +54,17 @@ def save_pipeline_status(statuses: dict[str, dict[str, Any]]) -> None:
 
 
 def update_flow_status(flow_key: str, **fields: Any) -> None:
-    statuses = load_pipeline_status()
-    current = statuses.get(flow_key, {})
-    current.update(fields)
-    current.setdefault("updated_at", datetime.now(UTC).isoformat())
-    statuses[flow_key] = current
-    save_pipeline_status(statuses)
+    with state_update_lock():
+        statuses = load_state_for_update("pipeline_status", default={})
+        if not isinstance(statuses, dict):
+            raise ValueError("Pipeline status must be a mapping")
+        current = statuses.get(flow_key, {})
+        if not isinstance(current, dict):
+            raise ValueError("Pipeline flow status must be a mapping")
+        current.update(fields)
+        current.setdefault("updated_at", datetime.now(UTC).isoformat())
+        statuses[flow_key] = current
+        save_pipeline_status(statuses)
 
 
 def pipeline_status_rows() -> list[dict[str, Any]]:
