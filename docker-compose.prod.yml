@@ -105,7 +105,7 @@ services:
     - platform_edge
     - professional_net
   finlens-api:
-    image: sha256:83671beb38010d447e1e968704cf4a763686c914bc05d678816fb5040b6da06f
+    image: sha256:b4aaaad283226b0a45be793e6a082598f483f414d4937c03a192e4e41cba32e7
     pull_policy: never
     container_name: professional-finlens-api
     user: 10001:10001

@@ -44,8 +44,8 @@ FLOW_ORDER = [
 ]
 
 
-def load_pipeline_status() -> dict[str, dict[str, Any]]:
-    payload = load_state("pipeline_status", default={})
+def load_pipeline_status(*, quarantine_corrupt: bool = True) -> dict[str, dict[str, Any]]:
+    payload = load_state("pipeline_status", default={}, quarantine_corrupt=quarantine_corrupt)
     return payload if isinstance(payload, dict) else {}
 
 
@@ -62,8 +62,8 @@ def update_flow_status(flow_key: str, **fields: Any) -> None:
     save_pipeline_status(statuses)
 
 
-def pipeline_status_rows() -> list[dict[str, Any]]:
-    statuses = load_pipeline_status()
+def pipeline_status_rows(*, quarantine_corrupt: bool = True) -> list[dict[str, Any]]:
+    statuses = load_pipeline_status(quarantine_corrupt=quarantine_corrupt)
     rows: list[dict[str, Any]] = []
     for index, flow_key in enumerate(FLOW_ORDER, start=1):
         label, source = FLOW_LABELS[flow_key]
