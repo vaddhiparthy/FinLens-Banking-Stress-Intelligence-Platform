@@ -15,6 +15,7 @@ COPY scripts /app/scripts
 COPY dbt /app/dbt
 COPY airflow/dags /app/airflow/dags
 COPY streamlit_app /app/streamlit_app
+COPY .streamlit/config.toml /app/.streamlit/config.toml
 COPY ml /app/ml
 COPY rag /app/rag
 RUN mkdir -p /app/data /app/.duckdb

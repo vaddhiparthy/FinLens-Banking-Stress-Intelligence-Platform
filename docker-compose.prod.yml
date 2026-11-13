@@ -1,7 +1,7 @@
 name: professional
 services:
   finlens-web:
-    image: sha256:8d13baa93aaf8e8f2d004c849bc8281af596708be7e01e2e11d815d8ffc8563c
+    image: sha256:61f573548be5c6c6523092761fb9f588de6a4b357709562d09a3d23ae3838381
     pull_policy: never
     container_name: professional-finlens-web
     user: 10001:10001
@@ -52,7 +52,7 @@ services:
     networks:
     - professional_net
   finlens-public:
-    image: sha256:0dbda7dcf873f73220700cf912cec0b741f9c59e3deea5be2eeba5fc9a7a8c7e
+    image: sha256:5de0daada128384de135c3b01608011318f093b75100d42ad9be75c95a197cc8
     pull_policy: never
     container_name: professional-finlens-public
     user: 10001:10001

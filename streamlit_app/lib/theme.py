@@ -1539,15 +1539,17 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         padding: .25rem;
         margin-bottom: .85rem;
     }}
-    .finlens-table {{
+    .finlens-table-wrap .finlens-table {{
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
+        margin: 0;
+        overflow-wrap: normal;
         color: {palette["text_main"]};
         font-size: .82rem;
         line-height: 1.45;
     }}
-    .finlens-table th {{
+    .finlens-table-wrap .finlens-table th {{
         text-align: left;
         color: {palette["text_soft"]};
         background: {palette["sand"]};
@@ -1556,22 +1558,25 @@ def _build_app_css(mode: str, sidebar_open: bool = False) -> str:
         font-size: .66rem;
         font-weight: 800;
         padding: .72rem .78rem;
+        border: 0;
         border-bottom: 1px solid {palette["border"]};
         white-space: nowrap;
     }}
-    .finlens-table td {{
+    .finlens-table-wrap .finlens-table td {{
         color: {palette["text_main"]};
         background: {palette["content_bg"]};
         padding: .72rem .78rem;
+        border: 0;
         border-bottom: 1px solid {palette["border"]};
         vertical-align: top;
         max-width: 26rem;
-        word-break: break-word;
+        word-break: normal;
+        overflow-wrap: normal;
     }}
-    .finlens-table tbody tr:nth-child(even) td {{
+    .finlens-table-wrap .finlens-table tbody tr:nth-child(even) td {{
         background: {palette["content_bg"]};
     }}
-    .finlens-table tr:last-child td {{
+    .finlens-table-wrap .finlens-table tr:last-child td {{
         border-bottom: 0;
     }}
     [data-testid="stExpander"] {{
