@@ -1,0 +1,238 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+from finlens.config import get_settings
+from finlens.paths import ROOT_DIR
+
+
+def probe_local_raw_storage() -> dict[str, Any]:
+    """Raw landing zone lives on the VPS local filesystem (no cloud object store)."""
+    from finlens.paths import RAW_DATA_DIR
+
+    raw_dir = RAW_DATA_DIR
+    sources = (
+        sorted(p.name.split("=", 1)[-1] for p in raw_dir.glob("source=*"))
+        if raw_dir.exists()
+        else []
+    )
+    result: dict[str, Any] = {
+        "configured": raw_dir.exists(),
+        "path": str(raw_dir),
+        "sources": sources,
+    }
+    if not raw_dir.exists():
+        result["status"] = "Pending"
+        result["detail"] = f"Raw landing zone not created yet at {raw_dir}"
+        return result
+    result["status"] = "Ready"
+    result["detail"] = f"VPS local raw storage at {raw_dir} ({len(sources)} sources)"
+    return result
+
+
+def probe_dbt_project() -> dict[str, Any]:
+    dbt_dir = ROOT_DIR / "dbt"
+    model_files = sorted((dbt_dir / "models").glob("**/*.sql"))
+    test_files = sorted((dbt_dir / "models").glob("**/*.yml"))
+    result = {
+        "status": "Ready" if model_files else "Missing",
+        "model_count": len(model_files),
+        "yaml_count": len(test_files),
+        "project_path": str(dbt_dir),
+        "detail": f"{len(model_files)} SQL models and {len(test_files)} YAML contracts found",
+    }
+    try:
+        import dbt  # noqa: F401
+
+        result["runtime"] = "dbt package importable"
+    except Exception:
+        result["runtime"] = "dbt package not installed in this runtime"
+    return result
+
+
+def probe_airflow_project() -> dict[str, Any]:
+    settings = get_settings()
+    dag_dirs = [
+        ROOT_DIR / "airflow" / "dags",
+        Path("/opt/airflow/dags"),
+    ]
+    dags: list[Path] = []
+    for dags_dir in dag_dirs:
+        if dags_dir.exists():
+            dags = sorted(path for path in dags_dir.glob("dag_*.py") if path.is_file())
+            if dags:
+                break
+    result: dict[str, Any] = {
+        "status": "Ready" if dags else "Missing",
+        "dag_count": len(dags),
+        "dags": [path.stem for path in dags],
+        "dag_path": str(dags[0].parent) if dags else str(dag_dirs[0]),
+        "detail": f"{len(dags)} DAG definitions found",
+    }
+    if not dags:
+        return result
+    try:
+        import requests
+
+        response = requests.get(
+            f"{settings.airflow_api_base_url}/api/v2/monitor/health",
+            timeout=8,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except Exception:
+        result["status"] = "Failed"
+        result["runtime_status"] = "Unavailable"
+        result["detail"] = (
+            f"{len(dags)} DAG definitions found; webserver health endpoint not reachable "
+            "(Airflow service not running in this environment)"
+        )
+        return result
+
+    metadatabase = payload.get("metadatabase", {}).get("status")
+    scheduler = payload.get("scheduler", {}).get("status")
+    dag_processor = payload.get("dag_processor", {}).get("status")
+    result["metadatabase"] = metadatabase
+    result["scheduler"] = scheduler
+    result["dag_processor"] = dag_processor
+    if (
+        metadatabase != "healthy"
+        or scheduler != "healthy"
+        or dag_processor != "healthy"
+    ):
+        result["status"] = "Failed"
+        result["runtime_status"] = "Unhealthy"
+    else:
+        result["runtime_status"] = "Ready"
+    result["detail"] = (
+        f"{len(dags)} DAGs found; Airflow webserver healthy; "
+        f"metadatabase={metadatabase}; scheduler={scheduler}; "
+        f"dag_processor={dag_processor}"
+    )
+    return result
+
+
+def probe_snowflake_connection() -> dict[str, Any]:
+    settings = get_settings()
+    configured = bool(
+        settings.snowflake_account
+        and settings.snowflake_user
+        and settings.snowflake_password
+        and settings.snowflake_role
+    )
+    result: dict[str, Any] = {
+        "enabled": settings.snowflake_probe_enabled,
+        "configured": configured,
+        "account": settings.snowflake_account,
+        "role": settings.snowflake_role,
+        "warehouse": settings.snowflake_transforming_warehouse,
+        "database": settings.snowflake_database_marts,
+    }
+    if not settings.snowflake_probe_enabled:
+        result["status"] = "Disabled"
+        result["detail"] = (
+            "Snowflake probe disabled; the active FinLens warehouse is VPS-local DuckDB/Postgres"
+        )
+        return result
+    if not configured:
+        result["status"] = "Scaffolded"
+        result["detail"] = "Snowflake credentials are not fully configured for this runtime"
+        return result
+
+    try:
+        import snowflake.connector
+    except Exception:
+        result["status"] = "Unavailable"
+        result["detail"] = "snowflake-connector-python is not installed in this runtime"
+        return result
+
+    try:
+        conn = snowflake.connector.connect(
+            account=settings.snowflake_account,
+            user=settings.snowflake_user,
+            password=settings.snowflake_password,
+            role=settings.snowflake_role,
+            warehouse=settings.snowflake_transforming_warehouse,
+            database=settings.snowflake_database_marts,
+            schema="PUBLIC",
+            login_timeout=20,
+            network_timeout=20,
+            client_store_temporary_credential=False,
+            disable_ocsp_checks=False,
+            ocsp_fail_open=True,
+        )
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "select current_account(), current_role(), current_warehouse(), "
+                    "current_database(), current_schema()"
+                )
+                row = cur.fetchone()
+        finally:
+            conn.close()
+    except Exception as exc:
+        result["status"] = "Failed"
+        result["detail"] = str(exc)
+        return result
+
+    result.update(
+        {
+            "status": "Ready",
+            "current_account": row[0] if row else None,
+            "current_role": row[1] if row else None,
+            "current_warehouse": row[2] if row else None,
+            "current_database": row[3] if row else None,
+            "current_schema": row[4] if row else None,
+            "detail": "Snowflake session opened successfully",
+        }
+    )
+    return result
+
+
+def probe_postgres_sync() -> dict[str, Any]:
+    settings = get_settings()
+    result: dict[str, Any] = {
+        "configured": bool(settings.postgres_sync_dsn),
+        "schema": settings.postgres_sync_schema,
+    }
+    if not settings.postgres_sync_dsn:
+        result["status"] = "Scaffolded"
+        result["detail"] = "POSTGRES_SYNC_DSN is not configured"
+        return result
+
+    try:
+        import psycopg
+
+        with psycopg.connect(settings.postgres_sync_dsn, connect_timeout=10) as conn:
+            with conn.cursor() as cur:
+                cur.execute("select 1")
+                cur.fetchone()
+    except Exception as exc:
+        result["status"] = "Failed"
+        result["detail"] = str(exc)
+        return result
+
+    result["status"] = "Ready"
+    result["detail"] = f"Postgres sync schema target: {settings.postgres_sync_schema}"
+    return result
+
+
+def probe_platform_stack() -> dict[str, Any]:
+    return {
+        "airflow": probe_airflow_project(),
+        "dbt": probe_dbt_project(),
+        "raw_storage": probe_local_raw_storage(),
+        "snowflake": probe_snowflake_connection(),
+        "postgres": probe_postgres_sync(),
+    }
+
+
+def summarize_probe(name: str, payload: dict[str, Any]) -> str:
+    status = payload.get("status", "Unknown")
+    detail = payload.get("detail", "")
+    return f"{name}: {status}. {detail}".strip()
+
+
+def local_path_exists(path: str | Path) -> bool:
+    return Path(path).exists()

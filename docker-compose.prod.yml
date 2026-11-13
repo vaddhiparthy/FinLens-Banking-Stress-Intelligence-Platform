@@ -333,7 +333,7 @@ services:
     - professional_net
     - platform_edge
   scheduler:
-    image: sha256:d380286e94bb43ea25a8629d4f148d43fd7363a8013efcbc0255fc22d0017b36
+    image: sha256:869a5061d93810e61fbd16b571b132602e1cbf15dbfdfe963af0fa95c8293167
     pull_policy: never
     container_name: professional-finlens-scheduler
     group_add:
