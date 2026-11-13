@@ -145,7 +145,7 @@ services:
     - platform_edge
     - professional_net
   finlens-db:
-    image: sha256:e3541a307e4c7ea2f931f3fa5110859f12215b8ae486d08a9331fb6564dfab8d
+    image: sha256:75dcac3dfb1cd01ca3536910bbc84128759362f8b118bf8c55b38a94f68f3b73
     container_name: professional-finlens-db
     mem_limit: 512m
     memswap_limit: 512m
@@ -183,7 +183,7 @@ services:
     networks:
     - professional_net
   airflow-db:
-    image: sha256:e3541a307e4c7ea2f931f3fa5110859f12215b8ae486d08a9331fb6564dfab8d
+    image: sha256:75dcac3dfb1cd01ca3536910bbc84128759362f8b118bf8c55b38a94f68f3b73
     container_name: professional-finlens-airflow-db
     mem_limit: 512m
     memswap_limit: 512m
