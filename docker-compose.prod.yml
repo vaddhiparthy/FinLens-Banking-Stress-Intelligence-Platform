@@ -275,7 +275,7 @@ services:
     networks:
     - professional_net
   airflow-web:
-    image: sha256:45bccbd25b1492651d262d8893c548e6b14184b33fde0b53b6527a5e5cb96a13
+    image: sha256:c8847805bb75b4190c397e2afb09ea796e2fb5ee7438d0fd653add3c7a969e80
     pull_policy: never
     container_name: professional-finlens-airflow-web
     group_add:
