@@ -2,21 +2,17 @@ from finlens.config import Settings
 
 
 def test_masked_dict_redacts_sensitive_values() -> None:
-    settings = Settings(
-        aws_access_key_id="abc123",
-        aws_secret_access_key="secret-value",
-        fred_api_key="fred-secret",
-        finlens_environment="test",
-    )
-
+    settings = Settings(fred_api_key="fred-secret", finlens_environment="test")
+    assert settings.fred_api_key == "fred-secret"
     masked = settings.as_masked_dict(
         ["aws_access_key_id", "aws_secret_access_key", "fred_api_key", "finlens_environment"]
     )
-
-    assert masked["aws_access_key_id"] == "***"
-    assert masked["aws_secret_access_key"] == "***"
+    # Retired connector fields have no configured value; current secrets remain masked.
+    assert masked["aws_access_key_id"] == "<unset>"
+    assert masked["aws_secret_access_key"] == "<unset>"
     assert masked["fred_api_key"] == "***"
     assert masked["finlens_environment"] == "test"
+    assert "fred-secret" not in str(masked)
 
 
 def test_require_raises_for_missing_variables() -> None:

@@ -23,9 +23,12 @@ RUN mkdir -p /app/data /app/.duckdb
 # libgomp1 is the OpenMP runtime that LightGBM links against (absent from python:slim).
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
     && rm -rf /var/lib/apt/lists/*
-RUN pip install --no-cache-dir uv \
+RUN python -m pip install --no-cache-dir --only-binary=:all: --upgrade pip==26.3 \
+    && pip install --no-cache-dir uv \
     && uv sync --frozen --no-dev --no-editable \
     && uv pip install --python /app/.venv/bin/python "lightgbm>=4.5" "shap>=0.46" "skops>=0.11"
+
+RUN uv pip install --python /app/.venv/bin/python --no-deps -r /app/streamlit_app/requirements.txt
 
 ENV PATH="/app/.venv/bin:${PATH}"
 
