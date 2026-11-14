@@ -1,7 +1,7 @@
 name: professional
 services:
   finlens-web:
-    image: sha256:61f573548be5c6c6523092761fb9f588de6a4b357709562d09a3d23ae3838381
+    image: sha256:2a39690bdc42c07bf772240abe574b1df87032b55d8d36ed5a52fe4d99c65e21
     pull_policy: never
     container_name: professional-finlens-web
     user: 10001:10001
